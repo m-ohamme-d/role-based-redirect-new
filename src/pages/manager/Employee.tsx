@@ -142,16 +142,16 @@ const ManagerEmployee = () => {
             
             <h3 className="text-lg font-semibold mb-2">Performance History</h3>
             <div className="space-y-2">
-              {employee.evaluations.map((eval: any, index: number) => (
+              {employee.evaluations.map((evaluation: any, index: number) => (
                 <div key={index} className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">{new Date(eval.date).toLocaleDateString()}</span>
+                    <span className="text-sm text-gray-600">{new Date(evaluation.date).toLocaleDateString()}</span>
                     <div className="flex items-center">
-                      <span className="mr-1">{eval.rating.toFixed(1)}</span>
+                      <span className="mr-1">{evaluation.rating.toFixed(1)}</span>
                       <Star className="h-4 w-4 fill-yellow-500 stroke-yellow-500" />
                     </div>
                   </div>
-                  <p className="text-sm mt-1">{eval.comment}</p>
+                  <p className="text-sm mt-1">{evaluation.comment}</p>
                 </div>
               ))}
             </div>
