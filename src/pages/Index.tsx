@@ -12,7 +12,7 @@ const Index = () => {
       const userData = JSON.parse(user);
       switch (userData.role) {
         case 'admin':
-          navigate('/admin-dashboard');
+          navigate('/admin/dashboard');
           break;
         case 'manager':
           navigate('/manager/dashboard');

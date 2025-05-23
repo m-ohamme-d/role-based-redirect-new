@@ -31,8 +31,13 @@ import TeamLeadTeamDepartment from "./pages/teamlead/TeamDepartment";
 import TeamLeadSettings from "./pages/teamlead/Settings";
 import TeamLeadProfile from "./pages/teamlead/Profile";
 
-// Legacy dashboard pages
-import AdminDashboard from "./pages/AdminDashboard";
+// Admin Routes
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminUsers from "./pages/admin/Users";
+import AdminRecords from "./pages/admin/Records";
+import AdminAuditLog from "./pages/admin/AuditLog";
+import AdminSettings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -49,7 +54,6 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/user-dashboard" element={<UserDashboard />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
           
           {/* Manager Routes */}
           <Route path="/manager" element={<ManagerLayout />}>
@@ -71,6 +75,19 @@ const App = () => (
             <Route path="settings" element={<TeamLeadSettings />} />
             <Route path="profile" element={<TeamLeadProfile />} />
           </Route>
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="records" element={<AdminRecords />} />
+            <Route path="audit-log" element={<AdminAuditLog />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
+          
+          {/* Legacy admin dashboard - will redirect in Index.tsx */}
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />

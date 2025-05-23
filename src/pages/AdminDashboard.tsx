@@ -1,8 +1,7 @@
-
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Shield, Users, Settings, Database, Activity, BarChart3 } from 'lucide-react';
+import { LogOut, Shield, Users, Settings, Database, Activity, BarChart2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const AdminDashboard = () => {
@@ -13,6 +12,11 @@ const AdminDashboard = () => {
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
+      // Redirect to new admin dashboard after a brief delay
+      const timer = setTimeout(() => {
+        navigate('/admin/dashboard');
+      }, 1500);
+      return () => clearTimeout(timer);
     } else {
       navigate('/login');
     }
@@ -42,6 +46,17 @@ const AdminDashboard = () => {
             Logout
           </Button>
         </div>
+
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center">
+              <div className="text-center">
+                <h2 className="text-xl font-semibold mb-2">Redirecting to new Admin Dashboard...</h2>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -129,7 +144,7 @@ const AdminDashboard = () => {
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-red-600" />
+                <BarChart2 className="h-5 w-5 text-red-600" />
                 Analytics Overview
               </CardTitle>
               <CardDescription>
