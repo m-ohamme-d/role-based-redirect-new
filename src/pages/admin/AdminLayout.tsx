@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import Sidebar from '@/components/layouts/Sidebar';
-import { Home, Users, FileText, Activity, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import MainLayout from '@/components/layouts/MainLayout';
+import { Home, Users, FileText, Activity, Settings, HelpCircle, Bell } from 'lucide-react';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -46,6 +46,21 @@ const AdminLayout = () => {
       label: 'Audit Log'
     },
     {
+      to: '/admin/notifications',
+      icon: <Bell className="h-5 w-5" />,
+      label: 'Notifications'
+    },
+    {
+      to: '/admin/reports',
+      icon: <FileText className="h-5 w-5" />,
+      label: 'Reports'
+    },
+    {
+      to: '/admin/support',
+      icon: <HelpCircle className="h-5 w-5" />,
+      label: 'Support'
+    },
+    {
       to: '/admin/settings',
       icon: <Settings className="h-5 w-5" />,
       label: 'Settings'
@@ -53,12 +68,7 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar links={adminLinks} role="admin" userName={user.name} />
-      <div className="flex-1 overflow-auto p-6 bg-gradient-to-br from-purple-50 via-white to-red-50">
-        <Outlet />
-      </div>
-    </div>
+    <MainLayout links={adminLinks} role="admin" userName={user.name} />
   );
 };
 

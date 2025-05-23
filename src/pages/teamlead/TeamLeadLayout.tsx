@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import Sidebar from '@/components/layouts/Sidebar';
-import { Home, Users, Settings, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import MainLayout from '@/components/layouts/MainLayout';
+import { Home, Users, FileText, HelpCircle, Settings, User, Bell } from 'lucide-react';
 
 const TeamLeadLayout = () => {
   const navigate = useNavigate();
@@ -27,17 +27,15 @@ const TeamLeadLayout = () => {
   const sidebarLinks = [
     { to: "/teamlead/dashboard", icon: <Home size={20} />, label: "Dashboard" },
     { to: "/teamlead/team", icon: <Users size={20} />, label: "Teams" },
+    { to: "/teamlead/notifications", icon: <Bell size={20} />, label: "Notifications" },
+    { to: "/teamlead/reports", icon: <FileText size={20} />, label: "Reports" },
+    { to: "/teamlead/support", icon: <HelpCircle size={20} />, label: "Support" },
     { to: "/teamlead/settings", icon: <Settings size={20} />, label: "Settings" },
     { to: "/teamlead/profile", icon: <User size={20} />, label: "Profile" },
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar links={sidebarLinks} role="teamlead" userName={user.name} />
-      <main className="flex-1 overflow-auto p-6">
-        <Outlet />
-      </main>
-    </div>
+    <MainLayout links={sidebarLinks} role="teamlead" userName={user.name} />
   );
 };
 

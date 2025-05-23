@@ -14,6 +14,11 @@ import ResetPassword from "./pages/ResetPassword";
 import UserDashboard from "./pages/UserDashboard";
 import NotFound from "./pages/NotFound";
 
+// Common Pages
+import Notifications from "./pages/common/Notifications";
+import Reports from "./pages/common/Reports";
+import Support from "./pages/common/Support";
+
 // Manager Routes
 import ManagerLayout from "./pages/manager/ManagerLayout";
 import ManagerDashboard from "./pages/manager/Dashboard";
@@ -64,6 +69,10 @@ const App = () => (
             <Route path="employee/:employeeId" element={<ManagerEmployee />} />
             <Route path="settings" element={<ManagerSettings />} />
             <Route path="profile" element={<ManagerProfile />} />
+            {/* Common Pages */}
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="support" element={<Support />} />
           </Route>
           
           {/* Team Lead Routes */}
@@ -74,6 +83,10 @@ const App = () => (
             <Route path="team/:deptId" element={<TeamLeadTeamDepartment />} />
             <Route path="settings" element={<TeamLeadSettings />} />
             <Route path="profile" element={<TeamLeadProfile />} />
+            {/* Common Pages */}
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="support" element={<Support />} />
           </Route>
           
           {/* Admin Routes */}
@@ -84,6 +97,10 @@ const App = () => (
             <Route path="records" element={<AdminRecords />} />
             <Route path="audit-log" element={<AdminAuditLog />} />
             <Route path="settings" element={<AdminSettings />} />
+            {/* Common Pages */}
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="support" element={<Support />} />
           </Route>
           
           {/* Legacy admin dashboard - will redirect in Index.tsx */}
