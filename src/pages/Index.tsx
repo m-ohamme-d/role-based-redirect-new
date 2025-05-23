@@ -15,7 +15,10 @@ const Index = () => {
           navigate('/admin-dashboard');
           break;
         case 'manager':
-          navigate('/manager-dashboard');
+          navigate('/manager/dashboard');
+          break;
+        case 'teamlead':
+          navigate('/teamlead/dashboard');
           break;
         case 'user':
           navigate('/user-dashboard');

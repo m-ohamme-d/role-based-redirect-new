@@ -4,15 +4,35 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import UserDashboard from "./pages/UserDashboard";
-import ManagerDashboard from "./pages/ManagerDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+
+// Manager Routes
+import ManagerLayout from "./pages/manager/ManagerLayout";
+import ManagerDashboard from "./pages/manager/Dashboard";
+import ManagerTeam from "./pages/manager/Team";
+import ManagerDepartment from "./pages/manager/Department";
+import ManagerEmployee from "./pages/manager/Employee";
+import ManagerSettings from "./pages/manager/Settings";
+import ManagerProfile from "./pages/manager/Profile";
+
+// Team Lead Routes
+import TeamLeadLayout from "./pages/teamlead/TeamLeadLayout";
+import TeamLeadDashboard from "./pages/teamlead/Dashboard";
+import TeamLeadTeam from "./pages/teamlead/Team";
+import TeamLeadTeamDepartment from "./pages/teamlead/TeamDepartment";
+import TeamLeadSettings from "./pages/teamlead/Settings";
+import TeamLeadProfile from "./pages/teamlead/Profile";
+
+// Legacy dashboard pages
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -29,9 +49,30 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/user-dashboard" element={<UserDashboard />} />
-          <Route path="/manager-dashboard" element={<ManagerDashboard />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          
+          {/* Manager Routes */}
+          <Route path="/manager" element={<ManagerLayout />}>
+            <Route index element={<ManagerDashboard />} />
+            <Route path="dashboard" element={<ManagerDashboard />} />
+            <Route path="team" element={<ManagerTeam />} />
+            <Route path="department/:deptId" element={<ManagerDepartment />} />
+            <Route path="employee/:employeeId" element={<ManagerEmployee />} />
+            <Route path="settings" element={<ManagerSettings />} />
+            <Route path="profile" element={<ManagerProfile />} />
+          </Route>
+          
+          {/* Team Lead Routes */}
+          <Route path="/teamlead" element={<TeamLeadLayout />}>
+            <Route index element={<TeamLeadDashboard />} />
+            <Route path="dashboard" element={<TeamLeadDashboard />} />
+            <Route path="team" element={<TeamLeadTeam />} />
+            <Route path="team/:deptId" element={<TeamLeadTeamDepartment />} />
+            <Route path="settings" element={<TeamLeadSettings />} />
+            <Route path="profile" element={<TeamLeadProfile />} />
+          </Route>
+          
+          {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

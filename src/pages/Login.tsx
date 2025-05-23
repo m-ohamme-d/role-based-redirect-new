@@ -26,6 +26,7 @@ const Login = () => {
         let role = 'user';
         if (email.includes('admin')) role = 'admin';
         else if (email.includes('manager')) role = 'manager';
+        else if (email.includes('teamlead')) role = 'teamlead';
 
         const userData = { email, role, name: email.split('@')[0] };
         localStorage.setItem('user', JSON.stringify(userData));
@@ -38,7 +39,10 @@ const Login = () => {
             navigate('/admin-dashboard');
             break;
           case 'manager':
-            navigate('/manager-dashboard');
+            navigate('/manager/dashboard');
+            break;
+          case 'teamlead':
+            navigate('/teamlead/dashboard');
             break;
           default:
             navigate('/user-dashboard');
@@ -138,7 +142,7 @@ const Login = () => {
 
           <div className="mt-4 text-xs text-center text-gray-500">
             <p>Demo accounts:</p>
-            <p>admin@demo.com • manager@demo.com • user@demo.com</p>
+            <p>admin@demo.com • manager@demo.com • teamlead@demo.com • user@demo.com</p>
             <p>Password: any password</p>
           </div>
         </CardContent>
