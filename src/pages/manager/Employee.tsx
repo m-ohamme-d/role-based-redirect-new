@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Phone, Calendar, StarIcon } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Mock employee data
@@ -148,7 +148,7 @@ const ManagerEmployee = () => {
                     <span className="text-sm text-gray-600">{new Date(eval.date).toLocaleDateString()}</span>
                     <div className="flex items-center">
                       <span className="mr-1">{eval.rating.toFixed(1)}</span>
-                      <StarIcon className="h-4 w-4 fill-yellow-500 stroke-yellow-500" />
+                      <Star className="h-4 w-4 fill-yellow-500 stroke-yellow-500" />
                     </div>
                   </div>
                   <p className="text-sm mt-1">{eval.comment}</p>
