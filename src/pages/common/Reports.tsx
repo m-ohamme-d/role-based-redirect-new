@@ -37,6 +37,42 @@ const Reports = () => {
     }, 1500);
   };
 
+  const handleDownloadReport = (reportName: string, reportType: string) => {
+    // Create a mock file content based on the report type
+    let content = '';
+    let mimeType = '';
+    let fileName = '';
+    
+    if (reportType === 'PDF') {
+      content = `Mock PDF content for ${reportName}`;
+      mimeType = 'application/pdf';
+      fileName = `${reportName.replace(/\s+/g, '_')}.pdf`;
+    } else if (reportType === 'XLSX') {
+      content = `Mock Excel content for ${reportName}`;
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      fileName = `${reportName.replace(/\s+/g, '_')}.xlsx`;
+    } else if (reportType === 'CSV') {
+      content = `Name,Value,Date\n${reportName},100,${new Date().toISOString().split('T')[0]}`;
+      mimeType = 'text/csv';
+      fileName = `${reportName.replace(/\s+/g, '_')}.csv`;
+    }
+    
+    // Create blob and download
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('Download started', {
+      description: `${reportName} is being downloaded.`
+    });
+  };
+
   const recentReports = [
     { id: 1, name: 'Performance Q1', date: 'May 15, 2025', type: 'PDF' },
     { id: 2, name: 'Department Budget', date: 'May 10, 2025', type: 'XLSX' },
@@ -146,7 +182,11 @@ const Reports = () => {
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDownloadReport(report.name, report.type)}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
@@ -166,7 +206,11 @@ const Reports = () => {
                         <p className="text-xs text-gray-500">{report.type} Format</p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDownloadReport(report.name, report.type)}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
