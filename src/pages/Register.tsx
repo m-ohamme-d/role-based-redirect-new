@@ -57,6 +57,9 @@ const Register = () => {
         case 'manager':
           navigate('/manager-dashboard');
           break;
+        case 'teamlead':
+          navigate('/teamlead/dashboard');
+          break;
         default:
           navigate('/user-dashboard');
       }
@@ -123,6 +126,7 @@ const Register = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="teamlead">Team Lead</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
                 </SelectContent>
