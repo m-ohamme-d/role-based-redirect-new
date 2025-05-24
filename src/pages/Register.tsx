@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user'
+    role: 'teamlead'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -61,7 +60,7 @@ const Register = () => {
           navigate('/teamlead/dashboard');
           break;
         default:
-          navigate('/user-dashboard');
+          navigate('/teamlead/dashboard');
       }
       setLoading(false);
     }, 1000);
@@ -125,7 +124,6 @@ const Register = () => {
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
                   <SelectItem value="teamlead">Team Lead</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
