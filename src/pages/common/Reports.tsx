@@ -38,23 +38,38 @@ const Reports = () => {
   };
 
   const handleDownloadReport = (reportName: string, reportType: string) => {
+    // Generate timestamp and date stamp
+    const now = new Date();
+    const dateStamp = now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const timeStamp = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+    const fullTimestamp = `${dateStamp} at ${timeStamp}`;
+    
     // Create a mock file content based on the report type
     let content = '';
     let mimeType = '';
     let fileName = '';
     
     if (reportType === 'PDF') {
-      content = `Mock PDF content for ${reportName}`;
+      content = `Report: ${reportName}\nGenerated on: ${fullTimestamp}\n\nMock PDF content for ${reportName}`;
       mimeType = 'application/pdf';
-      fileName = `${reportName.replace(/\s+/g, '_')}.pdf`;
+      fileName = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
     } else if (reportType === 'XLSX') {
-      content = `Mock Excel content for ${reportName}`;
+      content = `Report: ${reportName}\nGenerated on: ${fullTimestamp}\n\nMock Excel content for ${reportName}`;
       mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      fileName = `${reportName.replace(/\s+/g, '_')}.xlsx`;
+      fileName = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
     } else if (reportType === 'CSV') {
-      content = `Name,Value,Date\n${reportName},100,${new Date().toISOString().split('T')[0]}`;
+      content = `# Report: ${reportName}\n# Generated on: ${fullTimestamp}\nName,Value,Date\n${reportName},100,${now.toISOString().split('T')[0]}`;
       mimeType = 'text/csv';
-      fileName = `${reportName.replace(/\s+/g, '_')}.csv`;
+      fileName = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
     }
     
     // Create blob and download
@@ -69,7 +84,7 @@ const Reports = () => {
     window.URL.revokeObjectURL(url);
     
     toast.success('Download started', {
-      description: `${reportName} is being downloaded.`
+      description: `${reportName} generated on ${dateStamp} is being downloaded.`
     });
   };
 
