@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,21 +21,40 @@ const Login = () => {
     // Mock login logic - replace with actual authentication
     setTimeout(() => {
       if (email && password) {
-        // Mock role assignment based on email
-        let role = 'user';
-        if (email.includes('admin')) role = 'admin';
-        else if (email.includes('manager')) role = 'manager';
-        else if (email.includes('teamlead')) role = 'teamlead';
+        // First check if there's an existing user with this email
+        const existingUser = localStorage.getItem('user');
+        let userData;
+        
+        if (existingUser) {
+          const parsedUser = JSON.parse(existingUser);
+          // If the stored user email matches, use their data
+          if (parsedUser.email === email) {
+            userData = parsedUser;
+          } else {
+            // Mock role assignment for demo accounts
+            let role = 'teamlead'; // default role
+            if (email.includes('admin')) role = 'admin';
+            else if (email.includes('manager')) role = 'manager';
+            
+            userData = { email, role, name: email.split('@')[0] };
+          }
+        } else {
+          // Mock role assignment for demo accounts
+          let role = 'teamlead'; // default role
+          if (email.includes('admin')) role = 'admin';
+          else if (email.includes('manager')) role = 'manager';
+          
+          userData = { email, role, name: email.split('@')[0] };
+        }
 
-        const userData = { email, role, name: email.split('@')[0] };
         localStorage.setItem('user', JSON.stringify(userData));
         
         toast.success('Login successful!');
         
         // Redirect based on role
-        switch (role) {
+        switch (userData.role) {
           case 'admin':
-            navigate('/admin-dashboard');
+            navigate('/admin/dashboard');
             break;
           case 'manager':
             navigate('/manager/dashboard');
@@ -45,7 +63,7 @@ const Login = () => {
             navigate('/teamlead/dashboard');
             break;
           default:
-            navigate('/user-dashboard');
+            navigate('/teamlead/dashboard');
         }
       } else {
         toast.error('Please enter valid credentials');
@@ -142,7 +160,7 @@ const Login = () => {
 
           <div className="mt-4 text-xs text-center text-gray-500">
             <p>Demo accounts:</p>
-            <p>admin@demo.com • manager@demo.com • teamlead@demo.com • user@demo.com</p>
+            <p>admin@demo.com • manager@demo.com • teamlead@demo.com</p>
             <p>Password: any password</p>
           </div>
         </CardContent>
