@@ -1,4 +1,3 @@
-
 import { 
   Accordion, 
   AccordionContent, 
@@ -15,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, Mail, MessageSquare } from "lucide-react";
+import { AlertCircle, Mail, MessageSquare, FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 

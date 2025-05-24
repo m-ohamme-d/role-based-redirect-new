@@ -15,13 +15,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { 
-  Form, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormControl 
-} from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Download, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,84 +62,61 @@ const Reports = () => {
             <CardDescription>Select options to generate a custom report</CardDescription>
           </CardHeader>
           <CardContent>
-            <Form>
-              <div className="space-y-4">
-                <FormField
-                  name="reportType"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>Report Type</FormLabel>
-                      <FormControl>
-                        <Select value={reportType} onValueChange={setReportType}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select report type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="performance">Performance Report</SelectItem>
-                            <SelectItem value="financial">Financial Report</SelectItem>
-                            <SelectItem value="attendance">Attendance Report</SelectItem>
-                            <SelectItem value="project">Project Status Report</SelectItem>
-                            <SelectItem value="resource">Resource Allocation Report</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  name="dateRange"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>Date Range</FormLabel>
-                      <FormControl>
-                        <Select value={dateRange} onValueChange={setDateRange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select date range" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="week">Last Week</SelectItem>
-                            <SelectItem value="month">Last Month</SelectItem>
-                            <SelectItem value="quarter">Last Quarter</SelectItem>
-                            <SelectItem value="year">Last Year</SelectItem>
-                            <SelectItem value="custom">Custom Range</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  name="format"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>Export Format</FormLabel>
-                      <FormControl>
-                        <Select value={format} onValueChange={setFormat}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select export format" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pdf">PDF Document</SelectItem>
-                            <SelectItem value="xlsx">Excel Spreadsheet</SelectItem>
-                            <SelectItem value="csv">CSV File</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <Button 
-                  className="w-full" 
-                  onClick={handleGenerateReport} 
-                  disabled={generating}
-                >
-                  {generating ? 'Generating...' : 'Generate Report'}
-                </Button>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Report Type</label>
+                <Select value={reportType} onValueChange={setReportType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select report type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="performance">Performance Report</SelectItem>
+                    <SelectItem value="financial">Financial Report</SelectItem>
+                    <SelectItem value="attendance">Attendance Report</SelectItem>
+                    <SelectItem value="project">Project Status Report</SelectItem>
+                    <SelectItem value="resource">Resource Allocation Report</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </Form>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date Range</label>
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select date range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="week">Last Week</SelectItem>
+                    <SelectItem value="month">Last Month</SelectItem>
+                    <SelectItem value="quarter">Last Quarter</SelectItem>
+                    <SelectItem value="year">Last Year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Export Format</label>
+                <Select value={format} onValueChange={setFormat}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select export format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pdf">PDF Document</SelectItem>
+                    <SelectItem value="xlsx">Excel Spreadsheet</SelectItem>
+                    <SelectItem value="csv">CSV File</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button 
+                className="w-full" 
+                onClick={handleGenerateReport} 
+                disabled={generating}
+              >
+                {generating ? 'Generating...' : 'Generate Report'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
