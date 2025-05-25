@@ -30,7 +30,7 @@ const employeeProgressData = [
   { name: 'Finance', value: 70 },
 ];
 
-// Mock clients data with enhanced structure
+// Enhanced clients data with projects
 const clientsData = [
   { 
     id: 1, 
@@ -81,6 +81,7 @@ const ManagerDashboard = () => {
     { id: 5, name: 'Finance', employeeCount: 14, growth: '0%', trend: 'neutral' as const },
   ]);
 
+  const [clients, setClients] = useState(clientsData);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
@@ -97,12 +98,19 @@ const ManagerDashboard = () => {
           ? { ...project, status: project.status === 'working' ? 'stopped' : 'working' }
           : project
       );
-      setSelectedClient({ ...selectedClient, projects: updatedProjects });
+      const updatedClient = { ...selectedClient, projects: updatedProjects };
+      
+      // Update the main clients array
+      setClients(clients.map(client => 
+        client.id === selectedClient.id ? updatedClient : client
+      ));
+      
+      setSelectedClient(updatedClient);
       toast.success('Project status updated');
     }
   };
 
-  const sendAlert = () => {
+  const sendReportAlert = () => {
     toast.success('Performance report alert sent to all Team Leads');
     setShowAlertsDialog(false);
   };
@@ -116,12 +124,12 @@ const ManagerDashboard = () => {
             <DialogTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
-                Send Alert
+                Send Report Alert
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Send Performance Alert</DialogTitle>
+                <DialogTitle>Send Performance Report Alert</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-gray-600">
@@ -131,7 +139,7 @@ const ManagerDashboard = () => {
                   <Button variant="outline" onClick={() => setShowAlertsDialog(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={sendAlert}>
+                  <Button onClick={sendReportAlert}>
                     Send Alert
                   </Button>
                 </div>
@@ -144,6 +152,7 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total Employees"
@@ -173,6 +182,7 @@ const ManagerDashboard = () => {
         />
       </div>
 
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LineChart 
           data={employeeOverviewData} 
@@ -193,7 +203,7 @@ const ManagerDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clientsData.map(client => (
+            {clients.map(client => (
               <Card 
                 key={client.id} 
                 className="cursor-pointer hover:shadow-md transition-shadow"
@@ -209,6 +219,9 @@ const ManagerDashboard = () => {
                     >
                       {client.status === 'working' ? 'Working' : 'Stopped'}
                     </Badge>
+                    <p className="text-xs text-gray-500">
+                      {client.projects.length} project{client.projects.length !== 1 ? 's' : ''}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -217,10 +230,18 @@ const ManagerDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Department Map - Read Only */}
+      {/* Department Overview - Read Only */}
       <Card>
         <CardHeader>
-          <CardTitle>Department Overview</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Department Overview</CardTitle>
+            <Link 
+              to="/manager/team" 
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Manage Teams →
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
