@@ -3,7 +3,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Download, Bell } from 'lucide-react';
+import { Download, Bell, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 // Mock data for teams
 const teamsData = [
@@ -16,6 +19,9 @@ const teamsData = [
 
 const ManagerTeam = () => {
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
+  const [notificationText, setNotificationText] = useState('');
+  const [reminderDate, setReminderDate] = useState('');
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
 
   const handleSelectTeam = (teamId: number) => {
     if (selectedTeams.includes(teamId)) {
@@ -34,11 +40,61 @@ const ManagerTeam = () => {
   };
 
   const handleExport = () => {
-    toast.success(`Exported ${selectedTeams.length} teams`);
+    if (selectedTeams.length === 0) {
+      toast.error('Please select teams to export');
+      return;
+    }
+
+    const selectedTeamData = teamsData.filter(team => selectedTeams.includes(team.id));
+    
+    // Create CSV content
+    const headers = ['Team Name', 'Team Lead', 'Department', 'Members', 'Performance'];
+    const csvContent = [
+      headers.join(','),
+      ...selectedTeamData.map(team => 
+        [team.name, team.lead, team.department, team.members, `${team.performance}%`].join(',')
+      )
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `team_export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${selectedTeams.length} teams successfully`);
   };
 
-  const handleNotify = () => {
-    toast.success(`Notification sent to ${selectedTeams.length} teams`);
+  const handleSendNotification = () => {
+    if (selectedTeams.length === 0) {
+      toast.error('Please select teams to notify');
+      return;
+    }
+
+    if (!notificationText.trim()) {
+      toast.error('Please enter notification text');
+      return;
+    }
+
+    const selectedTeamNames = teamsData
+      .filter(team => selectedTeams.includes(team.id))
+      .map(team => team.name)
+      .join(', ');
+
+    toast.success(`Notification sent to ${selectedTeams.length} team leads: ${selectedTeamNames}`);
+    
+    if (reminderDate) {
+      toast.success(`Reminder set for ${reminderDate}`);
+    }
+
+    setShowNotificationDialog(false);
+    setNotificationText('');
+    setReminderDate('');
   };
 
   return (
@@ -55,14 +111,50 @@ const ManagerTeam = () => {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button
-            className="flex items-center gap-2"
-            disabled={selectedTeams.length === 0}
-            onClick={handleNotify}
-          >
-            <Bell className="h-4 w-4" />
-            Notify
-          </Button>
+          <Dialog open={showNotificationDialog} onOpenChange={setShowNotificationDialog}>
+            <DialogTrigger asChild>
+              <Button
+                className="flex items-center gap-2"
+                disabled={selectedTeams.length === 0}
+              >
+                <Bell className="h-4 w-4" />
+                Notify
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Send Notification</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Message</label>
+                  <Textarea
+                    value={notificationText}
+                    onChange={(e) => setNotificationText(e.target.value)}
+                    placeholder="Enter notification message..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Reminder Date (Optional)</label>
+                  <Input
+                    type="datetime-local"
+                    value={reminderDate}
+                    onChange={(e) => setReminderDate(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowNotificationDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSendNotification}>
+                    Send Notification
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

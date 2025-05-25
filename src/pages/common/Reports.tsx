@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Card, 
@@ -24,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FileText, Download, Calendar, CheckCircle } from 'lucide-react';
+import { FileText, Download, Calendar, CheckCircle, Bell, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Reports = () => {
@@ -39,7 +38,21 @@ const Reports = () => {
     format: string;
     dateGenerated: string;
     status: string;
+    isFavorite: boolean;
   }>>([]);
+
+  const [recentReports, setRecentReports] = useState([
+    { id: 1, name: 'Performance Q1', date: 'May 15, 2025', type: 'PDF', isFavorite: false },
+    { id: 2, name: 'Department Budget', date: 'May 10, 2025', type: 'XLSX', isFavorite: true },
+    { id: 3, name: 'Team Metrics', date: 'May 5, 2025', type: 'PDF', isFavorite: false },
+    { id: 4, name: 'Resource Allocation', date: 'Apr 28, 2025', type: 'CSV', isFavorite: true }
+  ]);
+
+  const [favoriteReports, setFavoriteReports] = useState([
+    { id: 1, name: 'Monthly Team Performance', type: 'PDF', isFavorite: true },
+    { id: 2, name: 'Resource Usage Summary', type: 'XLSX', isFavorite: true },
+    { id: 3, name: 'Department KPIs', type: 'PDF', isFavorite: true }
+  ]);
 
   const generateReportData = (reportType: string) => {
     const now = new Date();
@@ -116,7 +129,8 @@ const Reports = () => {
           month: 'long',
           day: 'numeric'
         }),
-        status: 'Ready'
+        status: 'Ready',
+        isFavorite: false
       };
       
       setGeneratedReports(prev => [newReport, ...prev]);
@@ -126,6 +140,51 @@ const Reports = () => {
         description: `Your ${reportType} report is ready for download.`
       });
     }, 1500);
+  };
+
+  const handleToggleFavorite = (reportId: number, isGenerated: boolean = false) => {
+    if (isGenerated) {
+      setGeneratedReports(prev => prev.map(report => 
+        report.id === reportId.toString() 
+          ? { ...report, isFavorite: !report.isFavorite }
+          : report
+      ));
+    } else {
+      setRecentReports(prev => prev.map(report => 
+        report.id === reportId 
+          ? { ...report, isFavorite: !report.isFavorite }
+          : report
+      ));
+      
+      // Also update favorites list
+      const report = recentReports.find(r => r.id === reportId);
+      if (report) {
+        if (!report.isFavorite) {
+          setFavoriteReports(prev => [...prev, { ...report, isFavorite: true }]);
+        } else {
+          setFavoriteReports(prev => prev.filter(r => r.id !== reportId));
+        }
+      }
+    }
+    
+    toast.success('Favorite status updated');
+  };
+
+  const handleSaveReport = (reportName: string, reportFormat: string) => {
+    const savedReport = {
+      id: Date.now(),
+      name: reportName,
+      date: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      type: reportFormat,
+      isFavorite: false
+    };
+    
+    setRecentReports(prev => [savedReport, ...prev]);
+    toast.success('Report saved successfully');
   };
 
   const handleDownloadReport = (reportName: string, reportFormat: string, reportTypeData?: string) => {
@@ -194,19 +253,6 @@ const Reports = () => {
     }
   };
 
-  const recentReports = [
-    { id: 1, name: 'Performance Q1', date: 'May 15, 2025', type: 'PDF' },
-    { id: 2, name: 'Department Budget', date: 'May 10, 2025', type: 'XLSX' },
-    { id: 3, name: 'Team Metrics', date: 'May 5, 2025', type: 'PDF' },
-    { id: 4, name: 'Resource Allocation', date: 'Apr 28, 2025', type: 'CSV' }
-  ];
-
-  const favoriteReports = [
-    { id: 1, name: 'Monthly Team Performance', type: 'PDF' },
-    { id: 2, name: 'Resource Usage Summary', type: 'XLSX' },
-    { id: 3, name: 'Department KPIs', type: 'PDF' }
-  ];
-
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
@@ -266,13 +312,21 @@ const Reports = () => {
                 </Select>
               </div>
 
-              <Button 
-                className="w-full" 
-                onClick={handleGenerateReport} 
-                disabled={generating}
-              >
-                {generating ? 'Generating...' : 'Generate Report'}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  className="flex-1" 
+                  onClick={handleGenerateReport} 
+                  disabled={generating}
+                >
+                  {generating ? 'Generating...' : 'Generate Report'}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleSaveReport(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`, format.toUpperCase())}
+                >
+                  Save Config
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -303,19 +357,28 @@ const Reports = () => {
                         </p>
                       </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleDownloadReport(report.name, report.type)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleToggleFavorite(report.id)}
+                      >
+                        <Star className={`h-4 w-4 ${report.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDownloadReport(report.name, report.type)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </TabsContent>
               
               <TabsContent value="favorites" className="space-y-4">
-                {favoriteReports.map((report) => (
+                {favoriteReports.filter(report => report.isFavorite).map((report) => (
                   <div 
                     key={report.id}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
@@ -327,13 +390,22 @@ const Reports = () => {
                         <p className="text-xs text-gray-500">{report.type} Format</p>
                       </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleDownloadReport(report.name, report.type)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleToggleFavorite(report.id)}
+                      >
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDownloadReport(report.name, report.type)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </TabsContent>
@@ -375,15 +447,24 @@ const Reports = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDownloadReport(report.name, report.format, report.type)}
-                        className="flex items-center gap-2"
-                      >
-                        <Download className="h-4 w-4" />
-                        Download
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleToggleFavorite(parseInt(report.id), true)}
+                        >
+                          <Star className={`h-4 w-4 ${report.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDownloadReport(report.name, report.format, report.type)}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
