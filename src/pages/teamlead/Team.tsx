@@ -4,11 +4,9 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Mock departments data
+// Mock departments data - restricted to IT only for team leads
 const departments = [
   { id: 1, name: 'IT', memberCount: 15 },
-  { id: 2, name: 'Marketing', memberCount: 8 },
-  { id: 3, name: 'Sales', memberCount: 12 },
 ];
 
 const TeamLeadTeam = () => {
@@ -17,7 +15,10 @@ const TeamLeadTeam = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Team Overview</h1>
+        <p className="text-sm text-gray-600">
+          Team member management is handled by managers. View-only access.
+        </p>
       </div>
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -39,14 +40,14 @@ const TeamLeadTeam = () => {
                     to={`/teamlead/team/${dept.id}`}
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    View Details
+                    View Team Details
                   </Link>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="mb-4">
-                  {dept.memberCount} members in this department. Click "View Details" to manage team members 
-                  and review performance metrics.
+                <p className="mb-4 text-gray-600">
+                  {dept.memberCount} members in this department. Click "View Team Details" to review 
+                  performance metrics and provide ratings. Member management is handled by managers.
                 </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

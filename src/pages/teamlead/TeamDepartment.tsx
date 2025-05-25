@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Calendar, Star, Save } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -11,42 +14,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from '@/components/ui/input';
 
-// Mock department data
+// Mock department data - only IT department
 const departmentsData = {
   1: { id: 1, name: 'IT', teamLead: 'You' },
-  2: { id: 2, name: 'Marketing', teamLead: 'You' },
-  3: { id: 3, name: 'Sales', teamLead: 'You' },
 };
 
-// Mock team members by department
+// Enhanced team members with multiple criteria ratings
 const teamMembersByDepartment = {
   1: [
-    { id: 101, name: 'John Smith', designation: 'Senior Developer', rating: 95, notes: 'Excellent problem solver' },
-    { id: 102, name: 'Emily Wilson', designation: 'UX Designer', rating: 88, notes: 'Creative and detail-oriented' },
-    { id: 103, name: 'Michael Brown', designation: 'Backend Developer', rating: 92, notes: 'Strong database skills' },
-    { id: 104, name: 'Sarah Johnson', designation: 'Frontend Developer', rating: 90, notes: 'Great with UI components' },
-  ],
-  2: [
-    { id: 201, name: 'Karen White', designation: 'Marketing Manager', rating: 94, notes: 'Excellent campaign strategy' },
-    { id: 202, name: 'Daniel Brown', designation: 'Digital Marketing Specialist', rating: 86, notes: 'Good with social media' },
-    { id: 203, name: 'Laura Green', designation: 'Content Writer', rating: 89, notes: 'Creative content creator' },
-  ],
-  3: [
-    { id: 301, name: 'Robert Wilson', designation: 'Sales Manager', rating: 93, notes: 'Exceeds targets consistently' },
-    { id: 302, name: 'Jennifer Smith', designation: 'Sales Representative', rating: 87, notes: 'Building strong client relationships' },
-    { id: 303, name: 'Thomas Miller', designation: 'Account Executive', rating: 91, notes: 'Great at closing deals' },
-    { id: 304, name: 'Amanda Jones', designation: 'Sales Associate', rating: 82, notes: 'Improving steadily' },
+    { 
+      id: 101, 
+      name: 'John Smith', 
+      designation: 'Senior Developer', 
+      avatar: null,
+      ratings: {
+        productivity: 95,
+        collaboration: 88,
+        timeliness: 92,
+        overall: 92
+      },
+      locked: false
+    },
+    { 
+      id: 102, 
+      name: 'Emily Wilson', 
+      designation: 'UX Designer', 
+      avatar: null,
+      ratings: {
+        productivity: 90,
+        collaboration: 95,
+        timeliness: 85,
+        overall: 90
+      },
+      locked: false
+    },
+    { 
+      id: 103, 
+      name: 'Michael Brown', 
+      designation: 'Backend Developer', 
+      avatar: null,
+      ratings: {
+        productivity: 88,
+        collaboration: 90,
+        timeliness: 94,
+        overall: 91
+      },
+      locked: true // Example of locked rating
+    },
   ],
 };
 
-// Time period options
+const criteriaLabels = {
+  productivity: 'Productivity',
+  collaboration: 'Collaboration',
+  timeliness: 'Timeliness',
+  overall: 'Overall Performance'
+};
+
 const timePeriods = [
   { value: 'month', label: 'This Month' },
   { value: 'quarter', label: 'This Quarter' },
   { value: 'year', label: 'This Year' },
-  { value: 'all', label: 'All Time' },
 ];
 
 const TeamLeadTeamDepartment = () => {
@@ -54,48 +83,33 @@ const TeamLeadTeamDepartment = () => {
   const [department, setDepartment] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [timePeriod, setTimePeriod] = useState('month');
-  const [editingMember, setEditingMember] = useState<number | null>(null);
-  const [editData, setEditData] = useState({
-    name: '',
-    designation: '',
-    rating: 0,
-    notes: '',
-  });
 
   useEffect(() => {
-    // In a real app, this would be an API call
     if (deptId && departmentsData[Number(deptId)]) {
       setDepartment(departmentsData[Number(deptId)]);
       setTeamMembers(teamMembersByDepartment[Number(deptId)] || []);
     }
   }, [deptId]);
 
-  const handleEdit = (member: any) => {
-    setEditingMember(member.id);
-    setEditData({
-      name: member.name,
-      designation: member.designation,
-      rating: member.rating,
-      notes: member.notes,
-    });
-  };
-
-  const handleSave = (id: number) => {
+  const handleRatingChange = (memberId: number, criterion: string, rating: number) => {
     setTeamMembers(teamMembers.map(member => {
-      if (member.id === id) {
-        return { ...member, ...editData };
+      if (member.id === memberId && !member.locked) {
+        const newRatings = { ...member.ratings, [criterion]: rating };
+        const overall = Math.round((newRatings.productivity + newRatings.collaboration + newRatings.timeliness) / 3);
+        return { 
+          ...member, 
+          ratings: { ...newRatings, overall }
+        };
       }
       return member;
     }));
-    setEditingMember(null);
   };
 
-  const handleCancel = () => {
-    setEditingMember(null);
-  };
-
-  const handleChange = (field: string, value: string | number) => {
-    setEditData({ ...editData, [field]: value });
+  const handleSaveRatings = (memberId: number) => {
+    setTeamMembers(teamMembers.map(member => 
+      member.id === memberId ? { ...member, locked: true } : member
+    ));
+    toast.success('Ratings saved and locked successfully');
   };
 
   if (!department) {
@@ -108,6 +122,10 @@ const TeamLeadTeamDepartment = () => {
       </div>
     );
   }
+
+  const averageRating = Math.round(
+    teamMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / teamMembers.length
+  );
 
   return (
     <div className="space-y-6">
@@ -157,7 +175,7 @@ const TeamLeadTeamDepartment = () => {
           <CardContent className="p-4">
             <h3 className="font-semibold">Average Rating</h3>
             <div className="text-3xl font-bold mt-2">
-              {Math.round(teamMembers.reduce((acc, member) => acc + member.rating, 0) / teamMembers.length)}%
+              {averageRating}%
             </div>
           </CardContent>
         </Card>
@@ -166,7 +184,7 @@ const TeamLeadTeamDepartment = () => {
           <CardContent className="p-4">
             <h3 className="font-semibold">Top Performer</h3>
             <div className="text-xl font-bold mt-2">
-              {teamMembers.sort((a, b) => b.rating - a.rating)[0]?.name || 'None'}
+              {teamMembers.sort((a, b) => b.ratings.overall - a.ratings.overall)[0]?.name || 'None'}
             </div>
           </CardContent>
         </Card>
@@ -174,109 +192,69 @@ const TeamLeadTeamDepartment = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Team Members</CardTitle>
+          <CardTitle>Team Performance Ratings</CardTitle>
+          <p className="text-sm text-gray-600">
+            Rate team members across multiple criteria. Once saved, ratings are locked and can only be edited by administrators.
+          </p>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Name</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Designation</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Rating</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Notes</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teamMembers.map(member => (
-                  <tr key={member.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      {editingMember === member.id ? (
-                        <Input 
-                          value={editData.name} 
-                          onChange={(e) => handleChange('name', e.target.value)}
-                          className="max-w-[200px]"
-                        />
-                      ) : (
-                        member.name
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editingMember === member.id ? (
-                        <Input 
-                          value={editData.designation} 
-                          onChange={(e) => handleChange('designation', e.target.value)}
-                          className="max-w-[200px]"
-                        />
-                      ) : (
-                        member.designation
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editingMember === member.id ? (
-                        <Input 
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={editData.rating} 
-                          onChange={(e) => handleChange('rating', parseInt(e.target.value) || 0)}
-                          className="max-w-[80px]"
-                        />
-                      ) : (
-                        <div className="flex items-center">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2 max-w-[100px]">
-                            <div 
-                              className="bg-blue-600 h-2.5 rounded-full" 
-                              style={{ width: `${member.rating}%` }}
-                            ></div>
+          <div className="space-y-6">
+            {teamMembers.map(member => (
+              <Card key={member.id} className={member.locked ? 'bg-gray-50' : ''}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={member.avatar} />
+                        <AvatarFallback>{member.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-semibold">{member.name}</h3>
+                        <p className="text-sm text-gray-600">{member.designation}</p>
+                        <Badge variant="outline">ID: {member.id}</Badge>
+                      </div>
+                    </div>
+                    {member.locked && (
+                      <Badge variant="destructive">Locked</Badge>
+                    )}
+                    {!member.locked && (
+                      <Button 
+                        onClick={() => handleSaveRatings(member.id)}
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Save className="h-4 w-4" />
+                        Save & Lock
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Object.entries(criteriaLabels).map(([key, label]) => (
+                      <div key={key} className="space-y-2">
+                        <label className="text-sm font-medium">{label}</label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-4 w-4 ${member.locked ? 'cursor-not-allowed' : 'cursor-pointer'} ${
+                                  star <= Math.round(member.ratings[key] / 20) 
+                                    ? 'fill-yellow-400 text-yellow-400' 
+                                    : 'text-gray-300'
+                                }`}
+                                onClick={() => !member.locked && handleRatingChange(member.id, key, star * 20)}
+                              />
+                            ))}
                           </div>
-                          <span>{member.rating}%</span>
+                          <span className="text-sm text-gray-600">({member.ratings[key]}%)</span>
                         </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editingMember === member.id ? (
-                        <Input 
-                          value={editData.notes} 
-                          onChange={(e) => handleChange('notes', e.target.value)}
-                          className="max-w-[200px]"
-                        />
-                      ) : (
-                        member.notes
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editingMember === member.id ? (
-                        <div className="flex space-x-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleSave(member.id)}
-                          >
-                            Save
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={handleCancel}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEdit(member)}
-                        >
-                          Edit
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>
