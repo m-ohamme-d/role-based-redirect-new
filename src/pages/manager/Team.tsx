@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,9 +36,9 @@ const teamsData = [
     department: 'IT', 
     performance: 88 
   },
-  { id: 3, name: 'HR Team', lead: 'Michael Brown', members: 4, department: 'HR', performance: 85 },
-  { id: 4, name: 'Sales Team', lead: 'Sarah Johnson', members: 12, department: 'Sales', performance: 90 },
-  { id: 5, name: 'Marketing Team', lead: 'David Lee', members: 6, department: 'Marketing', performance: 87 },
+  { id: 3, name: 'HR Team', lead: 'Michael Brown', members: [], department: 'HR', performance: 85 },
+  { id: 4, name: 'Sales Team', lead: 'Sarah Johnson', members: [], department: 'Sales', performance: 90 },
+  { id: 5, name: 'Marketing Team', lead: 'David Lee', members: [], department: 'Marketing', performance: 87 },
 ];
 
 const departments = [
@@ -59,6 +60,11 @@ const ManagerTeam = () => {
   const [newTeamLead, setNewTeamLead] = useState('');
   const [editingTeam, setEditingTeam] = useState<number | null>(null);
   const [editTeamName, setEditTeamName] = useState('');
+  
+  // Missing state variables for notification dialog
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+  const [notificationText, setNotificationText] = useState('');
+  const [reminderDate, setReminderDate] = useState('');
 
   const handleSelectTeam = (teamId: number) => {
     if (selectedTeams.includes(teamId)) {
@@ -89,7 +95,7 @@ const ManagerTeam = () => {
     const csvContent = [
       headers.join(','),
       ...selectedTeamData.map(team => 
-        [team.name, team.lead, team.department, team.members, `${team.performance}%`].join(',')
+        [team.name, team.lead, team.department, Array.isArray(team.members) ? team.members.length : 0, `${team.performance}%`].join(',')
       )
     ].join('\n');
 
@@ -366,7 +372,7 @@ const ManagerTeam = () => {
                     </td>
                     <td className="py-3 px-4">{team.lead}</td>
                     <td className="py-3 px-4">{team.department}</td>
-                    <td className="py-3 px-4">{team.members?.length || 0}</td>
+                    <td className="py-3 px-4">{Array.isArray(team.members) ? team.members.length : 0}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center">
                         <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2 max-w-[100px]">
