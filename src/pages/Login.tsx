@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,53 +19,34 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Mock login logic - replace with actual authentication
+    // Mock authentication logic - replace with actual JWT/Auth tokens
     setTimeout(() => {
       if (email && password) {
-        // First check if there's an existing user with this email
-        const existingUser = localStorage.getItem('user');
-        let userData;
+        // Role detection based on email domain/prefix
+        let role = 'teamlead'; // default role
+        let dashboardRoute = '/teamlead/dashboard';
         
-        if (existingUser) {
-          const parsedUser = JSON.parse(existingUser);
-          // If the stored user email matches, use their data
-          if (parsedUser.email === email) {
-            userData = parsedUser;
-          } else {
-            // Mock role assignment for demo accounts
-            let role = 'teamlead'; // default role
-            if (email.includes('admin')) role = 'admin';
-            else if (email.includes('manager')) role = 'manager';
-            
-            userData = { email, role, name: email.split('@')[0] };
-          }
-        } else {
-          // Mock role assignment for demo accounts
-          let role = 'teamlead'; // default role
-          if (email.includes('admin')) role = 'admin';
-          else if (email.includes('manager')) role = 'manager';
-          
-          userData = { email, role, name: email.split('@')[0] };
+        if (email.includes('admin') || email.endsWith('@admin.com')) {
+          role = 'admin';
+          dashboardRoute = '/admin/dashboard';
+        } else if (email.includes('manager') || email.endsWith('@manager.com')) {
+          role = 'manager';
+          dashboardRoute = '/manager/dashboard';
         }
+        
+        const userData = { 
+          email, 
+          role, 
+          name: email.split('@')[0],
+          // JWT token would be stored here in real implementation
+          token: `mock-jwt-token-${Date.now()}`
+        };
 
         localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('authToken', userData.token);
         
         toast.success('Login successful!');
-        
-        // Redirect based on role
-        switch (userData.role) {
-          case 'admin':
-            navigate('/admin/dashboard');
-            break;
-          case 'manager':
-            navigate('/manager/dashboard');
-            break;
-          case 'teamlead':
-            navigate('/teamlead/dashboard');
-            break;
-          default:
-            navigate('/teamlead/dashboard');
-        }
+        navigate(dashboardRoute);
       } else {
         toast.error('Please enter valid credentials');
       }
@@ -77,10 +59,10 @@ const Login = () => {
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Welcome Back
+            Secure Login
           </CardTitle>
           <CardDescription className="text-gray-600">
-            Sign in to your account to continue
+            Enter your credentials to access your dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -128,40 +110,23 @@ const Login = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <Link
-                  to="/forgot-password"
-                  className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-            </div>
-
             <Button
               type="submit"
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium transition-all duration-200 transform hover:scale-[1.02]"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Authenticating...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
-            >
-              Sign up here
-            </Link>
-          </div>
-
-          <div className="mt-4 text-xs text-center text-gray-500">
-            <p>Demo accounts:</p>
-            <p>admin@demo.com • manager@demo.com • teamlead@demo.com</p>
-            <p>Password: any password</p>
+          <div className="mt-6 text-xs text-center text-gray-500">
+            <p className="mb-2">Demo accounts:</p>
+            <div className="space-y-1">
+              <p><strong>Admin:</strong> admin@demo.com</p>
+              <p><strong>Manager:</strong> manager@demo.com</p>
+              <p><strong>Team Lead:</strong> teamlead@demo.com</p>
+            </div>
+            <p className="mt-2">Password: any password</p>
           </div>
         </CardContent>
       </Card>

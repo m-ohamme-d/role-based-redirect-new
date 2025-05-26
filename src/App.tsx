@@ -8,10 +8,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import UserDashboard from "./pages/UserDashboard";
 import NotFound from "./pages/NotFound";
 
 // Common Pages
@@ -55,10 +53,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/user-dashboard" element={<UserDashboard />} />
           
           {/* Manager Routes */}
           <Route path="/manager" element={<ManagerLayout />}>
@@ -103,8 +99,10 @@ const App = () => (
             <Route path="support" element={<Support />} />
           </Route>
           
-          {/* Legacy admin dashboard - will redirect in Index.tsx */}
+          {/* Legacy routes for backward compatibility */}
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/manager-dashboard" element={<ManagerDashboard />} />
+          <Route path="/teamlead-dashboard" element={<TeamLeadDashboard />} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
