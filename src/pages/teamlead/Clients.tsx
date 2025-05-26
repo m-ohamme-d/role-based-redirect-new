@@ -1,0 +1,414 @@
+
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Edit2, Upload, Building, Tag, User } from "lucide-react";
+import { toast } from "sonner";
+
+interface Client {
+  id: number;
+  name: string;
+  status: 'Active' | 'Inactive';
+  departments: string[];
+  tags: string[];
+  image?: File | null;
+  projects: string[];
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+const TeamLeadClients = () => {
+  const [clients, setClients] = useState<Client[]>([
+    {
+      id: 1,
+      name: 'TechCorp Solutions',
+      status: 'Active',
+      departments: ['IT'],
+      tags: ['High Priority', 'Long-term'],
+      projects: ['Web Development', 'Mobile App'],
+      contactPerson: 'John Smith',
+      email: 'john@techcorp.com',
+      phone: '+1-555-0123',
+      address: '123 Tech Street, Silicon Valley',
+      image: null
+    },
+    {
+      id: 2,
+      name: 'Global Industries',
+      status: 'Inactive',
+      departments: ['IT'],
+      tags: ['Seasonal'],
+      projects: ['System Maintenance'],
+      contactPerson: 'Sarah Johnson',
+      email: 'sarah@global.com',
+      phone: '+1-555-0456',
+      address: '456 Industrial Ave, Business District',
+      image: null
+    }
+  ]);
+
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [newClient, setNewClient] = useState<Partial<Client>>({
+    name: '',
+    status: 'Active',
+    departments: [],
+    tags: [],
+    projects: [],
+    contactPerson: '',
+    email: '',
+    phone: '',
+    address: ''
+  });
+  const [newTag, setNewTag] = useState('');
+
+  const handleAddClient = () => {
+    if (newClient.name?.trim()) {
+      const client: Client = {
+        id: Math.max(...clients.map(c => c.id)) + 1,
+        name: newClient.name.trim(),
+        status: newClient.status as 'Active' | 'Inactive',
+        departments: newClient.departments || [],
+        tags: newClient.tags || [],
+        projects: newClient.projects || [],
+        contactPerson: newClient.contactPerson || '',
+        email: newClient.email || '',
+        phone: newClient.phone || '',
+        address: newClient.address || '',
+        image: null
+      };
+      setClients([...clients, client]);
+      setNewClient({
+        name: '',
+        status: 'Active',
+        departments: [],
+        tags: [],
+        projects: [],
+        contactPerson: '',
+        email: '',
+        phone: '',
+        address: ''
+      });
+      setShowAddClient(false);
+      toast.success('Client added successfully');
+    }
+  };
+
+  const handleUpdateClient = () => {
+    if (editingClient) {
+      setClients(clients.map(c => c.id === editingClient.id ? editingClient : c));
+      setEditingClient(null);
+      toast.success('Client updated successfully');
+    }
+  };
+
+  const handleImageUpload = (clientId: number, file: File) => {
+    setClients(clients.map(client => 
+      client.id === clientId ? { ...client, image: file } : client
+    ));
+    toast.success('Client image uploaded successfully');
+  };
+
+  const addTag = (clientId: number) => {
+    if (newTag.trim()) {
+      setClients(clients.map(client => 
+        client.id === clientId 
+          ? { ...client, tags: [...client.tags, newTag.trim()] }
+          : client
+      ));
+      setNewTag('');
+      toast.success('Tag added successfully');
+    }
+  };
+
+  const removeTag = (clientId: number, tagToRemove: string) => {
+    setClients(clients.map(client => 
+      client.id === clientId 
+        ? { ...client, tags: client.tags.filter(tag => tag !== tagToRemove) }
+        : client
+    ));
+    toast.success('Tag removed successfully');
+  };
+
+  const activeClients = clients.filter(c => c.status === 'Active');
+  const inactiveClients = clients.filter(c => c.status === 'Inactive');
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Client Portfolio</h1>
+        <Dialog open={showAddClient} onOpenChange={setShowAddClient}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Client
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  value={newClient.name || ''}
+                  onChange={(e) => setNewClient({...newClient, name: e.target.value})}
+                  placeholder="Company name"
+                />
+                <Select
+                  value={newClient.status}
+                  onValueChange={(value) => setNewClient({...newClient, status: value as 'Active' | 'Inactive'})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  value={newClient.contactPerson || ''}
+                  onChange={(e) => setNewClient({...newClient, contactPerson: e.target.value})}
+                  placeholder="Contact person"
+                />
+                <Input
+                  value={newClient.email || ''}
+                  onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                  placeholder="Email"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  value={newClient.phone || ''}
+                  onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                  placeholder="Phone"
+                />
+              </div>
+              <Textarea
+                value={newClient.address || ''}
+                onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                placeholder="Address"
+              />
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowAddClient(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddClient}>
+                  Add Client
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="active">Active Clients ({activeClients.length})</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive Clients ({inactiveClients.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activeClients.map(client => (
+              <Card key={client.id} className="relative">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                        {client.image ? (
+                          <img 
+                            src={URL.createObjectURL(client.image)} 
+                            alt={client.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <Building className="h-6 w-6 text-gray-500" />
+                        )}
+                      </div>
+                      <span>{client.name}</span>
+                    </CardTitle>
+                    <Badge variant="default">Active</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
+                    <p className="text-sm text-gray-600">Email: {client.email}</p>
+                    <p className="text-sm text-gray-600">Phone: {client.phone}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium mb-2">Projects:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {client.projects.map((project, index) => (
+                        <Badge key={index} variant="outline">{project}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium mb-2">Tags:</p>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {client.tags.map((tag, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() => removeTag(client.id, tag)}
+                        >
+                          {tag} ×
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        placeholder="Add tag"
+                        className="text-xs"
+                        onKeyPress={(e) => e.key === 'Enter' && addTag(client.id)}
+                      />
+                      <Button size="sm" onClick={() => addTag(client.id)}>
+                        <Tag className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingClient(client)}
+                    >
+                      <Edit2 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(client.id, file);
+                        }}
+                        className="hidden"
+                        id={`upload-${client.id}`}
+                      />
+                      <label htmlFor={`upload-${client.id}`}>
+                        <Button variant="outline" size="sm" asChild>
+                          <span className="cursor-pointer">
+                            <Upload className="h-3 w-3 mr-1" />
+                            Image
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="inactive">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {inactiveClients.map(client => (
+              <Card key={client.id} className="opacity-75">
+                {/* ... similar structure to active clients */}
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                        {client.image ? (
+                          <img 
+                            src={URL.createObjectURL(client.image)} 
+                            alt={client.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <Building className="h-6 w-6 text-gray-500" />
+                        )}
+                      </div>
+                      <span>{client.name}</span>
+                    </CardTitle>
+                    <Badge variant="secondary">Inactive</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
+                  <p className="text-sm text-gray-600">Email: {client.email}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Client Dialog */}
+      {editingClient && (
+        <Dialog open={!!editingClient} onOpenChange={() => setEditingClient(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Client</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  value={editingClient.name}
+                  onChange={(e) => setEditingClient({...editingClient, name: e.target.value})}
+                  placeholder="Company name"
+                />
+                <Select
+                  value={editingClient.status}
+                  onValueChange={(value) => setEditingClient({...editingClient, status: value as 'Active' | 'Inactive'})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  value={editingClient.contactPerson}
+                  onChange={(e) => setEditingClient({...editingClient, contactPerson: e.target.value})}
+                  placeholder="Contact person"
+                />
+                <Input
+                  value={editingClient.email}
+                  onChange={(e) => setEditingClient({...editingClient, email: e.target.value})}
+                  placeholder="Email"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setEditingClient(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateClient}>
+                  Update Client
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+};
+
+export default TeamLeadClients;

@@ -33,6 +33,8 @@ import TeamLeadLayout from "./pages/teamlead/TeamLeadLayout";
 import TeamLeadDashboard from "./pages/teamlead/Dashboard";
 import TeamLeadTeam from "./pages/teamlead/Team";
 import TeamLeadTeamDepartment from "./pages/teamlead/TeamDepartment";
+import TeamLeadClients from "./pages/teamlead/Clients";
+import TeamLeadReports from "./pages/teamlead/Reports";
 import TeamLeadSettings from "./pages/teamlead/Settings";
 import TeamLeadProfile from "./pages/teamlead/Profile";
 

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
-import { Home, Users, FileText, HelpCircle, Settings, User, Bell } from 'lucide-react';
+import { Home, Users, FileText, HelpCircle, Settings, User, Building } from 'lucide-react';
 
 const TeamLeadLayout = () => {
   const navigate = useNavigate();
@@ -26,8 +26,8 @@ const TeamLeadLayout = () => {
 
   const sidebarLinks = [
     { to: "/teamlead/dashboard", icon: <Home size={20} />, label: "Dashboard" },
-    { to: "/teamlead/team", icon: <Users size={20} />, label: "Teams" },
-    { to: "/teamlead/notifications", icon: <Bell size={20} />, label: "Notifications" },
+    { to: "/teamlead/team", icon: <Users size={20} />, label: "Team List" },
+    { to: "/teamlead/clients", icon: <Building size={20} />, label: "Clients" },
     { to: "/teamlead/reports", icon: <FileText size={20} />, label: "Reports" },
     { to: "/teamlead/support", icon: <HelpCircle size={20} />, label: "Support" },
     { to: "/teamlead/settings", icon: <Settings size={20} />, label: "Settings" },
