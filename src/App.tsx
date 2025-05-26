@@ -21,6 +21,8 @@ import Support from "./pages/common/Support";
 import ManagerLayout from "./pages/manager/ManagerLayout";
 import ManagerDashboard from "./pages/manager/Dashboard";
 import ManagerTeam from "./pages/manager/Team";
+import ManagerClients from "./pages/manager/Clients";
+import ManagerAlerts from "./pages/manager/Alerts";
 import ManagerDepartment from "./pages/manager/Department";
 import ManagerEmployee from "./pages/manager/Employee";
 import ManagerSettings from "./pages/manager/Settings";
@@ -38,6 +40,7 @@ import TeamLeadProfile from "./pages/teamlead/Profile";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
+import AdminDepartments from "./pages/admin/Departments";
 import AdminRecords from "./pages/admin/Records";
 import AdminAuditLog from "./pages/admin/AuditLog";
 import AdminSettings from "./pages/admin/Settings";
@@ -61,6 +64,8 @@ const App = () => (
             <Route index element={<ManagerDashboard />} />
             <Route path="dashboard" element={<ManagerDashboard />} />
             <Route path="team" element={<ManagerTeam />} />
+            <Route path="clients" element={<ManagerClients />} />
+            <Route path="alerts" element={<ManagerAlerts />} />
             <Route path="department/:deptId" element={<ManagerDepartment />} />
             <Route path="employee/:employeeId" element={<ManagerEmployee />} />
             <Route path="settings" element={<ManagerSettings />} />
@@ -90,6 +95,7 @@ const App = () => (
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="departments" element={<AdminDepartments />} />
             <Route path="records" element={<AdminRecords />} />
             <Route path="audit-log" element={<AdminAuditLog />} />
             <Route path="settings" element={<AdminSettings />} />
