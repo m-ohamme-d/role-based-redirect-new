@@ -26,6 +26,7 @@ interface Client {
 }
 
 const TeamLeadClients = () => {
+  // Only show clients assigned to IT department (Team Lead's department)
   const [clients, setClients] = useState<Client[]>([
     {
       id: 1,
@@ -42,15 +43,28 @@ const TeamLeadClients = () => {
     },
     {
       id: 2,
-      name: 'Global Industries',
+      name: 'HealthCare Systems',
+      status: 'Active',
+      departments: ['IT'],
+      tags: ['Healthcare', 'Critical'],
+      projects: ['Database Migration', 'Security Audit'],
+      contactPerson: 'Dr. Sarah Wilson',
+      email: 'sarah@healthcare.com',
+      phone: '+1-555-0456',
+      address: '456 Medical Center, Health District',
+      image: null
+    },
+    {
+      id: 3,
+      name: 'DataTech Solutions',
       status: 'Inactive',
       departments: ['IT'],
-      tags: ['Seasonal'],
-      projects: ['System Maintenance'],
-      contactPerson: 'Sarah Johnson',
-      email: 'sarah@global.com',
-      phone: '+1-555-0456',
-      address: '456 Industrial Ave, Business District',
+      tags: ['Data Analytics'],
+      projects: ['Analytics Platform'],
+      contactPerson: 'Mike Johnson',
+      email: 'mike@datatech.com',
+      phone: '+1-555-0789',
+      address: '789 Data Street, Tech Park',
       image: null
     }
   ]);
@@ -60,7 +74,7 @@ const TeamLeadClients = () => {
   const [newClient, setNewClient] = useState<Partial<Client>>({
     name: '',
     status: 'Active',
-    departments: [],
+    departments: ['IT'], // Default to IT department for Team Lead
     tags: [],
     projects: [],
     contactPerson: '',
@@ -76,7 +90,7 @@ const TeamLeadClients = () => {
         id: Math.max(...clients.map(c => c.id)) + 1,
         name: newClient.name.trim(),
         status: newClient.status as 'Active' | 'Inactive',
-        departments: newClient.departments || [],
+        departments: ['IT'], // Team Lead can only assign to IT
         tags: newClient.tags || [],
         projects: newClient.projects || [],
         contactPerson: newClient.contactPerson || '',
@@ -85,11 +99,14 @@ const TeamLeadClients = () => {
         address: newClient.address || '',
         image: null
       };
-      setClients([...clients, client]);
+      
+      const updatedClients = [...clients, client];
+      setClients(updatedClients);
+      
       setNewClient({
         name: '',
         status: 'Active',
-        departments: [],
+        departments: ['IT'],
         tags: [],
         projects: [],
         contactPerson: '',
@@ -98,43 +115,54 @@ const TeamLeadClients = () => {
         address: ''
       });
       setShowAddClient(false);
+      
+      console.log('Team Lead added client:', client);
+      console.log('Updated clients:', updatedClients);
       toast.success('Client added successfully');
     }
   };
 
   const handleUpdateClient = () => {
     if (editingClient) {
-      setClients(clients.map(c => c.id === editingClient.id ? editingClient : c));
+      const updatedClients = clients.map(c => c.id === editingClient.id ? editingClient : c);
+      setClients(updatedClients);
       setEditingClient(null);
+      
+      console.log('Team Lead updated client:', editingClient);
+      console.log('Updated clients:', updatedClients);
       toast.success('Client updated successfully');
     }
   };
 
   const handleImageUpload = (clientId: number, file: File) => {
-    setClients(clients.map(client => 
+    const updatedClients = clients.map(client => 
       client.id === clientId ? { ...client, image: file } : client
-    ));
+    );
+    setClients(updatedClients);
+    console.log('Client image uploaded for client:', clientId);
     toast.success('Client image uploaded successfully');
   };
 
   const addTag = (clientId: number) => {
     if (newTag.trim()) {
-      setClients(clients.map(client => 
+      const updatedClients = clients.map(client => 
         client.id === clientId 
           ? { ...client, tags: [...client.tags, newTag.trim()] }
           : client
-      ));
+      );
+      setClients(updatedClients);
       setNewTag('');
       toast.success('Tag added successfully');
     }
   };
 
   const removeTag = (clientId: number, tagToRemove: string) => {
-    setClients(clients.map(client => 
+    const updatedClients = clients.map(client => 
       client.id === clientId 
         ? { ...client, tags: client.tags.filter(tag => tag !== tagToRemove) }
         : client
-    ));
+    );
+    setClients(updatedClients);
     toast.success('Tag removed successfully');
   };
 
@@ -144,7 +172,10 @@ const TeamLeadClients = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Client Portfolio</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Client Portfolio</h1>
+          <p className="text-gray-600">Manage clients assigned to your IT department</p>
+        </div>
         <Dialog open={showAddClient} onOpenChange={setShowAddClient}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
@@ -326,7 +357,6 @@ const TeamLeadClients = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {inactiveClients.map(client => (
               <Card key={client.id} className="opacity-75">
-                {/* ... similar structure to active clients */}
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">

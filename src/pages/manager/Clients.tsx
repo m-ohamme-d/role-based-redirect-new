@@ -94,37 +94,52 @@ const ManagerClients = () => {
       projects: []
     };
 
-    setClients([...clients, client]);
+    const updatedClients = [...clients, client];
+    setClients(updatedClients);
+    
+    // Reset form
     setNewClient({
       name: '', company: '', status: 'active', departments: [], tags: [],
       contactEmail: '', contactPhone: '', projects: []
     });
     setShowCreateDialog(false);
+    
+    console.log('Client created successfully:', client);
+    console.log('Updated clients list:', updatedClients);
     toast.success('Client created successfully');
   };
 
   const handleEditClient = () => {
     if (!selectedClient) return;
 
-    setClients(clients.map(client => 
+    const updatedClients = clients.map(client => 
       client.id === selectedClient.id ? selectedClient : client
-    ));
+    );
+    
+    setClients(updatedClients);
     setShowEditDialog(false);
     setSelectedClient(null);
+    
+    console.log('Client updated successfully:', selectedClient);
+    console.log('Updated clients list:', updatedClients);
     toast.success('Client updated successfully');
   };
 
   const handleDeleteClient = (clientId: number) => {
-    setClients(clients.filter(client => client.id !== clientId));
+    const updatedClients = clients.filter(client => client.id !== clientId);
+    setClients(updatedClients);
+    console.log('Client deleted, updated list:', updatedClients);
     toast.success('Client deleted successfully');
   };
 
   const toggleClientStatus = (clientId: number) => {
-    setClients(clients.map(client => 
+    const updatedClients = clients.map(client => 
       client.id === clientId 
         ? { ...client, status: client.status === 'active' ? 'inactive' : 'active' }
         : client
-    ));
+    );
+    setClients(updatedClients);
+    console.log('Client status updated:', updatedClients);
     toast.success('Client status updated');
   };
 
@@ -141,9 +156,11 @@ const ManagerClients = () => {
       projects: [...selectedClient.projects, project]
     };
 
-    setClients(clients.map(client => 
+    const updatedClients = clients.map(client => 
       client.id === selectedClient.id ? updatedClient : client
-    ));
+    );
+    
+    setClients(updatedClients);
     setSelectedClient(updatedClient);
     setNewProject({ name: '', status: 'active' });
     toast.success('Project added successfully');
@@ -187,7 +204,7 @@ const ManagerClients = () => {
             <div className="space-y-4 max-h-[600px] overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="client-name">Client Name</Label>
+                  <Label htmlFor="client-name">Client Name *</Label>
                   <Input
                     id="client-name"
                     value={newClient.name}
@@ -196,7 +213,7 @@ const ManagerClients = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="company-name">Company Name</Label>
+                  <Label htmlFor="company-name">Company Name *</Label>
                   <Input
                     id="company-name"
                     value={newClient.company}
@@ -297,9 +314,9 @@ const ManagerClients = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="all">All Clients</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive</TabsTrigger>
+          <TabsTrigger value="all">All Clients ({clients.length})</TabsTrigger>
+          <TabsTrigger value="active">Active ({clients.filter(c => c.status === 'active').length})</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive ({clients.filter(c => c.status === 'inactive').length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
@@ -373,7 +390,7 @@ const ManagerClients = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setSelectedClient(client);
+                        setSelectedClient({...client});
                         setShowEditDialog(true);
                       }}
                     >
@@ -393,6 +410,117 @@ const ManagerClients = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Client Name</Label>
+                  <Input
+                    value={selectedClient.name}
+                    onChange={(e) => setSelectedClient({...selectedClient, name: e.target.value})}
+                    placeholder="Enter client name"
+                  />
+                </div>
+                <div>
+                  <Label>Company Name</Label>
+                  <Input
+                    value={selectedClient.company}
+                    onChange={(e) => setSelectedClient({...selectedClient, company: e.target.value})}
+                    placeholder="Enter company name"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Contact Email</Label>
+                  <Input
+                    type="email"
+                    value={selectedClient.contactEmail}
+                    onChange={(e) => setSelectedClient({...selectedClient, contactEmail: e.target.value})}
+                    placeholder="Enter contact email"
+                  />
+                </div>
+                <div>
+                  <Label>Contact Phone</Label>
+                  <Input
+                    value={selectedClient.contactPhone}
+                    onChange={(e) => setSelectedClient({...selectedClient, contactPhone: e.target.value})}
+                    placeholder="Enter contact phone"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={selectedClient.status}
+                  onValueChange={(value) => setSelectedClient({...selectedClient, status: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Assigned Departments</Label>
+                <Select 
+                  onValueChange={(value) => {
+                    if (!selectedClient.departments.includes(value)) {
+                      setSelectedClient({
+                        ...selectedClient, 
+                        departments: [...selectedClient.departments, value]
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Add departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedClient.departments.map((dept: string, index: number) => (
+                    <Badge key={index} variant="outline" className="cursor-pointer"
+                      onClick={() => setSelectedClient({
+                        ...selectedClient, 
+                        departments: selectedClient.departments.filter((_: string, i: number) => i !== index)
+                      })}
+                    >
+                      {dept} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditClient}>
+                  Update Client
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Projects Dialog */}
       <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>

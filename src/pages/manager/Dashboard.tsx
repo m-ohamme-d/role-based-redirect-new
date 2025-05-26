@@ -4,6 +4,7 @@ import { Users, ArrowUp, ArrowDown, User, BarChart3, Plus, Edit2, Bell } from "l
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
+import DepartmentManager from "@/components/manager/DepartmentManager";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,7 @@ const ManagerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
+  const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
 
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
@@ -112,6 +114,20 @@ const ManagerDashboard = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
         <div className="flex gap-2">
+          <Dialog open={showDepartmentDialog} onOpenChange={setShowDepartmentDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Manage Departments
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Department Management</DialogTitle>
+              </DialogHeader>
+              <DepartmentManager />
+            </DialogContent>
+          </Dialog>
           <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
@@ -131,7 +147,10 @@ const ManagerDashboard = () => {
                   <Button variant="outline" onClick={() => setShowAlertsDialog(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={sendAlert}>
+                  <Button onClick={() => {
+                    toast.success('Performance report alert sent to all Team Leads');
+                    setShowAlertsDialog(false);
+                  }}>
                     Send Alert
                   </Button>
                 </div>

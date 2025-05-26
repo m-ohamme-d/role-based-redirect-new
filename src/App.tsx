@@ -84,6 +84,7 @@ const App = () => (
             <Route path="dashboard" element={<TeamLeadDashboard />} />
             <Route path="team" element={<TeamLeadTeam />} />
             <Route path="team/:deptId" element={<TeamLeadTeamDepartment />} />
+            <Route path="clients" element={<TeamLeadClients />} />
             <Route path="settings" element={<TeamLeadSettings />} />
             <Route path="profile" element={<TeamLeadProfile />} />
             {/* Common Pages */}
