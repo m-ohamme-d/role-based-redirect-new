@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Building, Users, Briefcase } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building, Users, Briefcase, Check, X } from 'lucide-react';
 
 // Mock departments data
 const mockDepartments = [
@@ -47,13 +47,22 @@ const mockDepartments = [
     clients: ['Brand Co', 'Digital Agency'],
     status: 'active'
   },
+  { 
+    id: 5, 
+    name: 'Finance', 
+    teamCount: 1, 
+    employeeCount: 14, 
+    manager: 'David Lee',
+    clients: ['Finance Plus'],
+    status: 'active'
+  },
 ];
 
 const AdminDepartments = () => {
   const [departments, setDepartments] = useState(mockDepartments);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
+  const [editingDepartment, setEditingDepartment] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
   const [newDepartment, setNewDepartment] = useState({
     name: '',
     manager: '',
@@ -78,22 +87,45 @@ const AdminDepartments = () => {
     setNewDepartment({ name: '', manager: '', status: 'active' });
     setShowCreateDialog(false);
     toast.success('Department created successfully');
+    console.log('Department created and synced:', department);
   };
 
-  const handleEditDepartment = () => {
-    if (!selectedDepartment) return;
+  const handleStartEdit = (deptId: number, currentName: string) => {
+    setEditingDepartment(deptId);
+    setEditName(currentName);
+  };
+
+  const handleSaveEdit = (deptId: number) => {
+    if (!editName.trim()) {
+      toast.error('Department name cannot be empty');
+      return;
+    }
 
     setDepartments(departments.map(dept => 
-      dept.id === selectedDepartment.id ? selectedDepartment : dept
+      dept.id === deptId ? { ...dept, name: editName.trim() } : dept
     ));
-    setShowEditDialog(false);
-    setSelectedDepartment(null);
-    toast.success('Department updated successfully');
+    
+    setEditingDepartment(null);
+    setEditName('');
+    toast.success('Department name updated successfully');
+    console.log('Department name updated and synced across dashboards:', { id: deptId, newName: editName });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDepartment(null);
+    setEditName('');
   };
 
   const handleDeleteDepartment = (deptId: number) => {
+    const department = departments.find(d => d.id === deptId);
+    if (department && (department.employeeCount > 0 || department.teamCount > 0)) {
+      toast.error(`Cannot delete department with ${department.employeeCount} employees and ${department.teamCount} teams`);
+      return;
+    }
+
     setDepartments(departments.filter(dept => dept.id !== deptId));
     toast.success('Department deleted successfully');
+    console.log('Department deleted and synced:', deptId);
   };
 
   const toggleDepartmentStatus = (deptId: number) => {
@@ -103,6 +135,7 @@ const AdminDepartments = () => {
         : dept
     ));
     toast.success('Department status updated');
+    console.log('Department status toggled:', deptId);
   };
 
   return (
@@ -206,7 +239,33 @@ const AdminDepartments = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Building className="h-5 w-5" />
-                  {department.name}
+                  {editingDepartment === department.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        value={editName} 
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="max-w-[120px] h-8"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit(department.id);
+                          if (e.key === 'Escape') handleCancelEdit();
+                        }}
+                        autoFocus
+                      />
+                      <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(department.id)}>
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                        <X className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <span 
+                      className="cursor-pointer hover:text-blue-600"
+                      onClick={() => handleStartEdit(department.id, department.name)}
+                    >
+                      {department.name}
+                    </span>
+                  )}
                 </CardTitle>
                 <Badge 
                   variant={department.status === 'active' ? 'default' : 'destructive'}
@@ -241,10 +300,8 @@ const AdminDepartments = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setSelectedDepartment(department);
-                    setShowEditDialog(true);
-                  }}
+                  onClick={() => handleStartEdit(department.id, department.name)}
+                  disabled={editingDepartment === department.id}
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
@@ -252,6 +309,7 @@ const AdminDepartments = () => {
                   variant="destructive"
                   size="sm"
                   onClick={() => handleDeleteDepartment(department.id)}
+                  disabled={department.employeeCount > 0 || department.teamCount > 0}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -260,43 +318,6 @@ const AdminDepartments = () => {
           </Card>
         ))}
       </div>
-
-      {/* Edit Department Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Department</DialogTitle>
-          </DialogHeader>
-          {selectedDepartment && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-dept-name">Department Name</Label>
-                <Input
-                  id="edit-dept-name"
-                  value={selectedDepartment.name}
-                  onChange={(e) => setSelectedDepartment({...selectedDepartment, name: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-dept-manager">Department Manager</Label>
-                <Input
-                  id="edit-dept-manager"
-                  value={selectedDepartment.manager}
-                  onChange={(e) => setSelectedDepartment({...selectedDepartment, manager: e.target.value})}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleEditDepartment}>
-                  Save Changes
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

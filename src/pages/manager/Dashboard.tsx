@@ -1,13 +1,12 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ArrowUp, ArrowDown, User, BarChart3, Plus, Edit2, Bell } from "lucide-react";
+import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
-import DepartmentManager from "@/components/manager/DepartmentManager";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -74,6 +73,7 @@ const clientsData = [
 ];
 
 const ManagerDashboard = () => {
+  const navigate = useNavigate();
   const [departments] = useState([
     { id: 1, name: 'IT', employeeCount: 35, growth: '+5%', trend: 'up' as const },
     { id: 2, name: 'HR', employeeCount: 12, growth: '-2%', trend: 'down' as const },
@@ -85,11 +85,15 @@ const ManagerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
-  const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
 
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
     setShowClientDialog(true);
+  };
+
+  const handleViewAllClients = () => {
+    navigate('/manager/client-portfolio');
+    console.log('Navigating to full client portfolio');
   };
 
   const toggleProjectStatus = (projectId: number) => {
@@ -104,30 +108,11 @@ const ManagerDashboard = () => {
     }
   };
 
-  const sendAlert = () => {
-    toast.success('Performance report alert sent to all Team Leads');
-    setShowAlertsDialog(false);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
         <div className="flex gap-2">
-          <Dialog open={showDepartmentDialog} onOpenChange={setShowDepartmentDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Manage Departments
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle>Department Management</DialogTitle>
-              </DialogHeader>
-              <DepartmentManager />
-            </DialogContent>
-          </Dialog>
           <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
@@ -157,9 +142,6 @@ const ManagerDashboard = () => {
               </div>
             </DialogContent>
           </Dialog>
-          <Link to="/manager/profile" className="text-blue-600 hover:underline text-sm font-medium">
-            View Profile
-          </Link>
         </div>
       </div>
 
@@ -208,11 +190,21 @@ const ManagerDashboard = () => {
       {/* Clients Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Client Portfolio</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Client Portfolio</CardTitle>
+            <Button 
+              onClick={handleViewAllClients}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              View All Clients
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clientsData.map(client => (
+            {clientsData.slice(0, 3).map(client => (
               <Card 
                 key={client.id} 
                 className="cursor-pointer hover:shadow-md transition-shadow"
