@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import ChartDateFilter from './ChartDateFilter';
+import DropdownDateFilter from './DropdownDateFilter';
 
 interface BarChartProps {
   data: any[];
@@ -10,7 +10,7 @@ interface BarChartProps {
 }
 
 const BarChart = ({ data, title, subtitle }: BarChartProps) => {
-  const [currentFilter, setCurrentFilter] = useState('monthly');
+  const [currentFilter, setCurrentFilter] = useState('month');
   const [filteredData, setFilteredData] = useState(data);
 
   const handleFilterChange = (period: string, customRange?: { start: Date; end: Date }) => {
@@ -20,20 +20,16 @@ const BarChart = ({ data, title, subtitle }: BarChartProps) => {
     let filtered = [...data];
     
     switch (period) {
-      case 'daily':
-        // Show last 7 days of data
-        filtered = data.slice(-7);
-        break;
-      case 'weekly':
-        // Show last 4 weeks of data
-        filtered = data.slice(-4);
-        break;
-      case 'monthly':
-        // Show all monthly data (default)
+      case 'month':
+        // Show monthly data (default)
         filtered = data;
         break;
-      case 'yearly':
-        // Group by year (simplified for demo)
+      case 'quarter':
+        // Show last 3 months of data
+        filtered = data.slice(-3);
+        break;
+      case 'year':
+        // Show yearly data (simplified for demo)
         filtered = data.slice(-12);
         break;
       case 'custom':
@@ -54,15 +50,16 @@ const BarChart = ({ data, title, subtitle }: BarChartProps) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 h-full">
-      <div className="mb-3">
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+          {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+        </div>
+        <DropdownDateFilter 
+          onFilterChange={handleFilterChange}
+          currentFilter={currentFilter}
+        />
       </div>
-      
-      <ChartDateFilter 
-        onFilterChange={handleFilterChange}
-        currentFilter={currentFilter}
-      />
       
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">

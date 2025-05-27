@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,13 +6,7 @@ import { ArrowLeft, Calendar, Star, Save } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import DropdownDateFilter from '@/components/charts/DropdownDateFilter';
 
 // Mock department data - only IT department
 const departmentsData = {
@@ -112,6 +105,22 @@ const TeamLeadTeamDepartment = () => {
     toast.success('Ratings saved and locked successfully');
   };
 
+  const handleDateFilterChange = (period: string, customRange?: { start: Date; end: Date }) => {
+    setTimePeriod(period);
+    console.log(`Team overview filtered by ${period}:`, customRange || period);
+    
+    if (customRange) {
+      toast.success(`Team overview filtered by custom range: ${customRange.start.toLocaleDateString()} to ${customRange.end.toLocaleDateString()}`);
+    } else {
+      const periodLabels = {
+        month: 'This Month',
+        quarter: 'This Quarter', 
+        year: 'This Year'
+      };
+      toast.success(`Team overview filtered by ${periodLabels[period as keyof typeof periodLabels]}`);
+    }
+  };
+
   if (!department) {
     return (
       <div className="p-8 text-center">
@@ -143,21 +152,10 @@ const TeamLeadTeamDepartment = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-2" />
-            <Select value={timePeriod} onValueChange={setTimePeriod}>
-              <SelectTrigger className="min-w-[150px]">
-                <SelectValue placeholder="Select Time Period" />
-              </SelectTrigger>
-              <SelectContent>
-                {timePeriods.map(period => (
-                  <SelectItem key={period.value} value={period.value}>
-                    {period.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <DropdownDateFilter 
+            onFilterChange={handleDateFilterChange}
+            currentFilter={timePeriod}
+          />
         </div>
       </div>
 

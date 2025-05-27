@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Lock, Unlock, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import DropdownDateFilter from '@/components/charts/DropdownDateFilter';
 
 // Mock records data
 const mockRecords = [
@@ -27,6 +28,8 @@ const mockRecords = [
 const AdminRecords = () => {
   const [records, setRecords] = useState(mockRecords);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('month');
+  const [filteredByDate, setFilteredByDate] = useState(mockRecords);
 
   const toggleLock = (recordId: number) => {
     setRecords(records.map(record => 
@@ -37,6 +40,55 @@ const AdminRecords = () => {
     
     const record = records.find(r => r.id === recordId);
     toast.success(`Record ${record?.locked ? 'unlocked' : 'locked'} successfully`);
+  };
+
+  const handleDateFilterChange = (period: string, customRange?: { start: Date; end: Date }) => {
+    setDateFilter(period);
+    
+    let filtered = [...mockRecords];
+    const currentDate = new Date();
+    
+    switch (period) {
+      case 'month':
+        // Filter records from this month
+        filtered = mockRecords.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate.getMonth() === currentDate.getMonth() && 
+                 recordDate.getFullYear() === currentDate.getFullYear();
+        });
+        break;
+      case 'quarter':
+        // Filter records from this quarter
+        const quarterStart = new Date(currentDate.getFullYear(), Math.floor(currentDate.getMonth() / 3) * 3, 1);
+        filtered = mockRecords.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate >= quarterStart;
+        });
+        break;
+      case 'year':
+        // Filter records from this year
+        filtered = mockRecords.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate.getFullYear() === currentDate.getFullYear();
+        });
+        break;
+      case 'custom':
+        // Custom range filtering
+        if (customRange) {
+          filtered = mockRecords.filter(record => {
+            const recordDate = new Date(record.date);
+            return recordDate >= customRange.start && recordDate <= customRange.end;
+          });
+          console.log('Custom date filter applied to records:', customRange);
+        }
+        break;
+      default:
+        filtered = mockRecords;
+    }
+    
+    setFilteredByDate(filtered);
+    setRecords(filtered);
+    console.log(`Records filtered by ${period}:`, filtered);
   };
 
   const filteredRecords = records.filter(record => 
@@ -59,6 +111,10 @@ const AdminRecords = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <DropdownDateFilter 
+          onFilterChange={handleDateFilterChange}
+          currentFilter={dateFilter}
+        />
       </div>
 
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
