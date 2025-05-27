@@ -1,14 +1,14 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BarChart3, Plus, Edit2, Trash2, User, Upload } from "lucide-react";
+import { Users, BarChart3, Plus, Edit2, Trash2, User, Upload, Eye, FileText } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 // Mock data for charts
@@ -41,6 +41,19 @@ const ratingCriteria = [
   'Leadership'
 ];
 
+// Mock designations data - this would come from central admin/manager control
+const availableDesignations = [
+  'Senior Developer',
+  'Project Lead',
+  'UI Designer',
+  'Developer',
+  'QA Tester',
+  'Junior Developer',
+  'Technical Lead',
+  'Frontend Developer',
+  'Backend Developer'
+];
+
 const TeamLeadDashboard = () => {
   const [teamMembers, setTeamMembers] = useState([
     { id: 1, name: 'John Smith', designation: 'Developer', rating: 85, notes: 'Excellent performance', photo: null, department: 'IT' },
@@ -60,6 +73,10 @@ const TeamLeadDashboard = () => {
   });
   const [editingMember, setEditingMember] = useState<number | null>(null);
   const [showCriteria, setShowCriteria] = useState(false);
+  const [viewingMember, setViewingMember] = useState<any>(null);
+  const [showPerformanceDialog, setShowPerformanceDialog] = useState(false);
+  const [showEditDesignation, setShowEditDesignation] = useState(false);
+  const [selectedMemberForDesignation, setSelectedMemberForDesignation] = useState<any>(null);
 
   // Filter to show only IT department for IT team lead
   const currentUserDepartment = 'IT'; // This would come from user context
@@ -127,6 +144,34 @@ const TeamLeadDashboard = () => {
     toast.success('Rating updated successfully - updates synced to Manager and Admin dashboards');
   };
 
+  const handleDesignationChange = (newDesignation: string) => {
+    if (!selectedMemberForDesignation) return;
+    
+    const updatedMembers = teamMembers.map(member => 
+      member.id === selectedMemberForDesignation.id 
+        ? { ...member, designation: newDesignation } 
+        : member
+    );
+    setTeamMembers(updatedMembers);
+    
+    // Sync logging for live updates
+    console.log('Team member designation updated - syncing to Manager and Admin dashboards:', { 
+      memberId: selectedMemberForDesignation.id, 
+      newDesignation 
+    });
+    console.log('Updated team members list:', updatedMembers);
+    
+    setShowEditDesignation(false);
+    setSelectedMemberForDesignation(null);
+    toast.success('Designation updated successfully - changes synced across all dashboards');
+  };
+
+  const viewMemberPerformance = (member: any) => {
+    setViewingMember(member);
+    setShowPerformanceDialog(true);
+    console.log('Viewing performance details for member:', member);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -135,9 +180,6 @@ const TeamLeadDashboard = () => {
           <Button variant="outline" onClick={() => setShowCriteria(true)}>
             Rating Criteria
           </Button>
-          <Link to="/teamlead/profile" className="text-blue-600 hover:underline text-sm font-medium">
-            View Profile
-          </Link>
         </div>
       </div>
 
@@ -199,29 +241,51 @@ const TeamLeadDashboard = () => {
                   <DialogTitle>Add New Team Member</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <Input
-                    value={newMember.name}
-                    onChange={(e) => setNewMember({...newMember, name: e.target.value})}
-                    placeholder="Member name"
-                  />
-                  <Input
-                    value={newMember.designation}
-                    onChange={(e) => setNewMember({...newMember, designation: e.target.value})}
-                    placeholder="Designation"
-                  />
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={newMember.rating}
-                    onChange={(e) => setNewMember({...newMember, rating: parseInt(e.target.value) || 0})}
-                    placeholder="Initial rating (0-100)"
-                  />
-                  <Input
-                    value={newMember.notes}
-                    onChange={(e) => setNewMember({...newMember, notes: e.target.value})}
-                    placeholder="Notes"
-                  />
+                  <div>
+                    <Label htmlFor="member-name">Member Name</Label>
+                    <Input
+                      id="member-name"
+                      value={newMember.name}
+                      onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                      placeholder="Member name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="member-designation">Designation</Label>
+                    <Select onValueChange={(value) => setNewMember({...newMember, designation: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select designation" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableDesignations.map(designation => (
+                          <SelectItem key={designation} value={designation}>
+                            {designation}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="member-rating">Initial Rating (0-100)</Label>
+                    <Input
+                      id="member-rating"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={newMember.rating}
+                      onChange={(e) => setNewMember({...newMember, rating: parseInt(e.target.value) || 0})}
+                      placeholder="Initial rating"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="member-notes">Notes</Label>
+                    <Input
+                      id="member-notes"
+                      value={newMember.notes}
+                      onChange={(e) => setNewMember({...newMember, notes: e.target.value})}
+                      placeholder="Notes"
+                    />
+                  </div>
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setShowAddMember(false)}>
                       Cancel
@@ -280,7 +344,21 @@ const TeamLeadDashboard = () => {
                       </td>
                       <td className="py-3 px-4">{member.id}</td>
                       <td className="py-3 px-4">{member.name}</td>
-                      <td className="py-3 px-4">{member.designation}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span>{member.designation}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMemberForDesignation(member);
+                              setShowEditDesignation(true);
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center">
                           <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
@@ -306,7 +384,16 @@ const TeamLeadDashboard = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => viewMemberPerformance(member)}
+                            title="View Performance"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => setEditingMember(member.id)}
+                            title="Edit Member"
                           >
                             <Edit2 className="h-3 w-3" />
                           </Button>
@@ -315,6 +402,7 @@ const TeamLeadDashboard = () => {
                             size="sm"
                             onClick={() => handleRemoveMember(member.id)}
                             className="text-red-600 hover:text-red-700"
+                            title="Remove Member"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -328,6 +416,87 @@ const TeamLeadDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Performance Details Dialog */}
+      <Dialog open={showPerformanceDialog} onOpenChange={setShowPerformanceDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Performance Details - {viewingMember?.name}</DialogTitle>
+          </DialogHeader>
+          {viewingMember && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Overall Rating</Label>
+                  <div className="text-2xl font-bold text-blue-600">{viewingMember.rating}%</div>
+                </div>
+                <div>
+                  <Label>Designation</Label>
+                  <div className="text-lg">{viewingMember.designation}</div>
+                </div>
+              </div>
+              <div>
+                <Label>Performance Notes</Label>
+                <div className="p-3 bg-gray-50 rounded-md">{viewingMember.notes}</div>
+              </div>
+              <div>
+                <Label>Rating Breakdown</Label>
+                <div className="space-y-2 mt-2">
+                  {ratingCriteria.map((criteria, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-sm">{criteria}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${Math.max(60, viewingMember.rating + (Math.random() * 20 - 10))}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs w-8">{Math.round(Math.max(60, viewingMember.rating + (Math.random() * 20 - 10)))}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Designation Dialog */}
+      <Dialog open={showEditDesignation} onOpenChange={setShowEditDesignation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Designation - {selectedMemberForDesignation?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Current Designation</Label>
+              <div className="p-2 bg-gray-50 rounded">{selectedMemberForDesignation?.designation}</div>
+            </div>
+            <div>
+              <Label>New Designation</Label>
+              <Select onValueChange={handleDesignationChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select new designation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDesignations.map(designation => (
+                    <SelectItem key={designation} value={designation}>
+                      {designation}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowEditDesignation(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Rating Criteria Dialog */}
       <Dialog open={showCriteria} onOpenChange={setShowCriteria}>
