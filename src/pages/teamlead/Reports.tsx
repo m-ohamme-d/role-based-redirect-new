@@ -54,8 +54,14 @@ const TeamLeadReports = () => {
       status: 'Generated'
     };
 
-    setReports([newReport, ...reports]);
-    toast.success(`${type} report generated successfully`);
+    // Add new report to the beginning of the array to show most recent first
+    const updatedReports = [newReport, ...reports];
+    setReports(updatedReports);
+    
+    console.log('New report generated:', newReport);
+    console.log('Updated reports list (most recent first):', updatedReports);
+    
+    toast.success(`${type} report generated successfully and added to Recent Reports`);
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -79,6 +85,9 @@ const TeamLeadReports = () => {
       default: return 'outline';
     }
   };
+
+  // Sort reports by creation date (most recent first)
+  const sortedReports = [...reports].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
     <div className="space-y-6">
@@ -131,15 +140,16 @@ const TeamLeadReports = () => {
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Recent Reports
+            <span className="text-sm font-normal text-gray-500">({sortedReports.length} total)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {reports.length === 0 ? (
+            {sortedReports.length === 0 ? (
               <p className="text-center py-8 text-gray-500">No reports generated yet</p>
             ) : (
-              reports.map(report => (
-                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+              sortedReports.map(report => (
+                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <FileText className="h-5 w-5 text-blue-600" />
@@ -151,6 +161,8 @@ const TeamLeadReports = () => {
                         <span>{formatTimeAgo(report.createdAt)}</span>
                         <span>•</span>
                         <span>by {report.createdBy}</span>
+                        <span>•</span>
+                        <span>ID: {report.id}</span>
                       </div>
                     </div>
                   </div>

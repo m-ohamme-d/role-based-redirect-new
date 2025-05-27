@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Table, 
@@ -19,10 +18,10 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Users, Shield } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Shield, Key, RotateCcw } from 'lucide-react';
 
 // Mock users data with departments
 const mockUsers = [
@@ -40,7 +39,10 @@ const AdminUsers = () => {
   const [users, setUsers] = useState(mockUsers);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [passwordAction, setPasswordAction] = useState<'set' | 'reset'>('set');
+  const [newPassword, setNewPassword] = useState('');
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -107,6 +109,26 @@ const AdminUsers = () => {
         : user
     ));
     toast.success('User status updated');
+  };
+
+  const handlePasswordAction = (user: any, action: 'set' | 'reset') => {
+    setSelectedUser(user);
+    setPasswordAction(action);
+    setNewPassword('');
+    setShowPasswordDialog(true);
+  };
+
+  const handlePasswordSubmit = () => {
+    if (!newPassword.trim()) {
+      toast.error('Password cannot be empty');
+      return;
+    }
+
+    console.log(`Password ${passwordAction} for user:`, selectedUser?.email, 'New password:', newPassword);
+    toast.success(`Password ${passwordAction === 'set' ? 'set' : 'reset'} successfully for ${selectedUser?.name}`);
+    setShowPasswordDialog(false);
+    setNewPassword('');
+    setSelectedUser(null);
   };
 
   return (
@@ -178,7 +200,22 @@ const AdminUsers = () => {
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreateUser}>
+                <Button onClick={() => {
+                  if (!newUser.name || !newUser.email || !newUser.department) {
+                    toast.error('Please fill in all required fields');
+                    return;
+                  }
+
+                  const user = {
+                    ...newUser,
+                    id: Math.max(...users.map(u => u.id)) + 1
+                  };
+
+                  setUsers([...users, user]);
+                  setNewUser({ name: '', email: '', role: 'user', department: '', status: 'active' });
+                  setShowCreateDialog(false);
+                  toast.success('User created successfully');
+                }}>
                   Create User
                 </Button>
               </div>
@@ -252,7 +289,12 @@ const AdminUsers = () => {
                   <TableCell>
                     <Select
                       defaultValue={user.role}
-                      onValueChange={(value) => handleRoleChange(user.id, value)}
+                      onValueChange={(value) => {
+                        setUsers(users.map(u => 
+                          u.id === user.id ? { ...u, role: value } : u
+                        ));
+                        toast.success(`User role updated to ${value}`);
+                      }}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />
@@ -268,7 +310,12 @@ const AdminUsers = () => {
                   <TableCell>
                     <Select
                       defaultValue={user.department}
-                      onValueChange={(value) => handleDepartmentChange(user.id, value)}
+                      onValueChange={(value) => {
+                        setUsers(users.map(u => 
+                          u.id === user.id ? { ...u, department: value } : u
+                        ));
+                        toast.success(`User department updated to ${value}`);
+                      }}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />
@@ -284,13 +331,34 @@ const AdminUsers = () => {
                     <Badge 
                       variant={user.status === 'active' ? 'default' : 'destructive'}
                       className={`cursor-pointer ${user.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}
-                      onClick={() => toggleUserStatus(user.id)}
+                      onClick={() => {
+                        setUsers(users.map(u => 
+                          u.id === user.id 
+                            ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } 
+                            : u
+                        ));
+                        toast.success('User status updated');
+                      }}
                     >
                       {user.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePasswordAction(user, 'set')}
+                      >
+                        <Key className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePasswordAction(user, 'reset')}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -304,7 +372,10 @@ const AdminUsers = () => {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => {
+                          setUsers(users.filter(u => u.id !== user.id));
+                          toast.success('User deleted successfully');
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -316,6 +387,43 @@ const AdminUsers = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Password Management Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {passwordAction === 'set' ? 'Set Password' : 'Reset Password'} for {selectedUser?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {passwordAction === 'set' 
+                ? 'Set a new password for this user account.'
+                : 'Reset the password for this user account.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handlePasswordSubmit}>
+                {passwordAction === 'set' ? 'Set Password' : 'Reset Password'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit User Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>

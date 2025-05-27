@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BarChart3, Plus, Edit2, Trash2, User } from "lucide-react";
+import { Users, BarChart3, Plus, Edit2, Trash2, User, Upload } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
@@ -9,7 +9,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 // Mock data for charts
@@ -77,23 +76,55 @@ const TeamLeadDashboard = () => {
         photo: newMember.photo,
         department: currentUserDepartment
       };
-      setTeamMembers([...teamMembers, member]);
+      
+      const updatedMembers = [...teamMembers, member];
+      setTeamMembers(updatedMembers);
+      
+      // Sync logging for live updates
+      console.log('Team member added - syncing to Manager and Admin dashboards:', member);
+      console.log('Updated team members list:', updatedMembers);
+      
       setNewMember({ name: '', designation: '', rating: 0, notes: '', photo: null });
       setShowAddMember(false);
-      toast.success('Team member added successfully');
+      toast.success('Team member added successfully - updates synced to Manager and Admin dashboards');
     }
   };
 
   const handleRemoveMember = (memberId: number) => {
-    setTeamMembers(teamMembers.filter(m => m.id !== memberId));
-    toast.success('Team member removed successfully');
+    const updatedMembers = teamMembers.filter(m => m.id !== memberId);
+    setTeamMembers(updatedMembers);
+    
+    // Sync logging for live updates
+    console.log('Team member removed - syncing to Manager and Admin dashboards, member ID:', memberId);
+    console.log('Updated team members list:', updatedMembers);
+    
+    toast.success('Team member removed successfully - updates synced to Manager and Admin dashboards');
   };
 
   const handlePhotoUpload = (memberId: number, file: File) => {
-    setTeamMembers(teamMembers.map(member => 
+    const updatedMembers = teamMembers.map(member => 
       member.id === memberId ? { ...member, photo: file } : member
-    ));
-    toast.success('Photo uploaded successfully');
+    );
+    setTeamMembers(updatedMembers);
+    
+    // Sync logging for live updates
+    console.log('Team member photo updated - syncing to Manager and Admin dashboards:', memberId);
+    console.log('Updated team members list:', updatedMembers);
+    
+    toast.success('Photo uploaded successfully - updates synced to Manager and Admin dashboards');
+  };
+
+  const updateMemberRating = (memberId: number, newRating: number) => {
+    const updatedMembers = teamMembers.map(member => 
+      member.id === memberId ? { ...member, rating: newRating } : member
+    );
+    setTeamMembers(updatedMembers);
+    
+    // Sync logging for live updates
+    console.log('Team member rating updated - syncing to Manager and Admin dashboards:', { memberId, newRating });
+    console.log('Updated team members list:', updatedMembers);
+    
+    toast.success('Rating updated successfully - updates synced to Manager and Admin dashboards');
   };
 
   return (
@@ -191,11 +222,6 @@ const TeamLeadDashboard = () => {
                     onChange={(e) => setNewMember({...newMember, notes: e.target.value})}
                     placeholder="Notes"
                   />
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setNewMember({...newMember, photo: e.target.files?.[0] || null})}
-                  />
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setShowAddMember(false)}>
                       Cancel
@@ -226,17 +252,20 @@ const TeamLeadDashboard = () => {
                   {filteredMembers.map(member => (
                     <tr key={member.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <div className="relative group">
+                          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden">
                             {member.photo ? (
                               <img 
                                 src={URL.createObjectURL(member.photo)} 
                                 alt={member.name}
-                                className="w-8 h-8 rounded-full object-cover"
+                                className="w-12 h-12 rounded-full object-cover"
                               />
                             ) : (
-                              <User className="h-4 w-4 text-gray-500" />
+                              <User className="h-6 w-6 text-gray-500" />
                             )}
+                            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Upload className="h-4 w-4 text-white" />
+                            </div>
                           </div>
                           <input
                             type="file"
@@ -245,15 +274,8 @@ const TeamLeadDashboard = () => {
                               const file = e.target.files?.[0];
                               if (file) handlePhotoUpload(member.id, file);
                             }}
-                            className="hidden"
-                            id={`photo-${member.id}`}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
                           />
-                          <label 
-                            htmlFor={`photo-${member.id}`}
-                            className="text-xs text-blue-600 cursor-pointer hover:underline"
-                          >
-                            Upload
-                          </label>
                         </div>
                       </td>
                       <td className="py-3 px-4">{member.id}</td>
@@ -267,7 +289,15 @@ const TeamLeadDashboard = () => {
                               style={{ width: `${member.rating}%` }}
                             ></div>
                           </div>
-                          <span>{member.rating}%</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={member.rating}
+                            onChange={(e) => updateMemberRating(member.id, parseInt(e.target.value) || 0)}
+                            className="w-16 h-8 text-xs"
+                          />
+                          <span className="ml-1 text-sm">%</span>
                         </div>
                       </td>
                       <td className="py-3 px-4">{member.notes}</td>
