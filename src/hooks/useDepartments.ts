@@ -10,7 +10,9 @@ export const useDepartments = () => {
       setDepartments(departmentStore.getDepartments());
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const addDepartment = (name: string) => {
