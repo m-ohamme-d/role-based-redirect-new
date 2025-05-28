@@ -2,12 +2,14 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Users, BarChart3, Settings, Calendar } from 'lucide-react';
+import { LogOut, Users, BarChart3, Settings, Calendar, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useDepartments } from '@/hooks/useDepartments';
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
+  const { departments } = useDepartments();
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -23,6 +25,11 @@ const ManagerDashboard = () => {
     navigate('/login');
   };
 
+  const handleViewAllClients = () => {
+    console.log('Navigating to client portfolio with departments:', departments);
+    navigate('/manager/clients');
+  };
+
   if (!user) return null;
 
   return (
@@ -32,6 +39,7 @@ const ManagerDashboard = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
             <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
+            <p className="text-sm text-gray-500">Managing {departments.length} departments</p>
           </div>
           <Button
             onClick={handleLogout}
@@ -51,13 +59,28 @@ const ManagerDashboard = () => {
                 Team Management
               </CardTitle>
               <CardDescription>
-                Manage your team members
+                Manage your team members across {departments.length} departments
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
-                View and manage your team's activities and assignments.
+              <p className="text-gray-600 mb-4">
+                View and manage your team's activities and assignments across all departments.
               </p>
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">Active Departments:</p>
+                <div className="flex flex-wrap gap-1">
+                  {departments.slice(0, 3).map(dept => (
+                    <span key={dept} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                      {dept}
+                    </span>
+                  ))}
+                  {departments.length > 3 && (
+                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                      +{departments.length - 3} more
+                    </span>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -72,9 +95,16 @@ const ManagerDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
-                Track team performance and project progress.
+              <p className="text-gray-600 mb-4">
+                Track team performance and project progress across departments.
               </p>
+              <Button 
+                onClick={handleViewAllClients}
+                className="w-full flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                View All Clients
+              </Button>
             </CardContent>
           </Card>
 
@@ -90,7 +120,7 @@ const ManagerDashboard = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Plan and organize team schedules and meetings.
+                Plan and organize team schedules and meetings across all departments.
               </p>
             </CardContent>
           </Card>
@@ -107,8 +137,29 @@ const ManagerDashboard = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Customize your manager dashboard settings.
+                Customize your manager dashboard settings and department preferences.
               </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Department Overview</CardTitle>
+              <CardDescription>
+                Current departments synced from Admin dashboard ({departments.length} total)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {departments.map((dept) => (
+                  <div key={dept} className="p-3 bg-gray-50 rounded-lg text-center">
+                    <p className="font-medium text-gray-900">{dept}</p>
+                    <p className="text-xs text-gray-500">Active</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -129,7 +180,7 @@ const ManagerDashboard = () => {
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <p className="text-sm">New team member onboarded</p>
+                  <p className="text-sm">Department list updated from Admin dashboard</p>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
