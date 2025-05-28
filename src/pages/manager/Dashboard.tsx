@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell } from "lucide-react";
@@ -92,7 +91,7 @@ const ManagerDashboard = () => {
   };
 
   const handleViewAllClients = () => {
-    navigate('/manager/client-portfolio');
+    navigate('/manager/clients');
     console.log('Navigating to full client portfolio');
   };
 

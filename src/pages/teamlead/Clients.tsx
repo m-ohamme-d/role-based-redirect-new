@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -258,15 +257,7 @@ const TeamLeadClients = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        {client.image ? (
-                          <img 
-                            src={URL.createObjectURL(client.image)} 
-                            alt={client.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <Building className="h-6 w-6 text-gray-500" />
-                        )}
+                        <Building className="h-6 w-6 text-gray-500" />
                       </div>
                       <span>{client.name}</span>
                     </CardTitle>
@@ -326,26 +317,6 @@ const TeamLeadClients = () => {
                       <Edit2 className="h-3 w-3 mr-1" />
                       Edit
                     </Button>
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(client.id, file);
-                        }}
-                        className="hidden"
-                        id={`upload-${client.id}`}
-                      />
-                      <label htmlFor={`upload-${client.id}`}>
-                        <Button variant="outline" size="sm" asChild>
-                          <span className="cursor-pointer">
-                            <Upload className="h-3 w-3 mr-1" />
-                            Image
-                          </span>
-                        </Button>
-                      </label>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -361,15 +332,7 @@ const TeamLeadClients = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        {client.image ? (
-                          <img 
-                            src={URL.createObjectURL(client.image)} 
-                            alt={client.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <Building className="h-6 w-6 text-gray-500" />
-                        )}
+                        <Building className="h-6 w-6 text-gray-500" />
                       </div>
                       <span>{client.name}</span>
                     </CardTitle>

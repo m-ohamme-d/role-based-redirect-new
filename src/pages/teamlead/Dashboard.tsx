@@ -77,6 +77,10 @@ const TeamLeadDashboard = () => {
   const [showPerformanceDialog, setShowPerformanceDialog] = useState(false);
   const [showEditDesignation, setShowEditDesignation] = useState(false);
   const [selectedMemberForDesignation, setSelectedMemberForDesignation] = useState<any>(null);
+  const [customDesignation, setCustomDesignation] = useState('');
+  const [showEditNotes, setShowEditNotes] = useState(false);
+  const [selectedMemberForNotes, setSelectedMemberForNotes] = useState<any>(null);
+  const [editingNotes, setEditingNotes] = useState('');
 
   // Filter to show only IT department for IT team lead
   const currentUserDepartment = 'IT'; // This would come from user context
@@ -147,29 +151,64 @@ const TeamLeadDashboard = () => {
   const handleDesignationChange = (newDesignation: string) => {
     if (!selectedMemberForDesignation) return;
     
+    const finalDesignation = newDesignation === 'custom' ? customDesignation : newDesignation;
+    
+    if (!finalDesignation.trim()) {
+      toast.error('Please enter a designation');
+      return;
+    }
+    
     const updatedMembers = teamMembers.map(member => 
       member.id === selectedMemberForDesignation.id 
-        ? { ...member, designation: newDesignation } 
+        ? { ...member, designation: finalDesignation } 
         : member
     );
     setTeamMembers(updatedMembers);
     
-    // Sync logging for live updates
     console.log('Team member designation updated - syncing to Manager and Admin dashboards:', { 
       memberId: selectedMemberForDesignation.id, 
-      newDesignation 
+      newDesignation: finalDesignation 
     });
     console.log('Updated team members list:', updatedMembers);
     
     setShowEditDesignation(false);
     setSelectedMemberForDesignation(null);
+    setCustomDesignation('');
     toast.success('Designation updated successfully - changes synced across all dashboards');
+  };
+
+  const handleNotesUpdate = () => {
+    if (!selectedMemberForNotes) return;
+    
+    const updatedMembers = teamMembers.map(member => 
+      member.id === selectedMemberForNotes.id 
+        ? { ...member, notes: editingNotes } 
+        : member
+    );
+    setTeamMembers(updatedMembers);
+    
+    console.log('Team member notes updated - syncing to Manager and Admin dashboards:', { 
+      memberId: selectedMemberForNotes.id, 
+      newNotes: editingNotes 
+    });
+    console.log('Updated team members list:', updatedMembers);
+    
+    setShowEditNotes(false);
+    setSelectedMemberForNotes(null);
+    setEditingNotes('');
+    toast.success('Notes updated successfully - changes synced across all dashboards');
   };
 
   const viewMemberPerformance = (member: any) => {
     setViewingMember(member);
     setShowPerformanceDialog(true);
     console.log('Viewing performance details for member:', member);
+  };
+
+  const openNotesDialog = (member: any) => {
+    setSelectedMemberForNotes(member);
+    setEditingNotes(member.notes);
+    setShowEditNotes(true);
   };
 
   return (
@@ -252,18 +291,12 @@ const TeamLeadDashboard = () => {
                   </div>
                   <div>
                     <Label htmlFor="member-designation">Designation</Label>
-                    <Select onValueChange={(value) => setNewMember({...newMember, designation: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select designation" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableDesignations.map(designation => (
-                          <SelectItem key={designation} value={designation}>
-                            {designation}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="member-designation"
+                      value={newMember.designation}
+                      onChange={(e) => setNewMember({...newMember, designation: e.target.value})}
+                      placeholder="Enter custom designation"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="member-rating">Initial Rating (0-100)</Label>
@@ -327,9 +360,6 @@ const TeamLeadDashboard = () => {
                             ) : (
                               <User className="h-6 w-6 text-gray-500" />
                             )}
-                            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Upload className="h-4 w-4 text-white" />
-                            </div>
                           </div>
                           <input
                             type="file"
@@ -378,7 +408,18 @@ const TeamLeadDashboard = () => {
                           <span className="ml-1 text-sm">%</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4">{member.notes}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm truncate max-w-[150px]">{member.notes}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openNotesDialog(member)}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
                         <div className="flex gap-2">
                           <Button
@@ -475,8 +516,12 @@ const TeamLeadDashboard = () => {
               <div className="p-2 bg-gray-50 rounded">{selectedMemberForDesignation?.designation}</div>
             </div>
             <div>
-              <Label>New Designation</Label>
-              <Select onValueChange={handleDesignationChange}>
+              <Label>Select Designation</Label>
+              <Select onValueChange={(value) => {
+                if (value !== 'custom') {
+                  handleDesignationChange(value);
+                }
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select new designation" />
                 </SelectTrigger>
@@ -486,12 +531,56 @@ const TeamLeadDashboard = () => {
                       {designation}
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">Custom Designation</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Custom Designation</Label>
+              <Input
+                value={customDesignation}
+                onChange={(e) => setCustomDesignation(e.target.value)}
+                placeholder="Enter custom designation"
+              />
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setShowEditDesignation(false)}>
                 Cancel
+              </Button>
+              <Button onClick={() => handleDesignationChange('custom')}>
+                Save Custom Designation
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Notes Dialog */}
+      <Dialog open={showEditNotes} onOpenChange={setShowEditNotes}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Notes - {selectedMemberForNotes?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Current Notes</Label>
+              <div className="p-2 bg-gray-50 rounded">{selectedMemberForNotes?.notes}</div>
+            </div>
+            <div>
+              <Label>New Notes</Label>
+              <Textarea
+                value={editingNotes}
+                onChange={(e) => setEditingNotes(e.target.value)}
+                placeholder="Enter notes"
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowEditNotes(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleNotesUpdate}>
+                Save Notes
               </Button>
             </div>
           </div>
