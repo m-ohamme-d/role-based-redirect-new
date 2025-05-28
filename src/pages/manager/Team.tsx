@@ -1,15 +1,15 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Download, Bell, Plus, Edit2, Trash2, Upload, Star } from 'lucide-react';
+import { Download, Bell, Plus, Edit2, Trash2, Upload, Star, Building } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useDepartments } from '@/hooks/useDepartments';
 
 // Enhanced teams data with members
 const teamsData = [
@@ -41,15 +41,8 @@ const teamsData = [
   { id: 5, name: 'Marketing Team', lead: 'David Lee', members: [], department: 'Marketing', performance: 87 },
 ];
 
-const departments = [
-  { id: 1, name: 'IT' },
-  { id: 2, name: 'HR' },
-  { id: 3, name: 'Sales' },
-  { id: 4, name: 'Marketing' },
-  { id: 5, name: 'Finance' }
-];
-
 const ManagerTeam = () => {
+  const { departments, addDepartment, updateDepartment, deleteDepartment } = useDepartments();
   const [teams, setTeams] = useState(teamsData);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
@@ -61,10 +54,77 @@ const ManagerTeam = () => {
   const [editingTeam, setEditingTeam] = useState<number | null>(null);
   const [editTeamName, setEditTeamName] = useState('');
   
+  // Department management states
+  const [showAddDepartment, setShowAddDepartment] = useState(false);
+  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [editingDepartment, setEditingDepartment] = useState<string | null>(null);
+  const [editDepartmentName, setEditDepartmentName] = useState('');
+  
   // Missing state variables for notification dialog
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
+
+  // Department management functions
+  const handleAddDepartment = () => {
+    if (!newDepartmentName.trim()) {
+      toast.error('Department name is required');
+      return;
+    }
+
+    if (newDepartmentName.trim().length < 2) {
+      toast.error('Department name must be at least 2 characters long');
+      return;
+    }
+
+    if (addDepartment(newDepartmentName.trim())) {
+      setNewDepartmentName('');
+      setShowAddDepartment(false);
+      toast.success('Department added successfully - synced with Admin dashboard');
+    } else {
+      toast.error('Department already exists or invalid name');
+    }
+  };
+
+  const handleStartEditDepartment = (deptName: string) => {
+    setEditingDepartment(deptName);
+    setEditDepartmentName(deptName);
+  };
+
+  const handleSaveEditDepartment = (oldName: string) => {
+    if (!editDepartmentName.trim()) {
+      toast.error('Department name cannot be empty');
+      return;
+    }
+
+    if (editDepartmentName.trim().length < 2) {
+      toast.error('Department name must be at least 2 characters long');
+      return;
+    }
+
+    if (updateDepartment(oldName, editDepartmentName.trim())) {
+      setEditingDepartment(null);
+      setEditDepartmentName('');
+      toast.success('Department updated successfully - synced with Admin dashboard');
+    } else {
+      toast.error('Department already exists or invalid name');
+    }
+  };
+
+  const handleDeleteDepartment = (deptName: string) => {
+    // Check if any teams are using this department
+    const teamsUsingDept = teams.filter(team => team.department === deptName);
+    if (teamsUsingDept.length > 0) {
+      toast.error(`Cannot delete department "${deptName}" - it has ${teamsUsingDept.length} team(s) assigned to it`);
+      return;
+    }
+
+    if (deleteDepartment(deptName)) {
+      toast.success('Department deleted successfully - synced with Admin dashboard');
+    } else {
+      toast.error('Failed to delete department');
+    }
+  };
 
   const handleSelectTeam = (teamId: number) => {
     if (selectedTeams.includes(teamId)) {
@@ -238,7 +298,7 @@ const ManagerTeam = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map(dept => (
-                      <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -314,6 +374,88 @@ const ManagerTeam = () => {
         </div>
       </div>
 
+      {/* Department Management Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Department Management
+            </CardTitle>
+            <Dialog open={showAddDepartment} onOpenChange={setShowAddDepartment}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Department
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Department</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Input
+                    value={newDepartmentName}
+                    onChange={(e) => setNewDepartmentName(e.target.value)}
+                    placeholder="Enter department name (min. 2 characters)"
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowAddDepartment(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddDepartment}>
+                      Add Department
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {departments.map((dept) => (
+              <div key={dept} className="flex items-center gap-2 p-2 border rounded">
+                {editingDepartment === dept ? (
+                  <div className="flex items-center gap-1 w-full">
+                    <Input 
+                      value={editDepartmentName} 
+                      onChange={(e) => setEditDepartmentName(e.target.value)}
+                      className="h-6 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveEditDepartment(dept);
+                        if (e.key === 'Escape') setEditingDepartment(null);
+                      }}
+                      autoFocus
+                    />
+                    <Button size="sm" variant="ghost" onClick={() => handleSaveEditDepartment(dept)} className="h-6 w-6 p-0">
+                      ✓
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingDepartment(null)} className="h-6 w-6 p-0">
+                      ✕
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-sm flex-1">{dept}</span>
+                    <Button size="sm" variant="ghost" onClick={() => handleStartEditDepartment(dept)} className="h-6 w-6 p-0">
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDeleteDepartment(dept)} className="h-6 w-6 p-0">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Changes sync automatically with Admin dashboard
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Teams Table */}
       <Card>
         <CardHeader>
           <CardTitle>All Teams</CardTitle>

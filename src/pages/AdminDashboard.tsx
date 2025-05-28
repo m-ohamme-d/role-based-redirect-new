@@ -11,7 +11,13 @@ const AdminDashboard = () => {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      // Ensure we're checking for admin role
+      if (parsedUser.role !== 'admin') {
+        navigate('/login');
+        return;
+      }
+      setUser(parsedUser);
       // Redirect to new admin dashboard after a brief delay
       const timer = setTimeout(() => {
         navigate('/admin/dashboard');
@@ -35,7 +41,8 @@ const AdminDashboard = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
+            <p className="text-gray-600 mt-2">Welcome back, Admin {user.name}!</p>
+            <p className="text-sm text-gray-500">Role: {user.role}</p>
           </div>
           <Button
             onClick={handleLogout}
