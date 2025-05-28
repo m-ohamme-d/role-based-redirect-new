@@ -73,7 +73,7 @@ const AdminLayout = () => {
   ];
 
   return (
-    <MainLayout links={adminLinks} role="admin" userName={user.name} />
+    <MainLayout links={adminLinks} role="Admin" userName={user.name} />
   );
 };
 
