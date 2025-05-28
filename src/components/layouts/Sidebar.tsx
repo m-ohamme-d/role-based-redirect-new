@@ -29,7 +29,7 @@ const Sidebar = ({ links, role, userName }: SidebarProps) => {
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-8`}>
           <div className={collapsed ? 'hidden' : 'block'}>
             <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {role === 'manager' ? 'Manager' : 'Team Lead'}
+              {role}
             </h2>
             <p className="text-sm text-gray-600">Welcome, {userName}</p>
           </div>
