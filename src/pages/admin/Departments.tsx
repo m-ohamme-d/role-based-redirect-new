@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Building, Users, Briefcase, Check, X } from 'lucide-react';
@@ -96,13 +97,7 @@ const AdminDepartments = () => {
     setEditName('');
   };
 
-  const handleDeleteDepartment = (deptName: string) => {
-    const details = departmentDetails[deptName];
-    if (details && (details.employeeCount > 0 || details.teamCount > 0)) {
-      toast.error(`Cannot delete department with ${details.employeeCount} employees and ${details.teamCount} teams`);
-      return;
-    }
-
+  const confirmDeleteDepartment = (deptName: string) => {
     if (deleteDepartment(deptName)) {
       // Remove department details
       setDepartmentDetails(prev => {
@@ -318,14 +313,37 @@ const AdminDepartments = () => {
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteDepartment(deptName)}
-                    disabled={details.employeeCount > 0 || details.teamCount > 0}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Department</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete the "{deptName}" department? 
+                          {details.employeeCount > 0 && (
+                            <span className="block mt-2 text-orange-600 font-medium">
+                              Warning: This department has {details.employeeCount} employees and {details.teamCount} teams.
+                            </span>
+                          )}
+                          This action cannot be undone and will sync across all dashboards.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => confirmDeleteDepartment(deptName)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete Department
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

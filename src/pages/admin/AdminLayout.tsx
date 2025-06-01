@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
-import { Home, Users, FileText, Activity, Settings, HelpCircle, Bell, Building } from 'lucide-react';
+import { Home, Users, FileText, Activity, Settings, HelpCircle, Bell, Building, User } from 'lucide-react';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -69,6 +69,11 @@ const AdminLayout = () => {
       to: '/admin/settings',
       icon: <Settings className="h-5 w-5" />,
       label: 'Settings'
+    },
+    {
+      to: '/admin/profile',
+      icon: <User className="h-5 w-5" />,
+      label: 'Profile'
     }
   ];
 
