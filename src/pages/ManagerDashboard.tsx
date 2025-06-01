@@ -1,7 +1,8 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Users, BarChart3, Settings, Calendar, Eye, FileText } from 'lucide-react';
+import { LogOut, Users, BarChart3, Settings, Calendar, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useDepartments } from '@/hooks/useDepartments';
 
@@ -27,14 +28,6 @@ const ManagerDashboard = () => {
   const handleViewAllClients = () => {
     console.log('Navigating to client portfolio with departments:', departments);
     navigate('/manager/clients');
-  };
-
-  const handleProjectAssignment = () => {
-    navigate('/manager/clients');
-  };
-
-  const handleReports = () => {
-    navigate('/reports');
   };
 
   if (!user) return null;
@@ -73,7 +66,7 @@ const ManagerDashboard = () => {
               <p className="text-gray-600 mb-4">
                 View and manage your team's activities and assignments across all departments.
               </p>
-              <div className="space-y-1 mb-4">
+              <div className="space-y-1">
                 <p className="text-xs text-gray-500">Active Departments:</p>
                 <div className="flex flex-wrap gap-1">
                   {departments.slice(0, 3).map(dept => (
@@ -88,14 +81,6 @@ const ManagerDashboard = () => {
                   )}
                 </div>
               </div>
-              <Button 
-                onClick={handleProjectAssignment}
-                className="w-full flex items-center gap-2"
-                variant="outline"
-              >
-                <Settings className="h-4 w-4" />
-                Assign Projects
-              </Button>
             </CardContent>
           </Card>
 
@@ -113,23 +98,13 @@ const ManagerDashboard = () => {
               <p className="text-gray-600 mb-4">
                 Track team performance and project progress across departments.
               </p>
-              <div className="space-y-2">
-                <Button 
-                  onClick={handleViewAllClients}
-                  className="w-full flex items-center gap-2"
-                >
-                  <Eye className="h-4 w-4" />
-                  View All Clients
-                </Button>
-                <Button 
-                  onClick={handleReports}
-                  variant="outline"
-                  className="w-full flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  Generate Reports
-                </Button>
-              </div>
+              <Button 
+                onClick={handleViewAllClients}
+                className="w-full flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                View All Clients
+              </Button>
             </CardContent>
           </Card>
 

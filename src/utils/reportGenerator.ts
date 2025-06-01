@@ -100,41 +100,24 @@ export const generateExcelContent = (data: ReportData) => {
     day: 'numeric'
   });
 
-  let content = `Report Information\n`;
-  content += `Report Type,${reportType}\n`;
+  let content = `Report Type,${reportType}\n`;
   content += `Department,${department || 'All Departments'}\n`;
   content += `Team Lead,${teamLead || 'N/A'}\n`;
   content += `Generated On,${timestamp}\n`;
   content += `Period,${dateRange}\n\n`;
 
-  content += `Employee Data\n`;
-  content += `Employee ID,Name,Position,Department,Performance Score,Rating Category,Email\n`;
+  // Headers
+  content += 'Employee ID,Name,Position,Department,Performance Score,Rating,Email\n';
 
-  // Ensure we have actual data to export
-  if (employees && employees.length > 0) {
-    employees.forEach(employee => {
-      const performance = employee.performance || employee.rating || 0;
-      const rating = performance >= 90 ? 'Excellent' : 
-                    performance >= 80 ? 'Good' : 
-                    performance >= 70 ? 'Average' : 'Below Average';
-      
-      content += `"${employee.id}","${employee.name}","${employee.position || 'Not specified'}","${department || employee.department || 'Not specified'}","${performance}%","${rating}","${employee.email || 'Not available'}"\n`;
-    });
-  } else {
-    content += `No employee data available,,,,,\n`;
-  }
-
-  // Add summary section
-  if (employees && employees.length > 0) {
-    const avgPerformance = employees.reduce((sum, emp) => sum + (emp.performance || emp.rating || 0), 0) / employees.length;
-    content += `\nSummary Statistics\n`;
-    content += `Total Employees,${employees.length}\n`;
-    content += `Average Performance,${avgPerformance.toFixed(1)}%\n`;
-    content += `Excellent (90-100%),${employees.filter(e => (e.performance || e.rating || 0) >= 90).length}\n`;
-    content += `Good (80-89%),${employees.filter(e => (e.performance || e.rating || 0) >= 80 && (e.performance || e.rating || 0) < 90).length}\n`;
-    content += `Average (70-79%),${employees.filter(e => (e.performance || e.rating || 0) >= 70 && (e.performance || e.rating || 0) < 80).length}\n`;
-    content += `Below Average (<70%),${employees.filter(e => (e.performance || e.rating || 0) < 70).length}\n`;
-  }
+  // Data rows
+  employees.forEach(employee => {
+    const performance = employee.performance || employee.rating || 0;
+    const rating = performance >= 90 ? 'Excellent' : 
+                  performance >= 80 ? 'Good' : 
+                  performance >= 70 ? 'Average' : 'Below Average';
+    
+    content += `${employee.id},"${employee.name}","${employee.position || 'Not specified'}","${department || employee.department || 'Not specified'}",${performance}%,${rating},"${employee.email || 'Not available'}"\n`;
+  });
 
   return content;
 };
@@ -151,8 +134,6 @@ export const downloadFile = (content: string, filename: string, mimeType: string
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    console.log('File downloaded successfully:', filename);
-    console.log('Content preview:', content.substring(0, 200) + '...');
     return true;
   } catch (error) {
     console.error('Download failed:', error);
