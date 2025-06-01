@@ -82,6 +82,11 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Get stored avatar from localStorage
+  const userData = localStorage.getItem('user');
+  const user = userData ? JSON.parse(userData) : null;
+  const storedAvatar = localStorage.getItem('userAvatar');
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar links={links} role={role} userName={userName} />
@@ -90,9 +95,14 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
         {/* Top navbar */}
         <header className="bg-white shadow-sm z-10">
           <div className="flex justify-between items-center px-6 py-3">
-            <h1 className="text-xl font-semibold text-gray-800 capitalize">
-              {role} Dashboard
-            </h1>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-800 capitalize">
+                {role} Dashboard
+              </h1>
+              {user && (
+                <p className="text-sm text-gray-600">Welcome, {user.name}</p>
+              )}
+            </div>
             
             <div className="flex items-center gap-4">
               {/* Notifications */}
@@ -163,7 +173,7 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="p-1">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="" alt={userName} />
+                      <AvatarImage src={storedAvatar || ""} alt={userName} />
                       <AvatarFallback className="bg-primary text-white">
                         {userName.charAt(0).toUpperCase()}
                       </AvatarFallback>

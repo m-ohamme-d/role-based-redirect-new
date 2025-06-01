@@ -25,12 +25,14 @@ import {
 } from '@/components/ui/table';
 import { FileText, Download, Calendar, CheckCircle, Bell, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { generatePDFContent, generateExcelContent, downloadFile } from '@/utils/reportGenerator';
 
 const Reports = () => {
   const [reportType, setReportType] = useState('performance');
   const [dateRange, setDateRange] = useState('month');
   const [format, setFormat] = useState('pdf');
   const [generating, setGenerating] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [generatedReports, setGeneratedReports] = useState<Array<{
     id: string;
     name: string;
@@ -39,106 +41,117 @@ const Reports = () => {
     dateGenerated: string;
     status: string;
     isFavorite: boolean;
+    department?: string;
   }>>([]);
 
-  const [recentReports, setRecentReports] = useState([
-    { id: 1, name: 'Performance Q1', date: 'May 15, 2025', type: 'PDF', isFavorite: false },
-    { id: 2, name: 'Department Budget', date: 'May 10, 2025', type: 'XLSX', isFavorite: true },
-    { id: 3, name: 'Team Metrics', date: 'May 5, 2025', type: 'PDF', isFavorite: false },
-    { id: 4, name: 'Resource Allocation', date: 'Apr 28, 2025', type: 'CSV', isFavorite: true }
-  ]);
+  // Get current user and department context
+  const userData = localStorage.getItem('user');
+  const user = userData ? JSON.parse(userData) : null;
 
-  const [favoriteReports, setFavoriteReports] = useState([
-    { id: 1, name: 'Monthly Team Performance', type: 'PDF', isFavorite: true },
-    { id: 2, name: 'Resource Usage Summary', type: 'XLSX', isFavorite: true },
-    { id: 3, name: 'Department KPIs', type: 'PDF', isFavorite: true }
-  ]);
+  const getDepartmentEmployees = (department: string) => {
+    // Mock data for different departments
+    const departmentEmployees = {
+      'engineering': [
+        { id: 'EMP001', name: 'John Smith', position: 'Senior Developer', performance: 92, email: 'john@example.com' },
+        { id: 'EMP002', name: 'Sarah Johnson', position: 'Frontend Developer', performance: 88, email: 'sarah@example.com' },
+        { id: 'EMP003', name: 'Mike Davis', position: 'Backend Developer', performance: 95, email: 'mike@example.com' }
+      ],
+      'marketing': [
+        { id: 'EMP004', name: 'Lisa Chen', position: 'Marketing Manager', performance: 90, email: 'lisa@example.com' },
+        { id: 'EMP005', name: 'David Wilson', position: 'Content Specialist', performance: 85, email: 'david@example.com' }
+      ],
+      'sales': [
+        { id: 'EMP006', name: 'Emily Brown', position: 'Sales Manager', performance: 94, email: 'emily@example.com' },
+        { id: 'EMP007', name: 'Robert Lee', position: 'Sales Representative', performance: 87, email: 'robert@example.com' }
+      ],
+      'hr': [
+        { id: 'EMP008', name: 'Jennifer White', position: 'HR Manager', performance: 89, email: 'jennifer@example.com' }
+      ]
+    };
 
-  const generateReportData = (reportType: string) => {
-    const now = new Date();
-    const data = [];
-
-    switch (reportType) {
-      case 'performance':
-        return [
-          ['Employee ID', 'Name', 'Department', 'Performance Score', 'Goals Met', 'Last Review'],
-          ['EMP001', 'John Smith', 'Engineering', '92%', '8/10', '2025-05-20'],
-          ['EMP002', 'Sarah Johnson', 'Marketing', '88%', '7/9', '2025-05-18'],
-          ['EMP003', 'Mike Davis', 'Sales', '95%', '9/10', '2025-05-22'],
-          ['EMP004', 'Lisa Chen', 'Engineering', '90%', '8/9', '2025-05-19'],
-          ['EMP005', 'David Wilson', 'HR', '85%', '6/8', '2025-05-21']
-        ];
-
-      case 'financial':
-        return [
-          ['Department', 'Budget Allocated', 'Budget Used', 'Remaining', 'Percentage Used', 'Status'],
-          ['Engineering', '$150,000', '$142,500', '$7,500', '95%', 'On Track'],
-          ['Marketing', '$80,000', '$75,200', '$4,800', '94%', 'On Track'],
-          ['Sales', '$120,000', '$98,400', '$21,600', '82%', 'Under Budget'],
-          ['HR', '$60,000', '$55,800', '$4,200', '93%', 'On Track'],
-          ['Operations', '$90,000', '$89,100', '$900', '99%', 'Almost Exceeded']
-        ];
-
-      case 'attendance':
-        return [
-          ['Employee ID', 'Name', 'Department', 'Days Present', 'Days Absent', 'Attendance %', 'Late Arrivals'],
-          ['EMP001', 'John Smith', 'Engineering', '22', '0', '100%', '2'],
-          ['EMP002', 'Sarah Johnson', 'Marketing', '21', '1', '95.5%', '1'],
-          ['EMP003', 'Mike Davis', 'Sales', '22', '0', '100%', '0'],
-          ['EMP004', 'Lisa Chen', 'Engineering', '20', '2', '90.9%', '3'],
-          ['EMP005', 'David Wilson', 'HR', '22', '0', '100%', '1']
-        ];
-
-      case 'project':
-        return [
-          ['Project ID', 'Project Name', 'Manager', 'Status', 'Progress', 'Due Date', 'Team Size'],
-          ['PRJ001', 'Website Redesign', 'John Smith', 'In Progress', '75%', '2025-06-15', '5'],
-          ['PRJ002', 'Mobile App Launch', 'Sarah Johnson', 'In Progress', '60%', '2025-07-01', '8'],
-          ['PRJ003', 'Database Migration', 'Mike Davis', 'Completed', '100%', '2025-05-30', '3'],
-          ['PRJ004', 'Marketing Campaign', 'Lisa Chen', 'Planning', '25%', '2025-08-15', '4'],
-          ['PRJ005', 'Security Audit', 'David Wilson', 'In Progress', '40%', '2025-06-30', '2']
-        ];
-
-      case 'resource':
-        return [
-          ['Resource Type', 'Total Available', 'Currently Used', 'Available', 'Utilization %', 'Department'],
-          ['Laptops', '50', '45', '5', '90%', 'IT'],
-          ['Meeting Rooms', '8', '6', '2', '75%', 'All'],
-          ['Software Licenses', '100', '85', '15', '85%', 'All'],
-          ['Vehicles', '5', '4', '1', '80%', 'Sales'],
-          ['Workstations', '60', '58', '2', '97%', 'All']
-        ];
-
-      default:
-        return [['Data', 'Value'], ['Sample', '100']];
+    if (department === 'all') {
+      return Object.values(departmentEmployees).flat();
     }
+    
+    return departmentEmployees[department as keyof typeof departmentEmployees] || [];
+  };
+
+  const getTeamLead = (department: string) => {
+    const teamLeads = {
+      'engineering': 'John Smith',
+      'marketing': 'Lisa Chen', 
+      'sales': 'Emily Brown',
+      'hr': 'Jennifer White'
+    };
+    
+    return teamLeads[department as keyof typeof teamLeads] || null;
   };
 
   const handleGenerateReport = () => {
     setGenerating(true);
     
-    // Mock report generation
     setTimeout(() => {
-      const newReport = {
-        id: Date.now().toString(),
-        name: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`,
-        type: reportType,
-        format: format.toUpperCase(),
-        dateGenerated: new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
-        status: 'Ready',
-        isFavorite: false
+      const employees = getDepartmentEmployees(selectedDepartment);
+      const teamLead = selectedDepartment !== 'all' ? getTeamLead(selectedDepartment) : null;
+      const departmentName = selectedDepartment === 'all' ? undefined : selectedDepartment.charAt(0).toUpperCase() + selectedDepartment.slice(1);
+      
+      const reportData = {
+        employees,
+        department: departmentName,
+        teamLead,
+        reportType: reportType.charAt(0).toUpperCase() + reportType.slice(1),
+        dateRange: dateRange.charAt(0).toUpperCase() + dateRange.slice(1)
       };
+
+      const now = new Date();
+      let content = '';
+      let filename = '';
+      let mimeType = '';
+
+      if (format === 'pdf') {
+        content = generatePDFContent(reportData);
+        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
+        mimeType = 'application/pdf';
+      } else if (format === 'xlsx') {
+        content = generateExcelContent(reportData);
+        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      } else {
+        content = generateExcelContent(reportData);
+        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
+        mimeType = 'text/csv';
+      }
+
+      const success = downloadFile(content, filename, mimeType);
       
-      setGeneratedReports(prev => [newReport, ...prev]);
+      if (success) {
+        const newReport = {
+          id: Date.now().toString(),
+          name: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${departmentName ? ` - ${departmentName}` : ''}`,
+          type: reportType,
+          format: format.toUpperCase(),
+          dateGenerated: new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          status: 'Ready',
+          isFavorite: false,
+          department: departmentName
+        };
+        
+        setGeneratedReports(prev => [newReport, ...prev]);
+        
+        toast.success('Report generated and downloaded successfully', {
+          description: `Your ${reportType} report${departmentName ? ` for ${departmentName} department` : ''} has been downloaded.`
+        });
+      } else {
+        toast.error('Failed to generate report', {
+          description: 'There was an error generating the report. Please try again.'
+        });
+      }
+      
       setGenerating(false);
-      
-      toast.success('Report generated successfully', {
-        description: `Your ${reportType} report is ready for download.`
-      });
     }, 1500);
   };
 
@@ -188,65 +201,44 @@ const Reports = () => {
   };
 
   const handleDownloadReport = (reportName: string, reportFormat: string, reportTypeData?: string) => {
+    const employees = getDepartmentEmployees(selectedDepartment);
+    const teamLead = selectedDepartment !== 'all' ? getTeamLead(selectedDepartment) : null;
+    const departmentName = selectedDepartment === 'all' ? undefined : selectedDepartment.charAt(0).toUpperCase() + selectedDepartment.slice(1);
+    
+    const reportData = {
+      employees,
+      department: departmentName,
+      teamLead,
+      reportType: reportTypeData || reportType,
+      dateRange: dateRange
+    };
+
     const now = new Date();
-    const dateStamp = now.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const timeStamp = now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
-    const fullTimestamp = `${dateStamp} at ${timeStamp}`;
-    
-    // Get data based on report type
-    const reportData = generateReportData(reportTypeData || reportType);
-    
     let content = '';
+    let filename = '';
     let mimeType = '';
-    let fileName = '';
-    
+
     if (reportFormat === 'PDF') {
-      // Create formatted text content for PDF
-      content = `Report: ${reportName}\nGenerated on: ${fullTimestamp}\n\n`;
-      content += reportData.map(row => row.join(' | ')).join('\n');
-      mimeType = 'text/plain'; // Browser will treat as text for demo
-      fileName = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.txt`;
+      content = generatePDFContent(reportData);
+      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
+      mimeType = 'application/pdf';
     } else if (reportFormat === 'XLSX') {
-      // Create tab-separated content for Excel
-      content = `# Report: ${reportName}\n# Generated on: ${fullTimestamp}\n\n`;
-      content += reportData.map(row => row.join('\t')).join('\n');
-      mimeType = 'text/tab-separated-values';
-      fileName = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.tsv`;
-    } else if (reportFormat === 'CSV') {
-      // Create proper CSV content
-      content = `# Report: ${reportName}\n# Generated on: ${fullTimestamp}\n`;
-      content += reportData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      content = generateExcelContent(reportData);
+      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    } else {
+      content = generateExcelContent(reportData);
+      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
       mimeType = 'text/csv';
-      fileName = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
     }
+
+    const success = downloadFile(content, filename, mimeType);
     
-    try {
-      // Create blob and download
-      const blob = new Blob([content], { type: mimeType });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Download started', {
-        description: `${reportName} generated on ${dateStamp} is being downloaded to your Downloads folder.`
+    if (success) {
+      toast.success('Download completed', {
+        description: `${reportName} has been downloaded successfully.`
       });
-    } catch (error) {
-      console.error('Download failed:', error);
+    } else {
       toast.error('Download failed', {
         description: 'There was an error downloading the report. Please try again.'
       });
@@ -278,6 +270,22 @@ const Reports = () => {
                     <SelectItem value="attendance">Attendance Report</SelectItem>
                     <SelectItem value="project">Project Status Report</SelectItem>
                     <SelectItem value="resource">Resource Allocation Report</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Department</label>
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    <SelectItem value="engineering">Engineering</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="sales">Sales</SelectItem>
+                    <SelectItem value="hr">Human Resources</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -427,6 +435,7 @@ const Reports = () => {
                 <TableRow>
                   <TableHead>Report Name</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Department</TableHead>
                   <TableHead>Format</TableHead>
                   <TableHead>Generated On</TableHead>
                   <TableHead>Status</TableHead>
@@ -438,6 +447,7 @@ const Reports = () => {
                   <TableRow key={report.id}>
                     <TableCell className="font-medium">{report.name}</TableCell>
                     <TableCell className="capitalize">{report.type}</TableCell>
+                    <TableCell>{report.department || 'All'}</TableCell>
                     <TableCell>{report.format}</TableCell>
                     <TableCell>{report.dateGenerated}</TableCell>
                     <TableCell>

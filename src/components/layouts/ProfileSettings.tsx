@@ -33,8 +33,38 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
 
   const handleProfileUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would make an API call to update the profile
+    // Update localStorage with new profile data
+    const updatedUserData = {
+      ...userData,
+      name: formData.name,
+      email: formData.email,
+    };
+    localStorage.setItem('user', JSON.stringify(updatedUserData));
     toast.success('Profile updated successfully!');
+  };
+
+  const handleChangeProfile = () => {
+    // Create a file input element to allow profile picture selection
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        // In a real app, this would upload to a server
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const imageUrl = event.target?.result as string;
+          // Store the image in localStorage for demo purposes
+          localStorage.setItem('userAvatar', imageUrl);
+          toast.success('Profile picture updated successfully!');
+          // Force a page refresh to show the new avatar
+          window.location.reload();
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
   };
 
   const handlePasswordUpdate = (e: React.FormEvent) => {
@@ -62,6 +92,9 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
     });
   };
 
+  // Get avatar from localStorage or use default
+  const storedAvatar = localStorage.getItem('userAvatar');
+
   return (
     <div className="space-y-6">
       <Card>
@@ -72,10 +105,10 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="flex flex-col items-center">
               <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={`https://i.pravatar.cc/150?u=${userData.email}`} />
+                <AvatarImage src={storedAvatar || `https://i.pravatar.cc/150?u=${userData.email}`} />
                 <AvatarFallback>{userData.name.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
-              <Button size="sm">Change Avatar</Button>
+              <Button size="sm" onClick={handleChangeProfile}>Change Profile</Button>
             </div>
             
             <form onSubmit={handleProfileUpdate} className="flex-1 space-y-4">

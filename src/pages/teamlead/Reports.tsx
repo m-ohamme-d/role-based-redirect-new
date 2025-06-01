@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Eye, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { generatePDFContent, generateExcelContent, downloadFile } from '@/utils/reportGenerator';
 
 interface Report {
   id: number;
@@ -44,24 +45,66 @@ const TeamLeadReports = () => {
     }
   ]);
 
+  // Get current user data
+  const userData = localStorage.getItem('user');
+  const user = userData ? JSON.parse(userData) : null;
+
+  // Mock team data for Team Lead
+  const getTeamData = () => {
+    return [
+      { id: 'EMP001', name: 'John Smith', position: 'Senior Developer', performance: 92, email: 'john@example.com' },
+      { id: 'EMP002', name: 'Sarah Johnson', position: 'Frontend Developer', performance: 88, email: 'sarah@example.com' },
+      { id: 'EMP003', name: 'Mike Davis', position: 'Backend Developer', performance: 95, email: 'mike@example.com' },
+      { id: 'EMP004', name: 'Lisa Chen', position: 'UX Designer', performance: 90, email: 'lisa@example.com' }
+    ];
+  };
+
   const generateNewReport = (type: Report['type']) => {
-    const newReport: Report = {
-      id: Math.max(...reports.map(r => r.id)) + 1,
-      title: `${type} Report - ${new Date().toLocaleDateString()}`,
-      type,
-      createdBy: 'Current User',
-      createdAt: new Date(),
-      status: 'Generated'
+    const teamData = getTeamData();
+    const reportData = {
+      employees: teamData,
+      department: user?.department || 'Engineering',
+      teamLead: user?.name || 'Team Lead',
+      reportType: type,
+      dateRange: 'Current Month'
     };
 
-    // Add new report to the beginning of the array to show most recent first
-    const updatedReports = [newReport, ...reports];
-    setReports(updatedReports);
-    
-    console.log('New report generated:', newReport);
-    console.log('Updated reports list (most recent first):', updatedReports);
-    
-    toast.success(`${type} report generated successfully and added to Recent Reports`);
+    const now = new Date();
+    let content = '';
+    let filename = '';
+    let mimeType = '';
+
+    // Generate PDF using the Team Performance Rating template
+    content = generatePDFContent(reportData);
+    filename = `${type.replace(/\s+/g, '_')}_Report_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
+    mimeType = 'application/pdf';
+
+    const success = downloadFile(content, filename, mimeType);
+
+    if (success) {
+      const newReport: Report = {
+        id: Math.max(...reports.map(r => r.id)) + 1,
+        title: `${type} Report - ${new Date().toLocaleDateString()}`,
+        type,
+        createdBy: 'Current User',
+        createdAt: new Date(),
+        status: 'Generated'
+      };
+
+      const updatedReports = [newReport, ...reports];
+      setReports(updatedReports);
+      
+      console.log('New report generated:', newReport);
+      console.log('Updated reports list (most recent first):', updatedReports);
+      
+      toast.success(`${type} report generated and downloaded successfully`, {
+        description: 'Using Team Performance Rating template'
+      });
+    } else {
+      toast.error('Failed to generate report', {
+        description: 'There was an error generating the report. Please try again.'
+      });
+    }
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -83,6 +126,31 @@ const TeamLeadReports = () => {
       case 'Draft': return 'secondary';
       case 'Locked': return 'destructive';
       default: return 'outline';
+    }
+  };
+
+  const handleDownloadReport = (report: Report) => {
+    const teamData = getTeamData();
+    const reportData = {
+      employees: teamData,
+      department: user?.department || 'Engineering',
+      teamLead: user?.name || 'Team Lead',
+      reportType: report.type,
+      dateRange: 'Current Month'
+    };
+
+    const content = generatePDFContent(reportData);
+    const filename = `${report.title.replace(/\s+/g, '_')}_${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${new Date().getDate().toString().padStart(2, '0')}.pdf`;
+    const mimeType = 'application/pdf';
+
+    const success = downloadFile(content, filename, mimeType);
+    
+    if (success) {
+      toast.success('Report downloaded successfully');
+    } else {
+      toast.error('Download failed', {
+        description: 'There was an error downloading the report. Please try again.'
+      });
     }
   };
 
@@ -179,7 +247,11 @@ const TeamLeadReports = () => {
                         <Eye className="h-3 w-3 mr-1" />
                         View
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownloadReport(report)}
+                      >
                         <Download className="h-3 w-3 mr-1" />
                         Download
                       </Button>
