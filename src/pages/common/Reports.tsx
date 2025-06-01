@@ -44,6 +44,53 @@ const Reports = () => {
     department?: string;
   }>>([]);
 
+  // Add missing state variables
+  const [recentReports, setRecentReports] = useState<Array<{
+    id: number;
+    name: string;
+    date: string;
+    type: string;
+    isFavorite: boolean;
+  }>>([
+    {
+      id: 1,
+      name: 'Performance Report - Q4',
+      date: 'December 15, 2024',
+      type: 'PDF',
+      isFavorite: false
+    },
+    {
+      id: 2,
+      name: 'Financial Report - November',
+      date: 'December 1, 2024',
+      type: 'XLSX',
+      isFavorite: true
+    },
+    {
+      id: 3,
+      name: 'Attendance Report - Monthly',
+      date: 'November 30, 2024',
+      type: 'CSV',
+      isFavorite: false
+    }
+  ]);
+
+  const [favoriteReports, setFavoriteReports] = useState<Array<{
+    id: number;
+    name: string;
+    date: string;
+    type: string;
+    isFavorite: boolean;
+  }>>([
+    {
+      id: 2,
+      name: 'Financial Report - November',
+      date: 'December 1, 2024',
+      type: 'XLSX',
+      isFavorite: true
+    }
+  ]);
+
   // Get current user and department context
   const userData = localStorage.getItem('user');
   const user = userData ? JSON.parse(userData) : null;
