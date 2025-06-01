@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Building, Users, Briefcase, Check, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building, Users, Briefcase, Check, X, AlertTriangle } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 
 // Mock departments data with enhanced details
@@ -33,6 +33,14 @@ const AdminDepartments = () => {
     manager: '',
     status: 'active'
   });
+  
+  // For enhanced department options
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [departmentOptions, setDepartmentOptions] = useState({
+    budget: '',
+    location: '',
+    workType: 'hybrid'
+  });
 
   const handleCreateDepartment = () => {
     if (!newDepartment.name || !newDepartment.manager) {
@@ -49,14 +57,16 @@ const AdminDepartments = () => {
           employeeCount: 0,
           manager: newDepartment.manager,
           clients: [],
-          status: newDepartment.status
+          status: newDepartment.status,
+          options: showAdvancedOptions ? departmentOptions : null
         }
       }));
 
       setNewDepartment({ name: '', manager: '', status: 'active' });
+      setDepartmentOptions({ budget: '', location: '', workType: 'hybrid' });
+      setShowAdvancedOptions(false);
       setShowCreateDialog(false);
       toast.success('Department created successfully - synced to Manager dashboard');
-      console.log('Department created and synced:', newDepartment.name);
     } else {
       toast.error('Department already exists');
     }
@@ -86,7 +96,6 @@ const AdminDepartments = () => {
       setEditingDepartment(null);
       setEditName('');
       toast.success('Department name updated successfully - synced to Manager dashboard');
-      console.log('Department name updated and synced across dashboards:', { oldName, newName: editName });
     } else {
       toast.error('Department already exists or invalid name');
     }
@@ -98,6 +107,7 @@ const AdminDepartments = () => {
   };
 
   const confirmDeleteDepartment = (deptName: string) => {
+    // Allow deletion even with teams or users
     if (deleteDepartment(deptName)) {
       // Remove department details
       setDepartmentDetails(prev => {
@@ -106,7 +116,6 @@ const AdminDepartments = () => {
       });
 
       toast.success('Department deleted successfully - synced to Manager dashboard');
-      console.log('Department deleted and synced:', deptName);
     } else {
       toast.error('Failed to delete department');
     }
@@ -121,7 +130,6 @@ const AdminDepartments = () => {
       }
     }));
     toast.success('Department status updated - synced to Manager dashboard');
-    console.log('Department status toggled and synced:', deptName);
   };
 
   // Get department details or default values
@@ -150,7 +158,7 @@ const AdminDepartments = () => {
               Add Department
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>Create New Department</DialogTitle>
             </DialogHeader>
@@ -173,6 +181,54 @@ const AdminDepartments = () => {
                   placeholder="Enter manager name"
                 />
               </div>
+              
+              <div className="flex items-center justify-between py-2">
+                <p className="text-sm font-medium">Advanced Options</p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                >
+                  {showAdvancedOptions ? 'Hide' : 'Show'}
+                </Button>
+              </div>
+              
+              {showAdvancedOptions && (
+                <div className="space-y-3 border p-3 rounded-md">
+                  <div>
+                    <Label htmlFor="dept-budget">Budget</Label>
+                    <Input
+                      id="dept-budget"
+                      value={departmentOptions.budget}
+                      onChange={(e) => setDepartmentOptions({...departmentOptions, budget: e.target.value})}
+                      placeholder="Annual budget"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dept-location">Location</Label>
+                    <Input
+                      id="dept-location"
+                      value={departmentOptions.location}
+                      onChange={(e) => setDepartmentOptions({...departmentOptions, location: e.target.value})}
+                      placeholder="Office location"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dept-worktype">Work Type</Label>
+                    <select
+                      id="dept-worktype"
+                      value={departmentOptions.workType}
+                      onChange={(e) => setDepartmentOptions({...departmentOptions, workType: e.target.value})}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="remote">Remote</option>
+                      <option value="onsite">Onsite</option>
+                      <option value="hybrid">Hybrid</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                   Cancel
@@ -304,6 +360,21 @@ const AdminDepartments = () => {
                   </div>
                 )}
                 
+                {details.options && (
+                  <div className="pt-2 border-t">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Department Options:</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {details.options.budget && (
+                        <p className="text-gray-600">Budget: <span className="font-medium">{details.options.budget}</span></p>
+                      )}
+                      {details.options.location && (
+                        <p className="text-gray-600">Location: <span className="font-medium">{details.options.location}</span></p>
+                      )}
+                      <p className="text-gray-600">Work Type: <span className="font-medium">{details.options.workType || 'Hybrid'}</span></p>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex justify-end space-x-2 pt-2">
                   <Button
                     variant="outline"
@@ -326,9 +397,13 @@ const AdminDepartments = () => {
                         <AlertDialogDescription>
                           Are you sure you want to delete the "{deptName}" department? 
                           {details.employeeCount > 0 && (
-                            <span className="block mt-2 text-orange-600 font-medium">
-                              Warning: This department has {details.employeeCount} employees and {details.teamCount} teams.
-                            </span>
+                            <div className="flex items-start gap-2 mt-2 p-2 bg-orange-50 border border-orange-200 rounded-md">
+                              <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                              <span className="text-orange-600">
+                                Warning: This department has {details.employeeCount} employees and {details.teamCount} teams.
+                                All team and employee associations will be lost.
+                              </span>
+                            </div>
                           )}
                           This action cannot be undone and will sync across all dashboards.
                         </AlertDialogDescription>

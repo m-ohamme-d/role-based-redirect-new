@@ -1,8 +1,9 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Download, Bell, Plus, Edit2, Trash2, Upload, Star, Building } from 'lucide-react';
+import { Download, Bell, Plus, Edit2, Trash2, Upload, Star, Building, Users, Settings, Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,12 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDepartments } from '@/hooks/useDepartments';
 
-// Enhanced teams data with members
+// Enhanced teams data with members and team leads
 const teamsData = [
   { 
     id: 1, 
     name: 'Development Team', 
-    lead: 'John Smith', 
+    lead: 'John Smith',
+    leadEmail: 'john.smith@company.com',
+    leadPhone: '+1 (555) 123-4567',
     members: [
       { id: 101, name: 'Alice Johnson', position: 'Senior Developer', performance: 92, avatar: null },
       { id: 102, name: 'Bob Wilson', position: 'Frontend Developer', performance: 88, avatar: null },
@@ -28,7 +31,9 @@ const teamsData = [
   { 
     id: 2, 
     name: 'Design Team', 
-    lead: 'Emily Wilson', 
+    lead: 'Emily Wilson',
+    leadEmail: 'emily.wilson@company.com',
+    leadPhone: '+1 (555) 987-6543',
     members: [
       { id: 201, name: 'David Lee', position: 'UI Designer', performance: 89, avatar: null },
       { id: 202, name: 'Emma Davis', position: 'UX Designer', performance: 91, avatar: null }
@@ -36,9 +41,9 @@ const teamsData = [
     department: 'IT', 
     performance: 88 
   },
-  { id: 3, name: 'HR Team', lead: 'Michael Brown', members: [], department: 'HR', performance: 85 },
-  { id: 4, name: 'Sales Team', lead: 'Sarah Johnson', members: [], department: 'Sales', performance: 90 },
-  { id: 5, name: 'Marketing Team', lead: 'David Lee', members: [], department: 'Marketing', performance: 87 },
+  { id: 3, name: 'HR Team', lead: 'Michael Brown', leadEmail: 'michael.brown@company.com', leadPhone: '+1 (555) 456-7890', members: [], department: 'HR', performance: 85 },
+  { id: 4, name: 'Sales Team', lead: 'Sarah Johnson', leadEmail: 'sarah.johnson@company.com', leadPhone: '+1 (555) 321-0987', members: [], department: 'Sales', performance: 90 },
+  { id: 5, name: 'Marketing Team', lead: 'David Lee', leadEmail: 'david.lee@company.com', leadPhone: '+1 (555) 111-2222', members: [], department: 'Marketing', performance: 87 },
 ];
 
 const ManagerTeam = () => {
@@ -47,45 +52,86 @@ const ManagerTeam = () => {
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
-  const [showAddTeam, setShowAddTeam] = useState(false);
-  const [newTeamName, setNewTeamName] = useState('');
-  const [newTeamDept, setNewTeamDept] = useState('');
-  const [newTeamLead, setNewTeamLead] = useState('');
-  const [editingTeam, setEditingTeam] = useState<number | null>(null);
-  const [editTeamName, setEditTeamName] = useState('');
+  const [showUnifiedForm, setShowUnifiedForm] = useState(false);
+  
+  // Unified form states
+  const [creationType, setCreationType] = useState<'department' | 'team'>('department');
+  const [formData, setFormData] = useState({
+    name: '',
+    manager: '',
+    description: '',
+    teamLead: '',
+    department: '',
+    customOptions: {
+      budget: '',
+      location: '',
+      workType: 'hybrid'
+    }
+  });
   
   // Department management states
-  const [showAddDepartment, setShowAddDepartment] = useState(false);
-  const [newDepartmentName, setNewDepartmentName] = useState('');
   const [editingDepartment, setEditingDepartment] = useState<string | null>(null);
   const [editDepartmentName, setEditDepartmentName] = useState('');
+  
+  // Team lead details dialog
+  const [showTeamLeadDetails, setShowTeamLeadDetails] = useState(false);
+  const [selectedTeamLead, setSelectedTeamLead] = useState<any>(null);
   
   // Missing state variables for notification dialog
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
 
-  // Department management functions
-  const handleAddDepartment = () => {
-    if (!newDepartmentName.trim()) {
-      toast.error('Department name is required');
-      return;
-    }
+  // Unified form submission
+  const handleUnifiedFormSubmit = () => {
+    if (creationType === 'department') {
+      if (!formData.name.trim() || !formData.manager.trim()) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
 
-    if (newDepartmentName.trim().length < 2) {
-      toast.error('Department name must be at least 2 characters long');
-      return;
-    }
-
-    if (addDepartment(newDepartmentName.trim())) {
-      setNewDepartmentName('');
-      setShowAddDepartment(false);
-      toast.success('Department added successfully - synced with Admin dashboard');
+      if (addDepartment(formData.name.trim())) {
+        toast.success(`Department "${formData.name}" created successfully with custom options`);
+        console.log('Department created with custom options:', formData);
+      } else {
+        toast.error('Department already exists');
+      }
     } else {
-      toast.error('Department already exists or invalid name');
+      if (!formData.name.trim() || !formData.department || !formData.teamLead.trim()) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      const newTeam = {
+        id: Math.max(...teams.map(t => t.id)) + 1,
+        name: formData.name.trim(),
+        lead: formData.teamLead.trim(),
+        leadEmail: `${formData.teamLead.toLowerCase().replace(' ', '.')}@company.com`,
+        leadPhone: '+1 (555) 000-0000',
+        members: [],
+        department: formData.department,
+        performance: 0
+      };
+      setTeams([...teams, newTeam]);
+      
+      // Send notification to team lead
+      toast.success(`Team "${formData.name}" created and notification sent to ${formData.teamLead}`);
+      console.log('Team created and notification sent to team lead:', newTeam);
     }
+
+    // Reset form
+    setFormData({
+      name: '',
+      manager: '',
+      description: '',
+      teamLead: '',
+      department: '',
+      customOptions: { budget: '', location: '', workType: 'hybrid' }
+    });
+    setShowUnifiedForm(false);
   };
 
+  // Department management functions
   const handleStartEditDepartment = (deptName: string) => {
     setEditingDepartment(deptName);
     setEditDepartmentName(deptName);
@@ -112,7 +158,6 @@ const ManagerTeam = () => {
   };
 
   const handleDeleteDepartment = (deptName: string) => {
-    // Check if any teams are using this department
     const teamsUsingDept = teams.filter(team => team.department === deptName);
     if (teamsUsingDept.length > 0) {
       toast.error(`Cannot delete department "${deptName}" - it has ${teamsUsingDept.length} team(s) assigned to it`);
@@ -150,7 +195,6 @@ const ManagerTeam = () => {
 
     const selectedTeamData = teamsData.filter(team => selectedTeams.includes(team.id));
     
-    // Create CSV content
     const headers = ['Team Name', 'Team Lead', 'Department', 'Members', 'Performance'];
     const csvContent = [
       headers.join(','),
@@ -159,7 +203,6 @@ const ManagerTeam = () => {
       )
     ].join('\n');
 
-    // Create and download file
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -205,56 +248,24 @@ const ManagerTeam = () => {
     setShowTeamDetails(true);
   };
 
-  const handleAddTeam = () => {
-    if (newTeamName.trim() && newTeamDept && newTeamLead.trim()) {
-      const newTeam = {
-        id: Math.max(...teams.map(t => t.id)) + 1,
-        name: newTeamName.trim(),
-        lead: newTeamLead.trim(),
-        members: [],
-        department: newTeamDept,
-        performance: 0
-      };
-      setTeams([...teams, newTeam]);
-      setNewTeamName('');
-      setNewTeamDept('');
-      setNewTeamLead('');
-      setShowAddTeam(false);
-      toast.success('Team added successfully');
-    }
+  const handleTeamLeadClick = (teamLead: any) => {
+    setSelectedTeamLead(teamLead);
+    setShowTeamLeadDetails(true);
   };
 
-  const handleEditTeam = (teamId: number, currentName: string) => {
-    setEditingTeam(teamId);
-    setEditTeamName(currentName);
-  };
-
-  const handleSaveTeamEdit = () => {
-    if (editingTeam && editTeamName.trim()) {
-      setTeams(teams.map(team => 
-        team.id === editingTeam ? { ...team, name: editTeamName.trim() } : team
-      ));
-      setEditingTeam(null);
-      setEditTeamName('');
-      toast.success('Team name updated successfully');
-    }
-  };
-
-  const handleImageUpload = (memberId: number, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && selectedTeam) {
-      // In a real app, you would upload to a server
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const updatedMembers = selectedTeam.members.map((member: any) => 
-          member.id === memberId ? { ...member, avatar: e.target?.result } : member
-        );
-        const updatedTeam = { ...selectedTeam, members: updatedMembers };
-        setSelectedTeam(updatedTeam);
-        setTeams(teams.map(team => team.id === selectedTeam.id ? updatedTeam : team));
-        toast.success('Profile image updated');
-      };
-      reader.readAsDataURL(file);
+  const handleEditTeam = (teamId: number) => {
+    const team = teams.find(t => t.id === teamId);
+    if (team) {
+      setFormData({
+        name: team.name,
+        manager: '',
+        description: '',
+        teamLead: team.lead,
+        department: team.department,
+        customOptions: { budget: '', location: '', workType: 'hybrid' }
+      });
+      setCreationType('team');
+      setShowUnifiedForm(true);
     }
   };
 
@@ -275,49 +286,162 @@ const ManagerTeam = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
         <div className="space-x-2">
-          <Dialog open={showAddTeam} onOpenChange={setShowAddTeam}>
+          <Dialog open={showUnifiedForm} onOpenChange={setShowUnifiedForm}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add Team
+                Create New
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[550px]">
               <DialogHeader>
-                <DialogTitle>Add New Team</DialogTitle>
+                <DialogTitle>Create New {creationType === 'department' ? 'Department' : 'Team'}</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <Input
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  placeholder="Team name"
-                />
-                <Select value={newTeamDept} onValueChange={setNewTeamDept}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={newTeamLead}
-                  onChange={(e) => setNewTeamLead(e.target.value)}
-                  placeholder="Team lead name"
-                />
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowAddTeam(false)}>
+              <div className="space-y-4 pt-2">
+                <div className="flex space-x-4">
+                  <Button 
+                    variant={creationType === 'department' ? 'default' : 'outline'}
+                    onClick={() => setCreationType('department')}
+                    className="flex-1"
+                  >
+                    <Building className="h-4 w-4 mr-2" />
+                    Department
+                  </Button>
+                  <Button 
+                    variant={creationType === 'team' ? 'default' : 'outline'}
+                    onClick={() => setCreationType('team')}
+                    className="flex-1"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Team
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Name</label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      placeholder={creationType === 'department' ? "Department name" : "Team name"}
+                    />
+                  </div>
+                  
+                  {creationType === 'department' ? (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium">Department Manager</label>
+                        <Input
+                          value={formData.manager}
+                          onChange={(e) => setFormData({...formData, manager: e.target.value})}
+                          placeholder="Manager's name"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Department Description</label>
+                        <Textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                          placeholder="Brief description about the department"
+                        />
+                      </div>
+                      <div className="space-y-3 border p-3 rounded-md">
+                        <h3 className="font-medium">Department Options</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-sm font-medium">Budget</label>
+                            <Input
+                              value={formData.customOptions.budget}
+                              onChange={(e) => setFormData({
+                                ...formData, 
+                                customOptions: {...formData.customOptions, budget: e.target.value}
+                              })}
+                              placeholder="Annual budget"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Location</label>
+                            <Input
+                              value={formData.customOptions.location}
+                              onChange={(e) => setFormData({
+                                ...formData, 
+                                customOptions: {...formData.customOptions, location: e.target.value}
+                              })}
+                              placeholder="Office location"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-sm font-medium">Work Type</label>
+                            <Select 
+                              value={formData.customOptions.workType}
+                              onValueChange={(val) => setFormData({
+                                ...formData,
+                                customOptions: {...formData.customOptions, workType: val}
+                              })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select work type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="remote">Remote</SelectItem>
+                                <SelectItem value="onsite">Onsite</SelectItem>
+                                <SelectItem value="hybrid">Hybrid</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium">Department</label>
+                        <Select 
+                          value={formData.department} 
+                          onValueChange={(val) => setFormData({...formData, department: val})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departments.map(dept => (
+                              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Team Lead</label>
+                        <Input
+                          value={formData.teamLead}
+                          onChange={(e) => setFormData({...formData, teamLead: e.target.value})}
+                          placeholder="Team lead's name"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Team Description</label>
+                        <Textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                          placeholder="Brief description about the team"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+                <div className="flex justify-end space-x-2 pt-2">
+                  <Button variant="outline" onClick={() => setShowUnifiedForm(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleAddTeam}>
-                    Add Team
+                  <Button onClick={handleUnifiedFormSubmit}>
+                    Create {creationType === 'department' ? 'Department' : 'Team'}
                   </Button>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
+          
           <Button
             variant="outline"
             className="flex items-center gap-2"
@@ -327,6 +451,7 @@ const ManagerTeam = () => {
             <Download className="h-4 w-4" />
             Export
           </Button>
+          
           <Dialog open={showNotificationDialog} onOpenChange={setShowNotificationDialog}>
             <DialogTrigger asChild>
               <Button
@@ -382,34 +507,6 @@ const ManagerTeam = () => {
               <Building className="h-5 w-5" />
               Department Management
             </CardTitle>
-            <Dialog open={showAddDepartment} onOpenChange={setShowAddDepartment}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Department
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Department</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Input
-                    value={newDepartmentName}
-                    onChange={(e) => setNewDepartmentName(e.target.value)}
-                    placeholder="Enter department name (min. 2 characters)"
-                  />
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setShowAddDepartment(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddDepartment}>
-                      Add Department
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -478,7 +575,6 @@ const ManagerTeam = () => {
                   <th className="text-left py-3 px-4 font-medium text-gray-600">Department</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-600">Members</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-600">Performance</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -493,26 +589,21 @@ const ManagerTeam = () => {
                       />
                     </td>
                     <td className="py-3 px-4">
-                      {editingTeam === team.id ? (
-                        <div className="flex gap-2">
-                          <Input 
-                            value={editTeamName} 
-                            onChange={(e) => setEditTeamName(e.target.value)}
-                            className="max-w-[150px]"
-                          />
-                          <Button size="sm" onClick={handleSaveTeamEdit}>Save</Button>
-                          <Button size="sm" variant="outline" onClick={() => setEditingTeam(null)}>Cancel</Button>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => handleTeamClick(team)}
-                          className="text-blue-600 hover:underline font-medium"
-                        >
-                          {team.name}
-                        </button>
-                      )}
+                      <button 
+                        onClick={() => handleTeamClick(team)}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {team.name}
+                      </button>
                     </td>
-                    <td className="py-3 px-4">{team.lead}</td>
+                    <td className="py-3 px-4">
+                      <button 
+                        onClick={() => handleTeamLeadClick(team)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {team.lead}
+                      </button>
+                    </td>
                     <td className="py-3 px-4">{team.department}</td>
                     <td className="py-3 px-4">{Array.isArray(team.members) ? team.members.length : 0}</td>
                     <td className="py-3 px-4">
@@ -525,16 +616,6 @@ const ManagerTeam = () => {
                         </div>
                         <span>{team.performance}%</span>
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditTeam(team.id, team.name)}
-                        className="p-1 h-auto"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -568,7 +649,7 @@ const ManagerTeam = () => {
                           type="file"
                           accept="image/*"
                           className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={(e) => handleImageUpload(member.id, e)}
+                          onChange={(e) => {}}
                         />
                       </div>
                       <div>
@@ -601,6 +682,60 @@ const ManagerTeam = () => {
               </Card>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Team Lead Details Dialog */}
+      <Dialog open={showTeamLeadDetails} onOpenChange={setShowTeamLeadDetails}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Team Lead Details</DialogTitle>
+          </DialogHeader>
+          {selectedTeamLead && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="text-lg">
+                    {selectedTeamLead.lead?.split(' ').map((n: string) => n[0]).join('') || 'TL'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-semibold">{selectedTeamLead.lead}</h3>
+                  <p className="text-sm text-gray-600">Team Lead - {selectedTeamLead.name}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3 pt-2">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Email</label>
+                  <p>{selectedTeamLead.leadEmail || `${selectedTeamLead.lead?.toLowerCase().replace(' ', '.')}@company.com`}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Phone</label>
+                  <p>{selectedTeamLead.leadPhone || '+1 (555) 000-0000'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Department</label>
+                  <p>{selectedTeamLead.department}</p>
+                </div>
+              </div>
+              
+              <div className="pt-3">
+                <Button 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => {
+                    setShowTeamLeadDetails(false);
+                    setNotificationText(`Hi ${selectedTeamLead.lead}, I need an update on the current projects.`);
+                    setShowNotificationDialog(true);
+                    toast.success('Notification draft created');
+                  }}
+                >
+                  <Send className="h-4 w-4" />
+                  Send Direct Message
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Search, Eye, Building, FileText, Filter } from 'lucide-react';
+import { Search, Eye, Building, FileText, Filter, Bell } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useDepartments } from '@/hooks/useDepartments';
 
 // Enhanced clients data
 const allClientsData = [
@@ -20,9 +22,9 @@ const allClientsData = [
     departments: ['IT', 'Marketing'],
     tags: ['Enterprise', 'Technology'],
     projects: [
-      { id: 1, name: 'Mobile App Development', status: 'working' },
-      { id: 2, name: 'Web Platform Redesign', status: 'working' },
-      { id: 3, name: 'API Integration', status: 'working' }
+      { id: 1, name: 'Mobile App Development', status: 'working', department: 'IT' },
+      { id: 2, name: 'Web Platform Redesign', status: 'working', department: 'IT' },
+      { id: 3, name: 'API Integration', status: 'working', department: null }
     ],
     contactEmail: 'contact@techcorp.com',
     contactPhone: '+1 (555) 123-4567'
@@ -36,8 +38,8 @@ const allClientsData = [
     departments: ['IT'],
     tags: ['Healthcare', 'Compliance'],
     projects: [
-      { id: 4, name: 'Patient Management System', status: 'working' },
-      { id: 5, name: 'Telemedicine Platform', status: 'stopped' }
+      { id: 4, name: 'Patient Management System', status: 'working', department: 'IT' },
+      { id: 5, name: 'Telemedicine Platform', status: 'stopped', department: null }
     ],
     contactEmail: 'info@healthcare.com',
     contactPhone: '+1 (555) 987-6543'
@@ -51,7 +53,7 @@ const allClientsData = [
     departments: ['Finance'],
     tags: ['Financial', 'Banking'],
     projects: [
-      { id: 6, name: 'Trading Platform', status: 'stopped' }
+      { id: 6, name: 'Trading Platform', status: 'stopped', department: 'Finance' }
     ],
     contactEmail: 'support@financeplus.com',
     contactPhone: '+1 (555) 456-7890'
@@ -65,8 +67,8 @@ const allClientsData = [
     departments: ['Sales', 'Marketing'],
     tags: ['Retail', 'E-commerce'],
     projects: [
-      { id: 7, name: 'E-commerce Migration', status: 'working' },
-      { id: 8, name: 'Inventory System', status: 'working' }
+      { id: 7, name: 'E-commerce Migration', status: 'working', department: 'Sales' },
+      { id: 8, name: 'Inventory System', status: 'working', department: null }
     ],
     contactEmail: 'contact@retailmasters.com',
     contactPhone: '+1 (555) 321-0987'
@@ -80,7 +82,7 @@ const allClientsData = [
     departments: ['IT', 'Sales'],
     tags: ['Education', 'Technology'],
     projects: [
-      { id: 9, name: 'Learning Management System', status: 'working' }
+      { id: 9, name: 'Learning Management System', status: 'working', department: 'IT' }
     ],
     contactEmail: 'info@edutech.com',
     contactPhone: '+1 (555) 111-2222'
@@ -88,9 +90,11 @@ const allClientsData = [
 ];
 
 const ManagerClientPortfolio = () => {
+  const { departments } = useDepartments();
   const [clients, setClients] = useState(allClientsData);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDetails, setShowClientDetails] = useState(false);
 
@@ -98,13 +102,13 @@ const ManagerClientPortfolio = () => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.company.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesDepartment = departmentFilter === 'all' || client.departments.includes(departmentFilter);
+    return matchesSearch && matchesStatus && matchesDepartment;
   });
 
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
     setShowClientDetails(true);
-    console.log('Client selected for details:', client);
   };
 
   const toggleProjectStatus = (projectId: number) => {
@@ -124,7 +128,38 @@ const ManagerClientPortfolio = () => {
       ));
       
       toast.success('Project status updated');
-      console.log('Project status toggled:', projectId);
+    }
+  };
+
+  const assignProjectToDepartment = (projectId: number, departmentName: string) => {
+    if (selectedClient) {
+      const updatedProjects = selectedClient.projects.map((project: any) => 
+        project.id === projectId 
+          ? { ...project, department: departmentName }
+          : project
+      );
+      
+      // Update client departments list if needed
+      let updatedDepartments = [...selectedClient.departments];
+      if (departmentName && !updatedDepartments.includes(departmentName)) {
+        updatedDepartments.push(departmentName);
+      }
+      
+      const updatedClient = { 
+        ...selectedClient, 
+        projects: updatedProjects,
+        departments: updatedDepartments
+      };
+      
+      setSelectedClient(updatedClient);
+      
+      // Update in main clients list
+      setClients(clients.map(client => 
+        client.id === selectedClient.id ? updatedClient : client
+      ));
+      
+      // Notify team lead
+      toast.success(`Project assigned to ${departmentName} department, notification sent to department team lead`);
     }
   };
 
@@ -186,8 +221,8 @@ const ManagerClientPortfolio = () => {
           <CardTitle>All Clients</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1 relative">
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="flex-1 relative min-w-[200px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search clients or companies..."
@@ -206,6 +241,19 @@ const ManagerClientPortfolio = () => {
                 <option value="all">All Status</option>
                 <option value="working">Working</option>
                 <option value="stopped">Stopped</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Building className="h-4 w-4 text-gray-600" />
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md min-w-[150px]"
+              >
+                <option value="all">All Departments</option>
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -310,27 +358,72 @@ const ManagerClientPortfolio = () => {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-3">Projects</p>
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-sm font-medium text-gray-600">Projects</p>
+                </div>
                 <div className="space-y-3 max-h-[300px] overflow-y-auto">
                   {selectedClient.projects.map((project: any) => (
-                    <Card key={project.id}>
+                    <Card key={project.id} className="shadow-sm border">
                       <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold">{project.name}</h3>
-                            <Badge 
-                              className={`mt-2 ${getStatusBadgeColor(project.status)} text-white`}
-                            >
-                              {project.status === 'working' ? 'Working' : 'Stopped'}
-                            </Badge>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="col-span-2">
+                            <h3 className="font-semibold text-lg">{project.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge 
+                                className={`${getStatusBadgeColor(project.status)} text-white`}
+                              >
+                                {project.status === 'working' ? 'Working' : 'Stopped'}
+                              </Badge>
+                              {project.department && (
+                                <Badge variant="outline">
+                                  Department: {project.department}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => toggleProjectStatus(project.id)}
-                          >
-                            Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
-                          </Button>
+                          
+                          <div className="md:col-span-1 space-y-2">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs font-medium text-gray-600">Assign Department</label>
+                              <div className="flex gap-2">
+                                <Select 
+                                  value={project.department || ''}
+                                  onValueChange={(value) => assignProjectToDepartment(project.id, value)}
+                                >
+                                  <SelectTrigger className="w-full h-8 text-xs">
+                                    <SelectValue placeholder="Select department" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {departments.map(dept => (
+                                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {project.department && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      toast.success(`Notification sent to ${project.department} team lead`);
+                                    }}
+                                    className="h-8 px-2"
+                                  >
+                                    <Bell className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-end mt-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => toggleProjectStatus(project.id)}
+                              >
+                                Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
