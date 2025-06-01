@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BarChart3, Plus, Edit2, Trash2, User, Eye } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
@@ -72,19 +72,19 @@ const TeamLeadDashboard = () => {
     notes: '',
     photo: null as File | null
   });
-  const [editingMember, setEditingMember] = useState<number | null>(null);
   const [showCriteria, setShowCriteria] = useState(false);
   const [viewingMember, setViewingMember] = useState<any>(null);
   const [showPerformanceDialog, setShowPerformanceDialog] = useState(false);
-  const [showEditDesignation, setShowEditDesignation] = useState(false);
-  const [selectedMemberForDesignation, setSelectedMemberForDesignation] = useState<any>(null);
-  const [customDesignation, setCustomDesignation] = useState('');
-  const [showEditNotes, setShowEditNotes] = useState(false);
-  const [selectedMemberForNotes, setSelectedMemberForNotes] = useState<any>(null);
-  const [editingNotes, setEditingNotes] = useState('');
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<any>(null);
+  const [editingData, setEditingData] = useState({
+    designation: '',
+    notes: '',
+    customDesignation: ''
+  });
 
   // Filter to show only IT department for IT team lead
-  const currentUserDepartment = 'IT'; // This would come from user context
+  const currentUserDepartment = 'IT';
   const filteredMembers = teamMembers.filter(member => member.department === currentUserDepartment);
 
   const handleAddMember = () => {
@@ -116,7 +116,6 @@ const TeamLeadDashboard = () => {
     const updatedMembers = teamMembers.filter(m => m.id !== memberId);
     setTeamMembers(updatedMembers);
     
-    // Sync logging for live updates
     console.log('Team member removed - syncing to Manager and Admin dashboards, member ID:', memberId);
     console.log('Updated team members list:', updatedMembers);
     
@@ -129,7 +128,6 @@ const TeamLeadDashboard = () => {
     );
     setTeamMembers(updatedMembers);
     
-    // Sync logging for live updates
     console.log('Team member photo updated - syncing to Manager and Admin dashboards:', memberId);
     console.log('Updated team members list:', updatedMembers);
     
@@ -138,78 +136,81 @@ const TeamLeadDashboard = () => {
 
   const updateMemberRating = (memberId: number, newRating: number) => {
     const updatedMembers = teamMembers.map(member => 
-      member.id === memberId ? { ...member, rating: newRating } : member
+      member.id === memberId ? { ...member, rating: Math.min(100, Math.max(0, newRating)) } : member
     );
     setTeamMembers(updatedMembers);
     
-    // Sync logging for live updates
     console.log('Team member rating updated - syncing to Manager and Admin dashboards:', { memberId, newRating });
     console.log('Updated team members list:', updatedMembers);
     
     toast.success('Rating updated successfully - updates synced to Manager and Admin dashboards');
   };
 
-  const handleDesignationChange = (newDesignation: string) => {
-    if (!selectedMemberForDesignation) return;
-    
-    const finalDesignation = newDesignation === 'custom' ? customDesignation : newDesignation;
-    
-    if (!finalDesignation.trim()) {
-      toast.error('Please enter a designation');
-      return;
-    }
-    
-    const updatedMembers = teamMembers.map(member => 
-      member.id === selectedMemberForDesignation.id 
-        ? { ...member, designation: finalDesignation } 
-        : member
-    );
-    setTeamMembers(updatedMembers);
-    
-    console.log('Team member designation updated - syncing to Manager and Admin dashboards:', { 
-      memberId: selectedMemberForDesignation.id, 
-      newDesignation: finalDesignation 
+  const openEditDialog = (member: any) => {
+    setSelectedMemberForEdit(member);
+    setEditingData({
+      designation: member.designation,
+      notes: member.notes,
+      customDesignation: ''
     });
-    console.log('Updated team members list:', updatedMembers);
-    
-    setShowEditDesignation(false);
-    setSelectedMemberForDesignation(null);
-    setCustomDesignation('');
-    toast.success('Designation updated successfully - changes synced across all dashboards');
+    setShowEditDialog(true);
   };
 
-  const handleNotesUpdate = () => {
-    if (!selectedMemberForNotes) return;
+  const handleSaveEdit = () => {
+    if (!selectedMemberForEdit) return;
+    
+    const finalDesignation = editingData.customDesignation.trim() || editingData.designation;
     
     const updatedMembers = teamMembers.map(member => 
-      member.id === selectedMemberForNotes.id 
-        ? { ...member, notes: editingNotes } 
+      member.id === selectedMemberForEdit.id 
+        ? { 
+            ...member, 
+            designation: finalDesignation,
+            notes: editingData.notes
+          } 
         : member
     );
     setTeamMembers(updatedMembers);
     
-    console.log('Team member notes updated - syncing to Manager and Admin dashboards:', { 
-      memberId: selectedMemberForNotes.id, 
-      newNotes: editingNotes 
+    console.log('Team member updated - syncing to Manager and Admin dashboards:', { 
+      memberId: selectedMemberForEdit.id, 
+      designation: finalDesignation,
+      notes: editingData.notes
     });
     console.log('Updated team members list:', updatedMembers);
     
-    setShowEditNotes(false);
-    setSelectedMemberForNotes(null);
-    setEditingNotes('');
-    toast.success('Notes updated successfully - changes synced across all dashboards');
+    setShowEditDialog(false);
+    setSelectedMemberForEdit(null);
+    toast.success('Member updated successfully - changes synced across all dashboards');
+  };
+
+  const handleStarClick = (memberId: number, starIndex: number, event: React.MouseEvent) => {
+    event.preventDefault();
+    const clickCount = event.detail;
+    let newRating: number;
+    
+    if (clickCount === 2) {
+      // Double click - full star
+      newRating = (starIndex + 1) * 20;
+    } else {
+      // Single click - half star  
+      newRating = (starIndex * 20) + 10;
+    }
+    
+    updateMemberRating(memberId, newRating);
+  };
+
+  const getRatingStars = (rating: number) => {
+    const fullStars = Math.floor(rating / 20);
+    const hasHalfStar = (rating % 20) >= 10;
+    
+    return { fullStars, hasHalfStar };
   };
 
   const viewMemberPerformance = (member: any) => {
     setViewingMember(member);
     setShowPerformanceDialog(true);
     console.log('Viewing performance details for member:', member);
-  };
-
-  const openNotesDialog = (member: any) => {
-    setSelectedMemberForNotes(member);
-    setEditingNotes(member.notes);
-    setShowEditNotes(true);
   };
 
   return (
@@ -347,117 +348,164 @@ const TeamLeadDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMembers.map(member => (
-                    <tr key={member.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="relative group">
-                          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden">
-                            {member.photo ? (
-                              <img 
-                                src={URL.createObjectURL(member.photo)} 
-                                alt={member.name}
-                                className="w-12 h-12 rounded-full object-cover"
-                              />
-                            ) : (
-                              <User className="h-6 w-6 text-gray-500" />
-                            )}
+                  {filteredMembers.map(member => {
+                    const { fullStars, hasHalfStar } = getRatingStars(member.rating);
+                    
+                    return (
+                      <tr key={member.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="relative group">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden">
+                              {member.photo ? (
+                                <img 
+                                  src={URL.createObjectURL(member.photo)} 
+                                  alt={member.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <User className="h-6 w-6 text-gray-500" />
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePhotoUpload(member.id, file);
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
                           </div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handlePhotoUpload(member.id, file);
-                            }}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                          />
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">{member.id}</td>
-                      <td className="py-3 px-4">{member.name}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span>{member.designation}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedMemberForDesignation(member);
-                              setShowEditDesignation(true);
-                            }}
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
-                            <div 
-                              className="bg-blue-600 h-2.5 rounded-full" 
-                              style={{ width: `${member.rating}%` }}
-                            ></div>
+                        </td>
+                        <td className="py-3 px-4">{member.id}</td>
+                        <td className="py-3 px-4">{member.name}</td>
+                        <td className="py-3 px-4">{member.designation}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              {[0, 1, 2, 3, 4].map((starIndex) => (
+                                <div
+                                  key={starIndex}
+                                  className="relative cursor-pointer select-none"
+                                  onClick={(e) => handleStarClick(member.id, starIndex, e)}
+                                  title="Single click for half star, double click for full star"
+                                >
+                                  <span className="text-gray-300 text-lg">★</span>
+                                  {starIndex < fullStars && (
+                                    <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
+                                  )}
+                                  {starIndex === fullStars && hasHalfStar && (
+                                    <span 
+                                      className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
+                                      style={{ width: '50%' }}
+                                    >
+                                      ★
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-sm text-gray-600 ml-2">{member.rating}%</span>
                           </div>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={member.rating}
-                            onChange={(e) => updateMemberRating(member.id, parseInt(e.target.value) || 0)}
-                            className="w-16 h-8 text-xs"
-                          />
-                          <span className="ml-1 text-sm">%</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm truncate max-w-[150px]">{member.notes}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openNotesDialog(member)}
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => viewMemberPerformance(member)}
-                            title="View Performance"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingMember(member.id)}
-                            title="Edit Member"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveMember(member.id)}
-                            className="text-red-600 hover:text-red-700"
-                            title="Remove Member"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm truncate max-w-[150px] block">{member.notes}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewMemberPerformance(member)}
+                              title="View Performance"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(member)}
+                              title="Edit Member"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="text-red-600 hover:text-red-700"
+                              title="Remove Member"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Consolidated Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Member - {selectedMemberForEdit?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Designation</Label>
+              <Select 
+                value={editingData.designation} 
+                onValueChange={(value) => setEditingData({...editingData, designation: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select designation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDesignations.map(designation => (
+                    <SelectItem key={designation} value={designation}>
+                      {designation}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label>Custom Designation (Optional)</Label>
+              <Input
+                value={editingData.customDesignation}
+                onChange={(e) => setEditingData({...editingData, customDesignation: e.target.value})}
+                placeholder="Enter custom designation"
+              />
+            </div>
+
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={editingData.notes}
+                onChange={(e) => setEditingData({...editingData, notes: e.target.value})}
+                placeholder="Enter notes"
+                rows={4}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Performance Details Dialog */}
       <Dialog open={showPerformanceDialog} onOpenChange={setShowPerformanceDialog}>
@@ -502,89 +550,6 @@ const TeamLeadDashboard = () => {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Designation Dialog */}
-      <Dialog open={showEditDesignation} onOpenChange={setShowEditDesignation}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Designation - {selectedMemberForDesignation?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Current Designation</Label>
-              <div className="p-2 bg-gray-50 rounded">{selectedMemberForDesignation?.designation}</div>
-            </div>
-            <div>
-              <Label>Select Designation</Label>
-              <Select onValueChange={(value) => {
-                if (value !== 'custom') {
-                  handleDesignationChange(value);
-                }
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select new designation" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableDesignations.map(designation => (
-                    <SelectItem key={designation} value={designation}>
-                      {designation}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Custom Designation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Custom Designation</Label>
-              <Input
-                value={customDesignation}
-                onChange={(e) => setCustomDesignation(e.target.value)}
-                placeholder="Enter custom designation"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowEditDesignation(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => handleDesignationChange('custom')}>
-                Save Custom Designation
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Notes Dialog */}
-      <Dialog open={showEditNotes} onOpenChange={setShowEditNotes}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Notes - {selectedMemberForNotes?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Current Notes</Label>
-              <div className="p-2 bg-gray-50 rounded">{selectedMemberForNotes?.notes}</div>
-            </div>
-            <div>
-              <Label>New Notes</Label>
-              <Textarea
-                value={editingNotes}
-                onChange={(e) => setEditingNotes(e.target.value)}
-                placeholder="Enter notes"
-                rows={4}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowEditNotes(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleNotesUpdate}>
-                Save Notes
-              </Button>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
 

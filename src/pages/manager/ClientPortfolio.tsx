@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Search, Eye, Building, FileText, Filter, Bell } from 'lucide-react';
+import { Search, Eye, Building, FileText, Filter, Bell, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDepartments } from '@/hooks/useDepartments';
 
@@ -97,6 +96,9 @@ const ManagerClientPortfolio = () => {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDetails, setShowClientDetails] = useState(false);
+  const [showInactiveDialog, setShowInactiveDialog] = useState(false);
+  const [clientToInactivate, setClientToInactivate] = useState<any>(null);
+  const [inactiveReason, setInactiveReason] = useState('');
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -109,6 +111,33 @@ const ManagerClientPortfolio = () => {
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
     setShowClientDetails(true);
+  };
+
+  const handleMarkInactive = (client: any) => {
+    setClientToInactivate(client);
+    setShowInactiveDialog(true);
+  };
+
+  const submitInactiveRequest = () => {
+    if (!clientToInactivate || !inactiveReason.trim()) {
+      toast.error('Please provide a reason for marking the client as inactive');
+      return;
+    }
+
+    // Simulate sending request to manager for approval
+    console.log('Inactive request submitted:', {
+      clientId: clientToInactivate.id,
+      clientName: clientToInactivate.name,
+      reason: inactiveReason,
+      requestedBy: 'Team Lead',
+      timestamp: new Date().toISOString()
+    });
+
+    toast.success(`Inactive request submitted for ${clientToInactivate.name}. Awaiting manager approval.`);
+    
+    setShowInactiveDialog(false);
+    setClientToInactivate(null);
+    setInactiveReason('');
   };
 
   const toggleProjectStatus = (projectId: number) => {
@@ -290,15 +319,28 @@ const ManagerClientPortfolio = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleClientClick(client)}
-                      className="flex items-center gap-2"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View Details
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleClientClick(client)}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Details
+                      </Button>
+                      {client.status === 'working' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleMarkInactive(client)}
+                          className="flex items-center gap-2 text-orange-600 hover:text-orange-700"
+                        >
+                          <AlertTriangle className="h-4 w-4" />
+                          Mark Inactive
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -429,6 +471,63 @@ const ManagerClientPortfolio = () => {
                     </Card>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Mark Inactive Dialog */}
+      <Dialog open={showInactiveDialog} onOpenChange={setShowInactiveDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Mark Client as Inactive
+            </DialogTitle>
+          </DialogHeader>
+          {clientToInactivate && (
+            <div className="space-y-4">
+              <div className="p-4 bg-orange-50 rounded-lg">
+                <p className="text-sm text-orange-800">
+                  <strong>Client:</strong> {clientToInactivate.name}
+                </p>
+                <p className="text-sm text-orange-800">
+                  <strong>Company:</strong> {clientToInactivate.company}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason for marking as inactive:</label>
+                <textarea
+                  value={inactiveReason}
+                  onChange={(e) => setInactiveReason(e.target.value)}
+                  placeholder="Please provide a detailed reason for marking this client as inactive..."
+                  className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                  rows={4}
+                />
+              </div>
+              
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> This request will be sent to the manager for approval. 
+                  The client will remain active until the manager approves this request.
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowInactiveDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={submitInactiveRequest}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  Submit Request
+                </Button>
               </div>
             </div>
           )}
