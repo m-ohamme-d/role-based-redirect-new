@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit2, Upload, Building, Tag, User } from "lucide-react";
+import { Plus, Edit2, Upload, Building, Tag, User, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface Client {
@@ -82,6 +83,9 @@ const TeamLeadClients = () => {
     address: ''
   });
   const [newTag, setNewTag] = useState('');
+  const [showManagerApprovalDialog, setShowManagerApprovalDialog] = useState(false);
+  const [clientToDeactivate, setClientToDeactivate] = useState<Client | null>(null);
+  const [approvalReason, setApprovalReason] = useState('');
 
   const handleAddClient = () => {
     if (newClient.name?.trim()) {
@@ -163,6 +167,46 @@ const TeamLeadClients = () => {
     );
     setClients(updatedClients);
     toast.success('Tag removed successfully');
+  };
+
+  const requestClientDeactivation = (client: Client) => {
+    setClientToDeactivate(client);
+    setShowManagerApprovalDialog(true);
+  };
+
+  const submitDeactivationRequest = () => {
+    if (clientToDeactivate && approvalReason.trim()) {
+      // In a real app, this would send a request to the manager
+      console.log('Deactivation request submitted:', {
+        clientId: clientToDeactivate.id,
+        clientName: clientToDeactivate.name,
+        reason: approvalReason,
+        requestedBy: 'Team Lead',
+        timestamp: new Date().toISOString()
+      });
+      
+      toast.success('Deactivation request sent to manager for approval', {
+        description: `Request for ${clientToDeactivate.name} pending manager approval`
+      });
+      
+      setShowManagerApprovalDialog(false);
+      setClientToDeactivate(null);
+      setApprovalReason('');
+    }
+  };
+
+  const toggleClientStatus = (client: Client) => {
+    if (client.status === 'Active') {
+      // Request manager approval for deactivation
+      requestClientDeactivation(client);
+    } else {
+      // Can reactivate without approval
+      const updatedClients = clients.map(c => 
+        c.id === client.id ? { ...c, status: 'Active' as const } : c
+      );
+      setClients(updatedClients);
+      toast.success('Client reactivated successfully');
+    }
   };
 
   const activeClients = clients.filter(c => c.status === 'Active');
@@ -317,6 +361,15 @@ const TeamLeadClients = () => {
                       <Edit2 className="h-3 w-3 mr-1" />
                       Edit
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleClientStatus(client)}
+                      className="text-orange-600 hover:text-orange-700"
+                    >
+                      <Shield className="h-3 w-3 mr-1" />
+                      Mark Inactive
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -339,15 +392,73 @@ const TeamLeadClients = () => {
                     <Badge variant="secondary">Inactive</Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
-                  <p className="text-sm text-gray-600">Email: {client.email}</p>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
+                    <p className="text-sm text-gray-600">Email: {client.email}</p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleClientStatus(client)}
+                      className="text-green-600 hover:text-green-700"
+                    >
+                      Reactivate
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Manager Approval Dialog for Deactivation */}
+      <Dialog open={showManagerApprovalDialog} onOpenChange={setShowManagerApprovalDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Manager Approval</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <Shield className="h-4 w-4" />
+                <span className="font-medium">Manager Approval Required</span>
+              </div>
+              <p className="text-sm text-yellow-700 mt-1">
+                Deactivating a client requires manager approval. Please provide a reason for this request.
+              </p>
+            </div>
+            
+            <div>
+              <Label>Client to Deactivate</Label>
+              <p className="font-medium">{clientToDeactivate?.name}</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="approval-reason">Reason for Deactivation</Label>
+              <Textarea
+                id="approval-reason"
+                value={approvalReason}
+                onChange={(e) => setApprovalReason(e.target.value)}
+                placeholder="Please explain why this client should be deactivated..."
+                rows={4}
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowManagerApprovalDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={submitDeactivationRequest} disabled={!approvalReason.trim()}>
+                Submit Request
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Client Dialog */}
       {editingClient && (

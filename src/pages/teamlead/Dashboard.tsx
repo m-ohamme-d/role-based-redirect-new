@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BarChart3, Plus, Edit2, Trash2, User, Eye } from "lucide-react";
@@ -57,15 +58,16 @@ const availableDesignations = [
 
 const TeamLeadDashboard = () => {
   const [teamMembers, setTeamMembers] = useState([
-    { id: 1, name: 'John Smith', designation: 'Developer', rating: 85, notes: 'Excellent performance', photo: null, department: 'IT' },
-    { id: 2, name: 'Sarah Johnson', designation: 'Designer', rating: 92, notes: 'Consistent high quality work', photo: null, department: 'IT' },
-    { id: 3, name: 'Michael Brown', designation: 'QA Tester', rating: 78, notes: 'Good attention to detail', photo: null, department: 'IT' },
-    { id: 4, name: 'Emily Davis', designation: 'Developer', rating: 88, notes: 'Fast learner', photo: null, department: 'IT' },
-    { id: 5, name: 'Robert Wilson', designation: 'Developer', rating: 75, notes: 'Needs mentoring', photo: null, department: 'IT' },
+    { id: 'TL001', name: 'John Smith', designation: 'Developer', rating: 85, notes: 'Excellent performance', photo: null, department: 'IT', originalOrder: 1 },
+    { id: 'TL002', name: 'Sarah Johnson', designation: 'Designer', rating: 92, notes: 'Consistent high quality work', photo: null, department: 'IT', originalOrder: 2 },
+    { id: 'TL003', name: 'Michael Brown', designation: 'QA Tester', rating: 78, notes: 'Good attention to detail', photo: null, department: 'IT', originalOrder: 3 },
+    { id: 'TL004', name: 'Emily Davis', designation: 'Developer', rating: 88, notes: 'Fast learner', photo: null, department: 'IT', originalOrder: 4 },
+    { id: 'TL005', name: 'Robert Wilson', designation: 'Developer', rating: 75, notes: 'Needs mentoring', photo: null, department: 'IT', originalOrder: 5 },
   ]);
 
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMember, setNewMember] = useState({
+    id: '',
     name: '',
     designation: '',
     rating: 0,
@@ -78,6 +80,7 @@ const TeamLeadDashboard = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<any>(null);
   const [editingData, setEditingData] = useState({
+    id: '',
     designation: '',
     notes: '',
     customDesignation: ''
@@ -85,18 +88,22 @@ const TeamLeadDashboard = () => {
 
   // Filter to show only IT department for IT team lead
   const currentUserDepartment = 'IT';
-  const filteredMembers = teamMembers.filter(member => member.department === currentUserDepartment);
+  const filteredMembers = teamMembers
+    .filter(member => member.department === currentUserDepartment)
+    .sort((a, b) => a.originalOrder - b.originalOrder); // Keep original order stable
 
   const handleAddMember = () => {
-    if (newMember.name.trim() && newMember.designation.trim()) {
+    if (newMember.name.trim() && newMember.designation.trim() && newMember.id.trim()) {
+      const nextOrder = Math.max(...teamMembers.map(m => m.originalOrder || 0)) + 1;
       const member = {
-        id: Math.max(...teamMembers.map(m => m.id)) + 1,
+        id: newMember.id.trim(),
         name: newMember.name.trim(),
         designation: newMember.designation.trim(),
         rating: newMember.rating || 0,
         notes: newMember.notes || '',
         photo: newMember.photo,
-        department: currentUserDepartment
+        department: currentUserDepartment,
+        originalOrder: nextOrder
       };
       
       const updatedMembers = [...teamMembers, member];
@@ -106,13 +113,13 @@ const TeamLeadDashboard = () => {
       console.log('Team member added - syncing to Manager and Admin dashboards:', member);
       console.log('Updated team members list:', updatedMembers);
       
-      setNewMember({ name: '', designation: '', rating: 0, notes: '', photo: null });
+      setNewMember({ id: '', name: '', designation: '', rating: 0, notes: '', photo: null });
       setShowAddMember(false);
       toast.success('Team member added successfully - updates synced to Manager and Admin dashboards');
     }
   };
 
-  const handleRemoveMember = (memberId: number) => {
+  const handleRemoveMember = (memberId: string) => {
     const updatedMembers = teamMembers.filter(m => m.id !== memberId);
     setTeamMembers(updatedMembers);
     
@@ -122,7 +129,7 @@ const TeamLeadDashboard = () => {
     toast.success('Team member removed successfully - updates synced to Manager and Admin dashboards');
   };
 
-  const handlePhotoUpload = (memberId: number, file: File) => {
+  const handlePhotoUpload = (memberId: string, file: File) => {
     const updatedMembers = teamMembers.map(member => 
       member.id === memberId ? { ...member, photo: file } : member
     );
@@ -134,7 +141,7 @@ const TeamLeadDashboard = () => {
     toast.success('Photo uploaded successfully - updates synced to Manager and Admin dashboards');
   };
 
-  const updateMemberRating = (memberId: number, newRating: number) => {
+  const updateMemberRating = (memberId: string, newRating: number) => {
     const updatedMembers = teamMembers.map(member => 
       member.id === memberId ? { ...member, rating: Math.min(100, Math.max(0, newRating)) } : member
     );
@@ -149,6 +156,7 @@ const TeamLeadDashboard = () => {
   const openEditDialog = (member: any) => {
     setSelectedMemberForEdit(member);
     setEditingData({
+      id: member.id,
       designation: member.designation,
       notes: member.notes,
       customDesignation: ''
@@ -165,6 +173,7 @@ const TeamLeadDashboard = () => {
       member.id === selectedMemberForEdit.id 
         ? { 
             ...member, 
+            id: editingData.id,
             designation: finalDesignation,
             notes: editingData.notes
           } 
@@ -173,7 +182,8 @@ const TeamLeadDashboard = () => {
     setTeamMembers(updatedMembers);
     
     console.log('Team member updated - syncing to Manager and Admin dashboards:', { 
-      memberId: selectedMemberForEdit.id, 
+      memberId: selectedMemberForEdit.id,
+      newId: editingData.id,
       designation: finalDesignation,
       notes: editingData.notes
     });
@@ -184,16 +194,16 @@ const TeamLeadDashboard = () => {
     toast.success('Member updated successfully - changes synced across all dashboards');
   };
 
-  const handleStarClick = (memberId: number, starIndex: number, event: React.MouseEvent) => {
+  const handleStarClick = (memberId: string, starIndex: number, event: React.MouseEvent) => {
     event.preventDefault();
     const clickCount = event.detail;
     let newRating: number;
     
     if (clickCount === 2) {
-      // Double click - full star
+      // Double click - full star (20%, 40%, 60%, 80%, 100%)
       newRating = (starIndex + 1) * 20;
     } else {
-      // Single click - half star  
+      // Single click - half star (10%, 30%, 50%, 70%, 90%)
       newRating = (starIndex * 20) + 10;
     }
     
@@ -282,6 +292,15 @@ const TeamLeadDashboard = () => {
                   <DialogTitle>Add New Team Member</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="member-id">Member ID</Label>
+                    <Input
+                      id="member-id"
+                      value={newMember.id}
+                      onChange={(e) => setNewMember({...newMember, id: e.target.value})}
+                      placeholder="Member ID (e.g., TL006)"
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="member-name">Member Name</Label>
                     <Input
@@ -458,6 +477,15 @@ const TeamLeadDashboard = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <Label>Member ID</Label>
+              <Input
+                value={editingData.id}
+                onChange={(e) => setEditingData({...editingData, id: e.target.value})}
+                placeholder="Member ID"
+              />
+            </div>
+            
+            <div>
               <Label>Designation</Label>
               <Select 
                 value={editingData.designation} 
@@ -562,6 +590,9 @@ const TeamLeadDashboard = () => {
           <div className="space-y-2">
             <p className="text-sm text-gray-600 mb-4">
               Team members are rated based on the following criteria:
+            </p>
+            <p className="text-xs text-gray-500 mb-4">
+              Rating System: Single click = half star (10%, 30%, 50%, 70%, 90%), Double click = full star (20%, 40%, 60%, 80%, 100%)
             </p>
             {ratingCriteria.map((criteria, index) => (
               <div key={index} className="flex items-center gap-2">

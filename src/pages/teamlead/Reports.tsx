@@ -49,13 +49,13 @@ const TeamLeadReports = () => {
   const userData = localStorage.getItem('user');
   const user = userData ? JSON.parse(userData) : null;
 
-  // Mock team data for Team Lead
+  // Team Lead can only access their own team's data (IT department only)
   const getTeamData = () => {
     return [
-      { id: 'EMP001', name: 'John Smith', position: 'Senior Developer', performance: 92, email: 'john@example.com' },
-      { id: 'EMP002', name: 'Sarah Johnson', position: 'Frontend Developer', performance: 88, email: 'sarah@example.com' },
-      { id: 'EMP003', name: 'Mike Davis', position: 'Backend Developer', performance: 95, email: 'mike@example.com' },
-      { id: 'EMP004', name: 'Lisa Chen', position: 'UX Designer', performance: 90, email: 'lisa@example.com' }
+      { id: 'TL001', name: 'John Smith', position: 'Senior Developer', performance: 92, email: 'john@example.com' },
+      { id: 'TL002', name: 'Sarah Johnson', position: 'Frontend Developer', performance: 88, email: 'sarah@example.com' },
+      { id: 'TL003', name: 'Mike Davis', position: 'Backend Developer', performance: 95, email: 'mike@example.com' },
+      { id: 'TL004', name: 'Lisa Chen', position: 'UX Designer', performance: 90, email: 'lisa@example.com' }
     ];
   };
 
@@ -63,7 +63,7 @@ const TeamLeadReports = () => {
     const teamData = getTeamData();
     const reportData = {
       employees: teamData,
-      department: user?.department || 'Engineering',
+      department: 'IT', // Team Lead is restricted to IT department only
       teamLead: user?.name || 'Team Lead',
       reportType: type,
       dateRange: 'Current Month'
@@ -76,7 +76,7 @@ const TeamLeadReports = () => {
 
     // Generate PDF using the Team Performance Rating template
     content = generatePDFContent(reportData);
-    filename = `${type.replace(/\s+/g, '_')}_Report_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
+    filename = `IT_${type.replace(/\s+/g, '_')}_Report_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
     mimeType = 'application/pdf';
 
     const success = downloadFile(content, filename, mimeType);
@@ -84,7 +84,7 @@ const TeamLeadReports = () => {
     if (success) {
       const newReport: Report = {
         id: Math.max(...reports.map(r => r.id)) + 1,
-        title: `${type} Report - ${new Date().toLocaleDateString()}`,
+        title: `IT Team ${type} Report - ${new Date().toLocaleDateString()}`,
         type,
         createdBy: 'Current User',
         createdAt: new Date(),
@@ -94,11 +94,11 @@ const TeamLeadReports = () => {
       const updatedReports = [newReport, ...reports];
       setReports(updatedReports);
       
-      console.log('New report generated:', newReport);
+      console.log('New IT team report generated:', newReport);
       console.log('Updated reports list (most recent first):', updatedReports);
       
-      toast.success(`${type} report generated and downloaded successfully`, {
-        description: 'Using Team Performance Rating template'
+      toast.success(`IT Team ${type} report generated and downloaded successfully`, {
+        description: 'Report contains only your team members from IT department'
       });
     } else {
       toast.error('Failed to generate report', {
@@ -133,20 +133,22 @@ const TeamLeadReports = () => {
     const teamData = getTeamData();
     const reportData = {
       employees: teamData,
-      department: user?.department || 'Engineering',
+      department: 'IT', // Team Lead is restricted to IT department only
       teamLead: user?.name || 'Team Lead',
       reportType: report.type,
       dateRange: 'Current Month'
     };
 
     const content = generatePDFContent(reportData);
-    const filename = `${report.title.replace(/\s+/g, '_')}_${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${new Date().getDate().toString().padStart(2, '0')}.pdf`;
+    const filename = `IT_Team_${report.title.replace(/\s+/g, '_')}_${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${new Date().getDate().toString().padStart(2, '0')}.pdf`;
     const mimeType = 'application/pdf';
 
     const success = downloadFile(content, filename, mimeType);
     
     if (success) {
-      toast.success('Report downloaded successfully');
+      toast.success('IT Team report downloaded successfully', {
+        description: 'Report contains only your team members'
+      });
     } else {
       toast.error('Download failed', {
         description: 'There was an error downloading the report. Please try again.'
@@ -160,16 +162,19 @@ const TeamLeadReports = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Reports Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">IT Team Reports Dashboard</h1>
+          <p className="text-gray-600">Generate and manage reports for your IT team members only</p>
+        </div>
         <div className="flex gap-2">
           <Button onClick={() => generateNewReport('Performance')}>
-            Generate Performance Report
+            Generate IT Team Performance Report
           </Button>
           <Button variant="outline" onClick={() => generateNewReport('Team Overview')}>
-            Team Overview Report
+            IT Team Overview Report
           </Button>
           <Button variant="outline" onClick={() => generateNewReport('Client Summary')}>
-            Client Report
+            IT Client Report
           </Button>
         </div>
       </div>
@@ -177,7 +182,7 @@ const TeamLeadReports = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-semibold">Total Reports</h3>
+            <h3 className="font-semibold">Total IT Team Reports</h3>
             <div className="text-3xl font-bold mt-2">{reports.length}</div>
           </CardContent>
         </Card>
@@ -195,9 +200,9 @@ const TeamLeadReports = () => {
         
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-semibold">Locked Reports</h3>
+            <h3 className="font-semibold">IT Team Members</h3>
             <div className="text-3xl font-bold mt-2">
-              {reports.filter(r => r.status === 'Locked').length}
+              {getTeamData().length}
             </div>
           </CardContent>
         </Card>
@@ -207,14 +212,14 @@ const TeamLeadReports = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Recent Reports
+            Recent IT Team Reports
             <span className="text-sm font-normal text-gray-500">({sortedReports.length} total)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {sortedReports.length === 0 ? (
-              <p className="text-center py-8 text-gray-500">No reports generated yet</p>
+              <p className="text-center py-8 text-gray-500">No IT team reports generated yet</p>
             ) : (
               sortedReports.map(report => (
                 <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
@@ -231,6 +236,8 @@ const TeamLeadReports = () => {
                         <span>by {report.createdBy}</span>
                         <span>•</span>
                         <span>ID: {report.id}</span>
+                        <span>•</span>
+                        <span className="text-blue-600 font-medium">IT Team Only</span>
                       </div>
                     </div>
                   </div>
@@ -241,6 +248,9 @@ const TeamLeadReports = () => {
                     </Badge>
                     <Badge variant="outline">
                       {report.type}
+                    </Badge>
+                    <Badge variant="secondary">
+                      IT Team
                     </Badge>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm">
