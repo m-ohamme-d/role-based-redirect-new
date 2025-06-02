@@ -46,6 +46,7 @@ import AdminDepartments from "./pages/admin/Departments";
 import AdminRecords from "./pages/admin/Records";
 import AdminAuditLog from "./pages/admin/AuditLog";
 import AdminSettings from "./pages/admin/Settings";
+import AdminProfile from "./pages/admin/Profile";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ const App = () => (
             <Route path="records" element={<AdminRecords />} />
             <Route path="audit-log" element={<AdminAuditLog />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="profile" element={<AdminProfile />} />
             {/* Common Pages */}
             <Route path="notifications" element={<Notifications />} />
             <Route path="reports" element={<Reports />} />

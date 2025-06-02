@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell } from "lucide-react";
+import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell, UserPlus } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Mock data for charts
 const employeeOverviewData = [
@@ -84,6 +85,8 @@ const ManagerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
+  const [showAssignProjectDialog, setShowAssignProjectDialog] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
 
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
@@ -104,6 +107,25 @@ const ManagerDashboard = () => {
       );
       setSelectedClient({ ...selectedClient, projects: updatedProjects });
       toast.success('Project status updated');
+    }
+  };
+
+  const handleAssignProject = (project: any) => {
+    setSelectedProject(project);
+    setShowAssignProjectDialog(true);
+  };
+
+  const assignProjectToDepartment = (departmentName: string) => {
+    if (selectedProject && selectedClient) {
+      const updatedProjects = selectedClient.projects.map((project: any) => 
+        project.id === selectedProject.id 
+          ? { ...project, department: departmentName }
+          : project
+      );
+      setSelectedClient({ ...selectedClient, projects: updatedProjects });
+      setShowAssignProjectDialog(false);
+      setSelectedProject(null);
+      toast.success(`Project "${selectedProject.name}" assigned to ${departmentName} department`);
     }
   };
 
@@ -271,26 +293,86 @@ const ManagerDashboard = () => {
               <Card key={project.id}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold">{project.name}</h3>
-                      <Badge 
-                        variant={project.status === 'working' ? 'default' : 'destructive'}
-                        className={`mt-2 ${project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
-                      >
-                        {project.status === 'working' ? 'Working' : 'Stopped'}
-                      </Badge>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge 
+                          variant={project.status === 'working' ? 'default' : 'destructive'}
+                          className={`${project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
+                        >
+                          {project.status === 'working' ? 'Working' : 'Stopped'}
+                        </Badge>
+                        {project.department && (
+                          <Badge variant="outline">
+                            {project.department}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => toggleProjectStatus(project.id)}
-                    >
-                      Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toggleProjectStatus(project.id)}
+                      >
+                        Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleAssignProject(project)}
+                        className="flex items-center gap-2"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        Assign Dept
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Project Dialog */}
+      <Dialog open={showAssignProjectDialog} onOpenChange={setShowAssignProjectDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Assign Project to Department</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedProject && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold">{selectedProject.name}</h3>
+                <p className="text-sm text-gray-600">
+                  Current: {selectedProject.department || 'Unassigned'}
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Department:</label>
+              <Select onValueChange={assignProjectToDepartment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAssignProjectDialog(false)}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
