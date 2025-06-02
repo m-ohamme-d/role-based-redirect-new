@@ -5,23 +5,103 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, FileText, Calendar, Users, TrendingUp, BarChart3 } from 'lucide-react';
+import { Download, FileText, Calendar, Users, TrendingUp, BarChart3, Lock } from 'lucide-react';
 import { generatePDFContent, generateExcelContent, downloadFile, prepareReportData } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
 
-// Mock team data for team lead's specific department
+// Mock team data for team lead's specific department - ENHANCED WITH MORE REALISTIC DATA
 const teamData = [
-  { id: 1, name: 'John Smith', position: 'Senior Developer', department: 'IT', performance: 92, email: 'john@company.com' },
-  { id: 2, name: 'Sarah Johnson', position: 'UI/UX Designer', department: 'IT', performance: 88, email: 'sarah@company.com' },
-  { id: 3, name: 'Mike Chen', position: 'Frontend Developer', department: 'IT', performance: 85, email: 'mike@company.com' },
-  { id: 4, name: 'Lisa Anderson', position: 'Backend Developer', department: 'IT', performance: 90, email: 'lisa@company.com' },
+  { 
+    id: 1, 
+    name: 'John Smith', 
+    position: 'Senior Developer', 
+    department: 'IT', 
+    performance: 92, 
+    email: 'john@company.com',
+    projects: ['Mobile App Development', 'API Integration'],
+    skills: ['React', 'Node.js', 'TypeScript'],
+    joinDate: '2022-01-15',
+    lastReview: '2024-11-01'
+  },
+  { 
+    id: 2, 
+    name: 'Sarah Johnson', 
+    position: 'UI/UX Designer', 
+    department: 'IT', 
+    performance: 88, 
+    email: 'sarah@company.com',
+    projects: ['Design System', 'User Research'],
+    skills: ['Figma', 'User Research', 'Prototyping'],
+    joinDate: '2022-03-10',
+    lastReview: '2024-10-28'
+  },
+  { 
+    id: 3, 
+    name: 'Mike Chen', 
+    position: 'Frontend Developer', 
+    department: 'IT', 
+    performance: 85, 
+    email: 'mike@company.com',
+    projects: ['Web Platform', 'Component Library'],
+    skills: ['Vue.js', 'CSS', 'JavaScript'],
+    joinDate: '2023-06-01',
+    lastReview: '2024-11-05'
+  },
+  { 
+    id: 4, 
+    name: 'Lisa Anderson', 
+    position: 'Backend Developer', 
+    department: 'IT', 
+    performance: 90, 
+    email: 'lisa@company.com',
+    projects: ['Database Optimization', 'Security Implementation'],
+    skills: ['Python', 'PostgreSQL', 'Docker'],
+    joinDate: '2021-09-20',
+    lastReview: '2024-10-30'
+  },
 ];
 
-// Mock projects data for the team lead's department
+// Mock projects data for the team lead's department - ENHANCED WITH MORE DETAILS
 const departmentProjects = [
-  { id: 1, name: 'Mobile App Development', status: 'working', assignedDepartment: 'IT', clientName: 'TechCorp Solutions' },
-  { id: 2, name: 'Web Platform Redesign', status: 'working', assignedDepartment: 'IT', clientName: 'TechCorp Solutions' },
-  { id: 3, name: 'Patient Management System', status: 'working', assignedDepartment: 'IT', clientName: 'HealthCare Inc' },
+  { 
+    id: 1, 
+    name: 'Mobile App Development', 
+    status: 'working', 
+    assignedDepartment: 'IT', 
+    clientName: 'TechCorp Solutions',
+    progress: 75,
+    startDate: '2024-08-01',
+    expectedCompletion: '2024-12-15',
+    teamMembers: ['John Smith', 'Mike Chen'],
+    budget: '$125,000',
+    priority: 'High'
+  },
+  { 
+    id: 2, 
+    name: 'Web Platform Redesign', 
+    status: 'working', 
+    assignedDepartment: 'IT', 
+    clientName: 'TechCorp Solutions',
+    progress: 60,
+    startDate: '2024-09-15',
+    expectedCompletion: '2025-01-30',
+    teamMembers: ['Sarah Johnson', 'Mike Chen'],
+    budget: '$85,000',
+    priority: 'Medium'
+  },
+  { 
+    id: 3, 
+    name: 'Patient Management System', 
+    status: 'working', 
+    assignedDepartment: 'IT', 
+    clientName: 'HealthCare Inc',
+    progress: 45,
+    startDate: '2024-10-01',
+    expectedCompletion: '2025-03-15',
+    teamMembers: ['Lisa Anderson', 'John Smith'],
+    budget: '$200,000',
+    priority: 'High'
+  },
 ];
 
 const TeamLeadReports = () => {
@@ -43,52 +123,56 @@ const TeamLeadReports = () => {
   };
 
   const handleDownloadReport = (format: 'pdf' | 'csv') => {
+    // RESTRICTED ACCESS CHECK
+    if (!currentUser.name || currentUser.role !== 'teamlead') {
+      toast.error('Access denied: Only team leads can download reports');
+      return;
+    }
+
     let data;
     let filename;
     
-    // Prepare data based on report type and user role restrictions
+    // RESTRICTED TO OWN TEAM ONLY - Remove department overview option
     switch (reportType) {
       case 'team-performance':
         data = prepareReportData(teamData, 'teamlead', userDepartment);
         data.reportType = 'Team Performance Report';
-        filename = `team-performance-${selectedPeriod}`;
+        data.teamLead = currentUser.name;
+        data.department = userDepartment;
+        filename = `team-performance-${userDepartment}-${selectedPeriod}`;
         break;
       case 'project-status':
         data = prepareReportData(departmentProjects, 'teamlead', userDepartment);
         data.reportType = 'Project Status Report';
         data.projects = departmentProjects;
-        filename = `project-status-${selectedPeriod}`;
-        break;
-      case 'department-overview':
-        data = prepareReportData([...teamData, ...departmentProjects], 'teamlead', userDepartment);
-        data.reportType = 'Department Overview Report';
-        data.employees = teamData;
-        data.projects = departmentProjects;
-        filename = `department-overview-${selectedPeriod}`;
+        data.teamLead = currentUser.name;
+        data.department = userDepartment;
+        filename = `project-status-${userDepartment}-${selectedPeriod}`;
         break;
       default:
-        data = prepareReportData(teamData, 'teamlead', userDepartment);
-        data.reportType = 'General Report';
-        filename = `general-report-${selectedPeriod}`;
+        toast.error('Invalid report type selected');
+        return;
     }
 
     data.dateRange = getPeriodLabel(selectedPeriod);
-    data.teamLead = currentUser.name || 'Team Lead';
-    data.department = userDepartment;
+    data.restrictedAccess = true; // Flag for restricted access
+    data.generatedBy = `${currentUser.name} (Team Lead - ${userDepartment})`;
 
     try {
       if (format === 'pdf') {
         const content = generatePDFContent(data);
         const success = downloadFile(content, `${filename}.txt`, 'text/plain');
         if (success) {
-          console.log('PDF report generated:', {
+          console.log('RESTRICTED PDF report generated:', {
             reportType: data.reportType,
             department: userDepartment,
+            teamLead: currentUser.name,
             employeeCount: data.employees?.length || 0,
             projectCount: data.projects?.length || 0,
-            period: data.dateRange
+            period: data.dateRange,
+            restrictedAccess: true
           });
-          toast.success('PDF report downloaded successfully');
+          toast.success(`PDF report downloaded successfully (${userDepartment} team only)`);
         } else {
           toast.error('Failed to download PDF report');
         }
@@ -96,14 +180,16 @@ const TeamLeadReports = () => {
         const content = generateExcelContent(data);
         const success = downloadFile(content, `${filename}.csv`, 'text/csv');
         if (success) {
-          console.log('CSV report generated:', {
+          console.log('RESTRICTED CSV report generated:', {
             reportType: data.reportType,
             department: userDepartment,
+            teamLead: currentUser.name,
             employeeCount: data.employees?.length || 0,
             projectCount: data.projects?.length || 0,
-            period: data.dateRange
+            period: data.dateRange,
+            restrictedAccess: true
           });
-          toast.success('CSV report downloaded successfully');
+          toast.success(`CSV report downloaded successfully (${userDepartment} team only)`);
         } else {
           toast.error('Failed to download CSV report');
         }
@@ -137,7 +223,7 @@ const TeamLeadReports = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team Reports</h1>
           <p className="text-gray-600">Generate and download performance reports for your team</p>
-          <p className="text-sm text-gray-500">Department: {userDepartment}</p>
+          <p className="text-sm text-gray-500">Department: {userDepartment} | Access: Team Lead Only</p>
         </div>
       </div>
 
@@ -250,8 +336,11 @@ const TeamLeadReports = () => {
         <TabsContent value="download" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Generate Reports</CardTitle>
-              <CardDescription>Download detailed reports for your team's performance and projects</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-red-600" />
+                Generate Reports - Restricted Access
+              </CardTitle>
+              <CardDescription>Download detailed reports for your team only. You cannot access reports from other departments.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -262,9 +351,8 @@ const TeamLeadReports = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="team-performance">Team Performance</SelectItem>
-                      <SelectItem value="project-status">Project Status</SelectItem>
-                      <SelectItem value="department-overview">Department Overview</SelectItem>
+                      <SelectItem value="team-performance">My Team Performance</SelectItem>
+                      <SelectItem value="project-status">My Team Projects</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -302,11 +390,19 @@ const TeamLeadReports = () => {
                 </Button>
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Reports are restricted to your department ({userDepartment}) data only. 
-                  You can only download reports for your team members and assigned projects.
-                </p>
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Lock className="h-5 w-5 text-red-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-red-800 font-medium">Access Restrictions</p>
+                    <ul className="text-sm text-red-700 mt-1 space-y-1">
+                      <li>• Reports are restricted to your department ({userDepartment}) only</li>
+                      <li>• You cannot download reports for other teams or departments</li>
+                      <li>• All report downloads are logged and monitored</li>
+                      <li>• Contact your manager for cross-department reports</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

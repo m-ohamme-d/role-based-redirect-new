@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BarChart3, Plus, Edit2, Trash2, User, Eye } from "lucide-react";
+import { Users, BarChart3, Plus, Edit2, Trash2, User, Eye, Upload, Camera } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
@@ -86,11 +85,14 @@ const TeamLeadDashboard = () => {
     customDesignation: ''
   });
 
+  // New state for photo upload feedback
+  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
+
   // Filter to show only IT department for IT team lead
   const currentUserDepartment = 'IT';
   const filteredMembers = teamMembers
     .filter(member => member.department === currentUserDepartment)
-    .sort((a, b) => a.originalOrder - b.originalOrder); // Keep original order stable
+    .sort((a, b) => a.originalOrder - b.originalOrder);
 
   const handleAddMember = () => {
     if (newMember.name.trim() && newMember.designation.trim() && newMember.id.trim()) {
@@ -129,7 +131,13 @@ const TeamLeadDashboard = () => {
     toast.success('Team member removed successfully - updates synced to Manager and Admin dashboards');
   };
 
-  const handlePhotoUpload = (memberId: string, file: File) => {
+  // Enhanced photo upload with feedback
+  const handlePhotoUpload = async (memberId: string, file: File) => {
+    setUploadingPhoto(memberId);
+    
+    // Simulate upload delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     const updatedMembers = teamMembers.map(member => 
       member.id === memberId ? { ...member, photo: file } : member
     );
@@ -138,7 +146,51 @@ const TeamLeadDashboard = () => {
     console.log('Team member photo updated - syncing to Manager and Admin dashboards:', memberId);
     console.log('Updated team members list:', updatedMembers);
     
+    setUploadingPhoto(null);
     toast.success('Photo uploaded successfully - updates synced to Manager and Admin dashboards');
+  };
+
+  // READ-ONLY rating display for main dashboard
+  const getRatingStarsReadOnly = (rating: number) => {
+    const fullStars = Math.floor(rating / 20);
+    const hasHalfStar = (rating % 20) >= 10;
+    
+    return (
+      <div className="flex items-center gap-1">
+        {[0, 1, 2, 3, 4].map((starIndex) => (
+          <div key={starIndex} className="relative">
+            <span className="text-gray-300 text-lg">★</span>
+            {starIndex < fullStars && (
+              <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
+            )}
+            {starIndex === fullStars && hasHalfStar && (
+              <span 
+                className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
+                style={{ width: '50%' }}
+              >
+                ★
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const handleStarClick = (memberId: string, starIndex: number, event: React.MouseEvent) => {
+    event.preventDefault();
+    const clickCount = event.detail;
+    let newRating: number;
+    
+    if (clickCount === 2) {
+      // Double click - full star (20%, 40%, 60%, 80%, 100%)
+      newRating = (starIndex + 1) * 20;
+    } else {
+      // Single click - half star (10%, 30%, 50%, 70%, 90%)
+      newRating = (starIndex * 20) + 10;
+    }
+    
+    updateMemberRating(memberId, newRating);
   };
 
   const updateMemberRating = (memberId: string, newRating: number) => {
@@ -192,29 +244,6 @@ const TeamLeadDashboard = () => {
     setShowEditDialog(false);
     setSelectedMemberForEdit(null);
     toast.success('Member updated successfully - changes synced across all dashboards');
-  };
-
-  const handleStarClick = (memberId: string, starIndex: number, event: React.MouseEvent) => {
-    event.preventDefault();
-    const clickCount = event.detail;
-    let newRating: number;
-    
-    if (clickCount === 2) {
-      // Double click - full star (20%, 40%, 60%, 80%, 100%)
-      newRating = (starIndex + 1) * 20;
-    } else {
-      // Single click - half star (10%, 30%, 50%, 70%, 90%)
-      newRating = (starIndex * 20) + 10;
-    }
-    
-    updateMemberRating(memberId, newRating);
-  };
-
-  const getRatingStars = (rating: number) => {
-    const fullStars = Math.floor(rating / 20);
-    const hasHalfStar = (rating % 20) >= 10;
-    
-    return { fullStars, hasHalfStar };
   };
 
   const viewMemberPerformance = (member: any) => {
@@ -368,31 +397,54 @@ const TeamLeadDashboard = () => {
                 </thead>
                 <tbody>
                   {filteredMembers.map(member => {
-                    const { fullStars, hasHalfStar } = getRatingStars(member.rating);
+                    const { fullStars, hasHalfStar } = getRatingStarsReadOnly(member.rating);
                     
                     return (
                       <tr key={member.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4">
                           <div className="relative group">
-                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden">
-                              {member.photo ? (
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors">
+                              {uploadingPhoto === member.id ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                </div>
+                              ) : member.photo ? (
                                 <img 
                                   src={URL.createObjectURL(member.photo)} 
                                   alt={member.name}
                                   className="w-12 h-12 rounded-full object-cover"
                                 />
                               ) : (
-                                <User className="h-6 w-6 text-gray-500" />
+                                <div className="flex flex-col items-center justify-center">
+                                  <Camera className="h-4 w-4 text-gray-400" />
+                                  <span className="text-xs text-gray-400 mt-1">Upload</span>
+                                </div>
                               )}
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-full flex items-center justify-center">
+                                <Upload className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
                             </div>
                             <input
                               type="file"
                               accept="image/*"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file) handlePhotoUpload(member.id, file);
+                                if (file) {
+                                  // Validate file size (max 5MB)
+                                  if (file.size > 5 * 1024 * 1024) {
+                                    toast.error('Image must be smaller than 5MB');
+                                    return;
+                                  }
+                                  // Validate file type
+                                  if (!file.type.startsWith('image/')) {
+                                    toast.error('Please select a valid image file');
+                                    return;
+                                  }
+                                  handlePhotoUpload(member.id, file);
+                                }
                               }}
                               className="absolute inset-0 opacity-0 cursor-pointer"
+                              disabled={uploadingPhoto === member.id}
                             />
                           </div>
                         </td>
@@ -401,30 +453,9 @@ const TeamLeadDashboard = () => {
                         <td className="py-3 px-4">{member.designation}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <div className="flex gap-1">
-                              {[0, 1, 2, 3, 4].map((starIndex) => (
-                                <div
-                                  key={starIndex}
-                                  className="relative cursor-pointer select-none"
-                                  onClick={(e) => handleStarClick(member.id, starIndex, e)}
-                                  title="Single click for half star, double click for full star"
-                                >
-                                  <span className="text-gray-300 text-lg">★</span>
-                                  {starIndex < fullStars && (
-                                    <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
-                                  )}
-                                  {starIndex === fullStars && hasHalfStar && (
-                                    <span 
-                                      className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
-                                      style={{ width: '50%' }}
-                                    >
-                                      ★
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
+                            {getRatingStarsReadOnly(member.rating)}
                             <span className="text-sm text-gray-600 ml-2">{member.rating}%</span>
+                            <span className="text-xs text-gray-400">(Read-only)</span>
                           </div>
                         </td>
                         <td className="py-3 px-4">

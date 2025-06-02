@@ -54,10 +54,10 @@ const ManagerTeam = () => {
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [showUnifiedForm, setShowUnifiedForm] = useState(false);
   
-  // Unified form states
-  const [creationType, setCreationType] = useState<'department' | 'team'>('department');
+  // Unified form states - SIMPLIFIED TO SINGLE OPTION
   const [formData, setFormData] = useState({
     name: '',
+    type: 'department' as 'department' | 'team',
     manager: '',
     description: '',
     teamLead: '',
@@ -84,7 +84,7 @@ const ManagerTeam = () => {
 
   // Unified form submission
   const handleUnifiedFormSubmit = () => {
-    if (creationType === 'department') {
+    if (formData.type === 'department') {
       if (!formData.name.trim() || !formData.manager.trim()) {
         toast.error('Please fill in all required fields');
         return;
@@ -122,6 +122,7 @@ const ManagerTeam = () => {
     // Reset form
     setFormData({
       name: '',
+      type: 'department',
       manager: '',
       description: '',
       teamLead: '',
@@ -290,31 +291,38 @@ const ManagerTeam = () => {
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Create New
+                Create Department/Team
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[550px]">
               <DialogHeader>
-                <DialogTitle>Create New {creationType === 'department' ? 'Department' : 'Team'}</DialogTitle>
+                <DialogTitle>Create New Department or Team</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-2">
-                <div className="flex space-x-4">
-                  <Button 
-                    variant={creationType === 'department' ? 'default' : 'outline'}
-                    onClick={() => setCreationType('department')}
-                    className="flex-1"
+                <div>
+                  <label className="text-sm font-medium">What would you like to create?</label>
+                  <Select 
+                    value={formData.type} 
+                    onValueChange={(val: 'department' | 'team') => setFormData({...formData, type: val})}
                   >
-                    <Building className="h-4 w-4 mr-2" />
-                    Department
-                  </Button>
-                  <Button 
-                    variant={creationType === 'team' ? 'default' : 'outline'}
-                    onClick={() => setCreationType('team')}
-                    className="flex-1"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Team
-                  </Button>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="department">
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4" />
+                          Department
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="team">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Team
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="space-y-3">
@@ -323,11 +331,11 @@ const ManagerTeam = () => {
                     <Input
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      placeholder={creationType === 'department' ? "Department name" : "Team name"}
+                      placeholder={formData.type === 'department' ? "Department name" : "Team name"}
                     />
                   </div>
                   
-                  {creationType === 'department' ? (
+                  {formData.type === 'department' ? (
                     <>
                       <div>
                         <label className="text-sm font-medium">Department Manager</label>
@@ -435,7 +443,7 @@ const ManagerTeam = () => {
                     Cancel
                   </Button>
                   <Button onClick={handleUnifiedFormSubmit}>
-                    Create {creationType === 'department' ? 'Department' : 'Team'}
+                    Create {formData.type === 'department' ? 'Department' : 'Team'}
                   </Button>
                 </div>
               </div>
