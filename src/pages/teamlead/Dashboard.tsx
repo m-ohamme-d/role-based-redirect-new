@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BarChart3, Plus, Edit2, Trash2, User, Eye } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
@@ -42,7 +43,7 @@ const ratingCriteria = [
   'Leadership'
 ];
 
-// Mock designations data
+// Mock designations data - this would come from central admin/manager control
 const availableDesignations = [
   'Senior Developer',
   'Project Lead',
@@ -69,7 +70,7 @@ const TeamLeadDashboard = () => {
     id: '',
     name: '',
     designation: '',
-    rating: 75, // Default to average rating
+    rating: 0,
     notes: '',
     photo: null as File | null
   });
@@ -89,20 +90,17 @@ const TeamLeadDashboard = () => {
   const currentUserDepartment = 'IT';
   const filteredMembers = teamMembers
     .filter(member => member.department === currentUserDepartment)
-    .sort((a, b) => a.originalOrder - b.originalOrder); // Stable sort by original order
+    .sort((a, b) => a.originalOrder - b.originalOrder); // Keep original order stable
 
-  const handleAddMember = useCallback(() => {
-    if (newMember.name.trim() && newMember.designation.trim()) {
-      // Auto-generate ID if not provided
-      const autoId = newMember.id.trim() || `TL${String(teamMembers.length + 1).padStart(3, '0')}`;
+  const handleAddMember = () => {
+    if (newMember.name.trim() && newMember.designation.trim() && newMember.id.trim()) {
       const nextOrder = Math.max(...teamMembers.map(m => m.originalOrder || 0)) + 1;
-      
       const member = {
-        id: autoId,
+        id: newMember.id.trim(),
         name: newMember.name.trim(),
         designation: newMember.designation.trim(),
-        rating: newMember.rating || 75,
-        notes: newMember.notes || 'New team member',
+        rating: newMember.rating || 0,
+        notes: newMember.notes || '',
         photo: newMember.photo,
         department: currentUserDepartment,
         originalOrder: nextOrder
@@ -111,49 +109,51 @@ const TeamLeadDashboard = () => {
       const updatedMembers = [...teamMembers, member];
       setTeamMembers(updatedMembers);
       
+      // Sync logging for live updates
       console.log('Team member added - syncing to Manager and Admin dashboards:', member);
+      console.log('Updated team members list:', updatedMembers);
       
-      setNewMember({ id: '', name: '', designation: '', rating: 75, notes: '', photo: null });
+      setNewMember({ id: '', name: '', designation: '', rating: 0, notes: '', photo: null });
       setShowAddMember(false);
-      toast.success('Team member added successfully');
-    } else {
-      toast.error('Please fill in required fields (Name and Designation)');
+      toast.success('Team member added successfully - updates synced to Manager and Admin dashboards');
     }
-  }, [newMember, teamMembers, currentUserDepartment]);
+  };
 
-  const handleRemoveMember = useCallback((memberId: string) => {
+  const handleRemoveMember = (memberId: string) => {
     const updatedMembers = teamMembers.filter(m => m.id !== memberId);
     setTeamMembers(updatedMembers);
     
     console.log('Team member removed - syncing to Manager and Admin dashboards, member ID:', memberId);
+    console.log('Updated team members list:', updatedMembers);
     
-    toast.success('Team member removed successfully');
-  }, [teamMembers]);
+    toast.success('Team member removed successfully - updates synced to Manager and Admin dashboards');
+  };
 
-  const handlePhotoUpload = useCallback((memberId: string, file: File) => {
+  const handlePhotoUpload = (memberId: string, file: File) => {
     const updatedMembers = teamMembers.map(member => 
       member.id === memberId ? { ...member, photo: file } : member
     );
     setTeamMembers(updatedMembers);
     
     console.log('Team member photo updated - syncing to Manager and Admin dashboards:', memberId);
+    console.log('Updated team members list:', updatedMembers);
     
-    toast.success('Photo uploaded successfully');
-  }, [teamMembers]);
+    toast.success('Photo uploaded successfully - updates synced to Manager and Admin dashboards');
+  };
 
-  const updateMemberRating = useCallback((memberId: string, newRating: number) => {
-    const clampedRating = Math.min(100, Math.max(0, newRating));
+  const updateMemberRating = (memberId: string, newRating: number) => {
     const updatedMembers = teamMembers.map(member => 
-      member.id === memberId ? { ...member, rating: clampedRating } : member
+      member.id === memberId ? { ...member, rating: Math.min(100, Math.max(0, newRating)) } : member
     );
     setTeamMembers(updatedMembers);
     
-    console.log('Team member rating updated - syncing to Manager and Admin dashboards:', { memberId, newRating: clampedRating });
+    console.log('Team member rating updated - syncing to Manager and Admin dashboards:', { memberId, newRating });
+    console.log('Updated team members list:', updatedMembers);
     
-    toast.success('Rating updated successfully');
-  }, [teamMembers]);
+    toast.success('Rating updated successfully - updates synced to Manager and Admin dashboards');
+  };
 
-  const openEditDialog = useCallback((member: any) => {
+  const openEditDialog = (member: any) => {
     setSelectedMemberForEdit(member);
     setEditingData({
       id: member.id,
@@ -162,9 +162,9 @@ const TeamLeadDashboard = () => {
       customDesignation: ''
     });
     setShowEditDialog(true);
-  }, []);
+  };
 
-  const handleSaveEdit = useCallback(() => {
+  const handleSaveEdit = () => {
     if (!selectedMemberForEdit) return;
     
     const finalDesignation = editingData.customDesignation.trim() || editingData.designation;
@@ -187,17 +187,15 @@ const TeamLeadDashboard = () => {
       designation: finalDesignation,
       notes: editingData.notes
     });
+    console.log('Updated team members list:', updatedMembers);
     
     setShowEditDialog(false);
     setSelectedMemberForEdit(null);
-    toast.success('Member updated successfully');
-  }, [editingData, selectedMemberForEdit, teamMembers]);
+    toast.success('Member updated successfully - changes synced across all dashboards');
+  };
 
-  // Enhanced star rating for Team List section only
-  const handleTeamListStarClick = useCallback((memberId: string, starIndex: number, event: React.MouseEvent) => {
+  const handleStarClick = (memberId: string, starIndex: number, event: React.MouseEvent) => {
     event.preventDefault();
-    event.stopPropagation();
-    
     const clickCount = event.detail;
     let newRating: number;
     
@@ -210,77 +208,20 @@ const TeamLeadDashboard = () => {
     }
     
     updateMemberRating(memberId, newRating);
-  }, [updateMemberRating]);
+  };
 
-  const getRatingStars = useCallback((rating: number) => {
+  const getRatingStars = (rating: number) => {
     const fullStars = Math.floor(rating / 20);
     const hasHalfStar = (rating % 20) >= 10;
     
     return { fullStars, hasHalfStar };
-  }, []);
+  };
 
-  // Read-only star display for dashboard
-  const renderReadOnlyStars = useCallback((rating: number) => {
-    const { fullStars, hasHalfStar } = getRatingStars(rating);
-    
-    return (
-      <div className="flex gap-1">
-        {[0, 1, 2, 3, 4].map((starIndex) => (
-          <div key={starIndex} className="relative">
-            <span className="text-gray-300 text-lg">★</span>
-            {starIndex < fullStars && (
-              <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
-            )}
-            {starIndex === fullStars && hasHalfStar && (
-              <span 
-                className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
-                style={{ width: '50%' }}
-              >
-                ★
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  }, [getRatingStars]);
-
-  // Interactive star display for Team List section
-  const renderInteractiveStars = useCallback((rating: number, memberId: string) => {
-    const { fullStars, hasHalfStar } = getRatingStars(rating);
-    
-    return (
-      <div className="flex gap-1">
-        {[0, 1, 2, 3, 4].map((starIndex) => (
-          <div
-            key={starIndex}
-            className="relative cursor-pointer select-none transition-transform hover:scale-110"
-            onClick={(e) => handleTeamListStarClick(memberId, starIndex, e)}
-            title="Single click for half star, double click for full star"
-          >
-            <span className="text-gray-300 text-lg">★</span>
-            {starIndex < fullStars && (
-              <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
-            )}
-            {starIndex === fullStars && hasHalfStar && (
-              <span 
-                className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
-                style={{ width: '50%' }}
-              >
-                ★
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  }, [getRatingStars, handleTeamListStarClick]);
-
-  const viewMemberPerformance = useCallback((member: any) => {
+  const viewMemberPerformance = (member: any) => {
     setViewingMember(member);
     setShowPerformanceDialog(true);
     console.log('Viewing performance details for member:', member);
-  }, []);
+  };
 
   return (
     <div className="space-y-6">
@@ -335,239 +276,198 @@ const TeamLeadDashboard = () => {
         />
       </div>
 
-      {/* Main Dashboard Section - Read-only ratings */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Team Performance Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredMembers.map(member => (
-                <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      {member.photo ? (
-                        <img 
-                          src={URL.createObjectURL(member.photo)} 
-                          alt={member.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-5 w-5 text-gray-500" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{member.name}</h3>
-                      <p className="text-sm text-gray-600">{member.designation}</p>
-                    </div>
+      <div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Team List - {currentUserDepartment} Department</CardTitle>
+            <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Team Member</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="member-id">Member ID</Label>
+                    <Input
+                      id="member-id"
+                      value={newMember.id}
+                      onChange={(e) => setNewMember({...newMember, id: e.target.value})}
+                      placeholder="Member ID (e.g., TL006)"
+                    />
                   </div>
-                  <div className="flex items-center gap-4">
-                    {renderReadOnlyStars(member.rating)}
-                    <span className="text-sm font-medium">{member.rating}%</span>
+                  <div>
+                    <Label htmlFor="member-name">Member Name</Label>
+                    <Input
+                      id="member-name"
+                      value={newMember.name}
+                      onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                      placeholder="Member name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="member-designation">Designation</Label>
+                    <Input
+                      id="member-designation"
+                      value={newMember.designation}
+                      onChange={(e) => setNewMember({...newMember, designation: e.target.value})}
+                      placeholder="Enter custom designation"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="member-rating">Initial Rating (0-100)</Label>
+                    <Input
+                      id="member-rating"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={newMember.rating}
+                      onChange={(e) => setNewMember({...newMember, rating: parseInt(e.target.value) || 0})}
+                      placeholder="Initial rating"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="member-notes">Notes</Label>
+                    <Input
+                      id="member-notes"
+                      value={newMember.notes}
+                      onChange={(e) => setNewMember({...newMember, notes: e.target.value})}
+                      placeholder="Notes"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowAddMember(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddMember}>
+                      Add Member
+                    </Button>
                   </div>
                 </div>
-              ))}
+              </DialogContent>
+            </Dialog>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Photo</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">ID</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Name</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Designation</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Rating</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Notes</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMembers.map(member => {
+                    const { fullStars, hasHalfStar } = getRatingStars(member.rating);
+                    
+                    return (
+                      <tr key={member.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="relative group">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden">
+                              {member.photo ? (
+                                <img 
+                                  src={URL.createObjectURL(member.photo)} 
+                                  alt={member.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <User className="h-6 w-6 text-gray-500" />
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePhotoUpload(member.id, file);
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">{member.id}</td>
+                        <td className="py-3 px-4">{member.name}</td>
+                        <td className="py-3 px-4">{member.designation}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              {[0, 1, 2, 3, 4].map((starIndex) => (
+                                <div
+                                  key={starIndex}
+                                  className="relative cursor-pointer select-none"
+                                  onClick={(e) => handleStarClick(member.id, starIndex, e)}
+                                  title="Single click for half star, double click for full star"
+                                >
+                                  <span className="text-gray-300 text-lg">★</span>
+                                  {starIndex < fullStars && (
+                                    <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
+                                  )}
+                                  {starIndex === fullStars && hasHalfStar && (
+                                    <span 
+                                      className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
+                                      style={{ width: '50%' }}
+                                    >
+                                      ★
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-sm text-gray-600 ml-2">{member.rating}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm truncate max-w-[150px] block">{member.notes}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewMemberPerformance(member)}
+                              title="View Performance"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(member)}
+                              title="Edit Member"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="text-red-600 hover:text-red-700"
+                              title="Remove Member"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button 
-              onClick={() => setShowAddMember(true)} 
-              className="w-full flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Team Member
-            </Button>
-            <Button variant="outline" className="w-full">
-              Generate Report
-            </Button>
-            <Button variant="outline" className="w-full">
-              Schedule Meeting
-            </Button>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Team List Section - Interactive ratings */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Team List - {currentUserDepartment} Department</CardTitle>
-          <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Team Member</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="member-id">Member ID (Optional)</Label>
-                  <Input
-                    id="member-id"
-                    value={newMember.id}
-                    onChange={(e) => setNewMember({...newMember, id: e.target.value})}
-                    placeholder="Leave blank for auto-generation"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">If left blank, ID will be auto-generated</p>
-                </div>
-                <div>
-                  <Label htmlFor="member-name">Member Name *</Label>
-                  <Input
-                    id="member-name"
-                    value={newMember.name}
-                    onChange={(e) => setNewMember({...newMember, name: e.target.value})}
-                    placeholder="Enter member name"
-                    className={!newMember.name.trim() ? 'border-red-300' : ''}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="member-designation">Designation *</Label>
-                  <Select value={newMember.designation} onValueChange={(value) => setNewMember({...newMember, designation: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select designation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableDesignations.map(designation => (
-                        <SelectItem key={designation} value={designation}>
-                          {designation}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="member-rating">Initial Rating (0-100)</Label>
-                  <Input
-                    id="member-rating"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={newMember.rating}
-                    onChange={(e) => setNewMember({...newMember, rating: parseInt(e.target.value) || 75})}
-                    placeholder="Default: 75"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="member-notes">Notes (Optional)</Label>
-                  <Textarea
-                    id="member-notes"
-                    value={newMember.notes}
-                    onChange={(e) => setNewMember({...newMember, notes: e.target.value})}
-                    placeholder="Add any notes about the member"
-                    rows={3}
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowAddMember(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddMember}>
-                    Add Member
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Photo</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">ID</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Name</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Designation</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Interactive Rating</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Notes</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMembers.map(member => (
-                  <tr key={member.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div className="relative group">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden">
-                          {member.photo ? (
-                            <img 
-                              src={URL.createObjectURL(member.photo)} 
-                              alt={member.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                          ) : (
-                            <User className="h-6 w-6 text-gray-500" />
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handlePhotoUpload(member.id, file);
-                          }}
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                        />
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">{member.id}</td>
-                    <td className="py-3 px-4">{member.name}</td>
-                    <td className="py-3 px-4">{member.designation}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        {renderInteractiveStars(member.rating, member.id)}
-                        <span className="text-sm text-gray-600 ml-2">{member.rating}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-sm truncate max-w-[150px] block">{member.notes}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => viewMemberPerformance(member)}
-                          title="View Performance"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(member)}
-                          title="Edit Member"
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveMember(member.id)}
-                          className="text-red-600 hover:text-red-700"
-                          title="Remove Member"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Consolidated Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -692,10 +592,7 @@ const TeamLeadDashboard = () => {
               Team members are rated based on the following criteria:
             </p>
             <p className="text-xs text-gray-500 mb-4">
-              <strong>Team List Rating System:</strong> Single click = half star (10%, 30%, 50%, 70%, 90%), Double click = full star (20%, 40%, 60%, 80%, 100%)
-            </p>
-            <p className="text-xs text-gray-500 mb-4">
-              <strong>Main Dashboard:</strong> Read-only display of current ratings
+              Rating System: Single click = half star (10%, 30%, 50%, 70%, 90%), Double click = full star (20%, 40%, 60%, 80%, 100%)
             </p>
             {ratingCriteria.map((criteria, index) => (
               <div key={index} className="flex items-center gap-2">

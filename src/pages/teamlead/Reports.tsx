@@ -5,79 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, FileText, Calendar, Users, TrendingUp, BarChart3, Shield } from 'lucide-react';
+import { Download, FileText, Calendar, Users, TrendingUp, BarChart3 } from 'lucide-react';
 import { generatePDFContent, generateExcelContent, downloadFile, prepareReportData } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
 
-// Enhanced team data with proper structure for exports
+// Mock team data for team lead's specific department
 const teamData = [
-  { 
-    id: 'TL001', 
-    name: 'John Smith', 
-    position: 'Senior Developer', 
-    department: 'IT', 
-    performance: 92, 
-    rating: 92,
-    email: 'john@company.com' 
-  },
-  { 
-    id: 'TL002', 
-    name: 'Sarah Johnson', 
-    position: 'UI/UX Designer', 
-    department: 'IT', 
-    performance: 88, 
-    rating: 88,
-    email: 'sarah@company.com' 
-  },
-  { 
-    id: 'TL003', 
-    name: 'Mike Chen', 
-    position: 'Frontend Developer', 
-    department: 'IT', 
-    performance: 85, 
-    rating: 85,
-    email: 'mike@company.com' 
-  },
-  { 
-    id: 'TL004', 
-    name: 'Lisa Anderson', 
-    position: 'Backend Developer', 
-    department: 'IT', 
-    performance: 90, 
-    rating: 90,
-    email: 'lisa@company.com' 
-  },
+  { id: 1, name: 'John Smith', position: 'Senior Developer', department: 'IT', performance: 92, email: 'john@company.com' },
+  { id: 2, name: 'Sarah Johnson', position: 'UI/UX Designer', department: 'IT', performance: 88, email: 'sarah@company.com' },
+  { id: 3, name: 'Mike Chen', position: 'Frontend Developer', department: 'IT', performance: 85, email: 'mike@company.com' },
+  { id: 4, name: 'Lisa Anderson', position: 'Backend Developer', department: 'IT', performance: 90, email: 'lisa@company.com' },
 ];
 
-// Enhanced projects data
+// Mock projects data for the team lead's department
 const departmentProjects = [
-  { 
-    id: 1, 
-    name: 'Mobile App Development', 
-    status: 'working', 
-    assignedDepartment: 'IT', 
-    clientName: 'TechCorp Solutions',
-    progress: 75,
-    deadline: '2024-03-15'
-  },
-  { 
-    id: 2, 
-    name: 'Web Platform Redesign', 
-    status: 'working', 
-    assignedDepartment: 'IT', 
-    clientName: 'TechCorp Solutions',
-    progress: 60,
-    deadline: '2024-04-01'
-  },
-  { 
-    id: 3, 
-    name: 'Patient Management System', 
-    status: 'working', 
-    assignedDepartment: 'IT', 
-    clientName: 'HealthCare Inc',
-    progress: 85,
-    deadline: '2024-02-28'
-  },
+  { id: 1, name: 'Mobile App Development', status: 'working', assignedDepartment: 'IT', clientName: 'TechCorp Solutions' },
+  { id: 2, name: 'Web Platform Redesign', status: 'working', assignedDepartment: 'IT', clientName: 'TechCorp Solutions' },
+  { id: 3, name: 'Patient Management System', status: 'working', assignedDepartment: 'IT', clientName: 'HealthCare Inc' },
 ];
 
 const TeamLeadReports = () => {
@@ -85,10 +29,8 @@ const TeamLeadReports = () => {
   const [reportType, setReportType] = useState('team-performance');
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Team lead role and department restrictions
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{"role": "teamlead", "department": "IT"}');
-  const userDepartment = 'IT'; // Restricted to IT department for team lead
-  const userRole = 'teamlead';
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userDepartment = 'IT'; // This would come from user session/context
 
   const getPeriodLabel = (period: string) => {
     switch (period) {
@@ -100,162 +42,90 @@ const TeamLeadReports = () => {
     }
   };
 
-  const validateAccess = () => {
-    // Team leads can only access their own department data
-    if (userRole !== 'teamlead') {
-      toast.error('Access denied: Insufficient permissions');
-      return false;
-    }
-    return true;
-  };
-
   const handleDownloadReport = (format: 'pdf' | 'csv') => {
-    if (!validateAccess()) {
-      return;
+    let data;
+    let filename;
+    
+    // Prepare data based on report type and user role restrictions
+    switch (reportType) {
+      case 'team-performance':
+        data = prepareReportData(teamData, 'teamlead', userDepartment);
+        data.reportType = 'Team Performance Report';
+        filename = `team-performance-${selectedPeriod}`;
+        break;
+      case 'project-status':
+        data = prepareReportData(departmentProjects, 'teamlead', userDepartment);
+        data.reportType = 'Project Status Report';
+        data.projects = departmentProjects;
+        filename = `project-status-${selectedPeriod}`;
+        break;
+      case 'department-overview':
+        data = prepareReportData([...teamData, ...departmentProjects], 'teamlead', userDepartment);
+        data.reportType = 'Department Overview Report';
+        data.employees = teamData;
+        data.projects = departmentProjects;
+        filename = `department-overview-${selectedPeriod}`;
+        break;
+      default:
+        data = prepareReportData(teamData, 'teamlead', userDepartment);
+        data.reportType = 'General Report';
+        filename = `general-report-${selectedPeriod}`;
     }
+
+    data.dateRange = getPeriodLabel(selectedPeriod);
+    data.teamLead = currentUser.name || 'Team Lead';
+    data.department = userDepartment;
 
     try {
-      let data;
-      let filename;
-      
-      // Filter data to only include team lead's department
-      const filteredTeamData = teamData.filter(member => member.department === userDepartment);
-      const filteredProjectData = departmentProjects.filter(project => project.assignedDepartment === userDepartment);
-      
-      console.log('Generating report for team lead:', {
-        userRole,
-        userDepartment,
-        teamMemberCount: filteredTeamData.length,
-        projectCount: filteredProjectData.length
-      });
-
-      // Prepare data based on report type with proper structure
-      switch (reportType) {
-        case 'team-performance':
-          data = {
-            employees: filteredTeamData,
-            reportType: 'Team Performance Report',
-            dateRange: getPeriodLabel(selectedPeriod),
-            teamLead: currentUser.name || 'Team Lead',
-            department: userDepartment,
-            userRole: userRole
-          };
-          filename = `team-performance-${userDepartment}-${selectedPeriod}`;
-          break;
-        case 'project-status':
-          data = {
-            projects: filteredProjectData,
-            reportType: 'Project Status Report',
-            dateRange: getPeriodLabel(selectedPeriod),
-            teamLead: currentUser.name || 'Team Lead',
-            department: userDepartment,
-            userRole: userRole
-          };
-          filename = `project-status-${userDepartment}-${selectedPeriod}`;
-          break;
-        case 'department-overview':
-          data = {
-            employees: filteredTeamData,
-            projects: filteredProjectData,
-            reportType: 'Department Overview Report',
-            dateRange: getPeriodLabel(selectedPeriod),
-            teamLead: currentUser.name || 'Team Lead',
-            department: userDepartment,
-            userRole: userRole
-          };
-          filename = `department-overview-${userDepartment}-${selectedPeriod}`;
-          break;
-        default:
-          data = {
-            employees: filteredTeamData,
-            reportType: 'General Report',
-            dateRange: getPeriodLabel(selectedPeriod),
-            teamLead: currentUser.name || 'Team Lead',
-            department: userDepartment,
-            userRole: userRole
-          };
-          filename = `general-report-${userDepartment}-${selectedPeriod}`;
-      }
-
-      // Validate data exists
-      if (!data.employees?.length && !data.projects?.length) {
-        toast.error('No data available for export');
-        console.error('No data available for report generation');
-        return;
-      }
-
-      const timestamp = new Date().toISOString().split('T')[0];
-      filename = `${filename}-${timestamp}`;
-
       if (format === 'pdf') {
         const content = generatePDFContent(data);
-        if (!content || content.trim().length === 0) {
-          throw new Error('Generated PDF content is empty');
-        }
         const success = downloadFile(content, `${filename}.txt`, 'text/plain');
         if (success) {
-          console.log('PDF report generated successfully:', {
+          console.log('PDF report generated:', {
             reportType: data.reportType,
             department: userDepartment,
             employeeCount: data.employees?.length || 0,
             projectCount: data.projects?.length || 0,
-            period: data.dateRange,
-            contentLength: content.length
+            period: data.dateRange
           });
           toast.success('PDF report downloaded successfully');
         } else {
-          throw new Error('Failed to download PDF file');
+          toast.error('Failed to download PDF report');
         }
       } else {
         const content = generateExcelContent(data);
-        if (!content || content.trim().length === 0) {
-          throw new Error('Generated CSV content is empty');
-        }
         const success = downloadFile(content, `${filename}.csv`, 'text/csv');
         if (success) {
-          console.log('CSV report generated successfully:', {
+          console.log('CSV report generated:', {
             reportType: data.reportType,
             department: userDepartment,
             employeeCount: data.employees?.length || 0,
             projectCount: data.projects?.length || 0,
-            period: data.dateRange,
-            contentLength: content.length
+            period: data.dateRange
           });
           toast.success('CSV report downloaded successfully');
         } else {
-          throw new Error('Failed to download CSV file');
+          toast.error('Failed to download CSV report');
         }
       }
     } catch (error) {
       console.error('Report generation failed:', error);
-      toast.error(`Failed to generate report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error('Failed to generate report');
     }
   };
 
   const getTeamStats = () => {
-    // Only calculate stats for team lead's department
-    const departmentTeam = teamData.filter(member => member.department === userDepartment);
-    
-    if (departmentTeam.length === 0) {
-      return {
-        avgPerformance: '0.0',
-        topPerformer: 'No team members',
-        activeProjects: 0,
-        totalMembers: 0
-      };
-    }
-
-    const avgPerformance = departmentTeam.reduce((sum, member) => sum + member.performance, 0) / departmentTeam.length;
-    const topPerformer = departmentTeam.reduce((top, member) => 
+    const avgPerformance = teamData.reduce((sum, member) => sum + member.performance, 0) / teamData.length;
+    const topPerformer = teamData.reduce((top, member) => 
       member.performance > top.performance ? member : top
     );
-    const activeProjects = departmentProjects.filter(p => p.status === 'working' && p.assignedDepartment === userDepartment).length;
+    const activeProjects = departmentProjects.filter(p => p.status === 'working').length;
 
     return {
       avgPerformance: avgPerformance.toFixed(1),
       topPerformer: topPerformer.name,
       activeProjects,
-      totalMembers: departmentTeam.length
+      totalMembers: teamData.length
     };
   };
 
@@ -267,10 +137,7 @@ const TeamLeadReports = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team Reports</h1>
           <p className="text-gray-600">Generate and download performance reports for your team</p>
-          <div className="flex items-center gap-2 mt-2">
-            <Shield className="h-4 w-4 text-blue-600" />
-            <p className="text-sm text-blue-600">Department: {userDepartment} | Role: Team Lead</p>
-          </div>
+          <p className="text-sm text-gray-500">Department: {userDepartment}</p>
         </div>
       </div>
 
@@ -331,11 +198,11 @@ const TeamLeadReports = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Team Performance</CardTitle>
-                <CardDescription>Current team member performance ratings - {userDepartment} Department</CardDescription>
+                <CardDescription>Current team member performance ratings</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {teamData.filter(member => member.department === userDepartment).map((member) => (
+                  {teamData.map((member) => (
                     <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-medium">{member.name}</p>
@@ -360,12 +227,11 @@ const TeamLeadReports = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {departmentProjects.filter(project => project.assignedDepartment === userDepartment).map((project) => (
+                  {departmentProjects.map((project) => (
                     <div key={project.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-medium">{project.name}</p>
                         <p className="text-sm text-gray-600">{project.clientName}</p>
-                        <p className="text-xs text-gray-500">Progress: {project.progress}%</p>
                       </div>
                       <Badge 
                         variant={project.status === 'working' ? 'default' : 'destructive'}
@@ -437,19 +303,10 @@ const TeamLeadReports = () => {
               </div>
 
               <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-blue-800 font-medium">Access Restrictions</p>
-                    <p className="text-sm text-blue-800">
-                      Reports are restricted to your department ({userDepartment}) data only. 
-                      You can only download reports for your team members and assigned projects.
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">
-                      Team members: {stats.totalMembers} | Active projects: {stats.activeProjects}
-                    </p>
-                  </div>
-                </div>
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Reports are restricted to your department ({userDepartment}) data only. 
+                  You can only download reports for your team members and assigned projects.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -459,50 +316,30 @@ const TeamLeadReports = () => {
           <Card>
             <CardHeader>
               <CardTitle>Performance Analytics</CardTitle>
-              <CardDescription>Detailed analytics for your team - {userDepartment} Department</CardDescription>
+              <CardDescription>Detailed analytics for your team</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-green-50 rounded-lg">
                   <h3 className="font-semibold text-green-800">High Performers</h3>
                   <p className="text-2xl font-bold text-green-600">
-                    {teamData.filter(m => m.department === userDepartment && m.performance >= 90).length}
+                    {teamData.filter(m => m.performance >= 90).length}
                   </p>
                   <p className="text-sm text-green-700">Members with 90%+ performance</p>
                 </div>
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <h3 className="font-semibold text-blue-800">Good Performers</h3>
                   <p className="text-2xl font-bold text-blue-600">
-                    {teamData.filter(m => m.department === userDepartment && m.performance >= 80 && m.performance < 90).length}
+                    {teamData.filter(m => m.performance >= 80 && m.performance < 90).length}
                   </p>
                   <p className="text-sm text-blue-700">Members with 80-89% performance</p>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-lg">
                   <h3 className="font-semibold text-orange-800">Needs Improvement</h3>
                   <p className="text-2xl font-bold text-orange-600">
-                    {teamData.filter(m => m.department === userDepartment && m.performance < 80).length}
+                    {teamData.filter(m => m.performance < 80).length}
                   </p>
                   <p className="text-sm text-orange-700">Members below 80% performance</p>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-2">Project Progress Summary</h3>
-                <div className="space-y-2">
-                  {departmentProjects.filter(p => p.assignedDepartment === userDepartment).map((project) => (
-                    <div key={project.id} className="flex items-center justify-between">
-                      <span className="text-sm">{project.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs w-8">{project.progress}%</span>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </CardContent>
