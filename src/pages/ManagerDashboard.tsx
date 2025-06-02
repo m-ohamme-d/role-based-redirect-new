@@ -1,15 +1,24 @@
-
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Users, BarChart3, Settings, Calendar, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { LogOut, Users, BarChart3, Settings, Calendar, Eye, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useDepartments } from '@/hooks/useDepartments';
+import { toast } from 'sonner';
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const { departments } = useDepartments();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newDepartmentTeam, setNewDepartmentTeam] = useState({
+    name: '',
+    description: '',
+    teamLead: ''
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -30,6 +39,26 @@ const ManagerDashboard = () => {
     navigate('/manager/clients');
   };
 
+  const handleCreateDepartmentTeam = () => {
+    if (!newDepartmentTeam.name.trim()) {
+      toast.error('Department/Team name is required');
+      return;
+    }
+
+    console.log('Creating new department/team:', newDepartmentTeam);
+    
+    // Simulate creating department/team
+    toast.success(`Department/Team "${newDepartmentTeam.name}" created successfully`);
+    
+    // Reset form
+    setNewDepartmentTeam({
+      name: '',
+      description: '',
+      teamLead: ''
+    });
+    setShowCreateDialog(false);
+  };
+
   if (!user) return null;
 
   return (
@@ -41,14 +70,66 @@ const ManagerDashboard = () => {
             <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
             <p className="text-sm text-gray-500">Managing {departments.length} departments</p>
           </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Department/Team
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Department/Team</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="dept-name">Department/Team Name *</Label>
+                    <Input
+                      id="dept-name"
+                      value={newDepartmentTeam.name}
+                      onChange={(e) => setNewDepartmentTeam({...newDepartmentTeam, name: e.target.value})}
+                      placeholder="Enter department or team name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dept-description">Description</Label>
+                    <Input
+                      id="dept-description"
+                      value={newDepartmentTeam.description}
+                      onChange={(e) => setNewDepartmentTeam({...newDepartmentTeam, description: e.target.value})}
+                      placeholder="Enter description (optional)"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="team-lead">Team Lead</Label>
+                    <Input
+                      id="team-lead"
+                      value={newDepartmentTeam.teamLead}
+                      onChange={(e) => setNewDepartmentTeam({...newDepartmentTeam, teamLead: e.target.value})}
+                      placeholder="Assign team lead (optional)"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateDepartmentTeam}>
+                      Create Department/Team
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

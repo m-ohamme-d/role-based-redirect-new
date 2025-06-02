@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,9 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Building2, Tag, FolderOpen } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building2, Tag, FolderOpen, X } from 'lucide-react';
+import { useDepartments } from '@/hooks/useDepartments';
 
-// Mock clients data
+// Mock clients data with enhanced structure
 const mockClients = [
   {
     id: 1,
@@ -19,10 +19,10 @@ const mockClients = [
     company: 'TechCorp Inc.',
     status: 'active',
     departments: ['IT', 'Marketing'],
-    tags: ['Enterprise', 'Technology'],
+    tags: ['Enterprise', 'Technology', 'Priority'],
     projects: [
-      { id: 1, name: 'Mobile App Development', status: 'active' },
-      { id: 2, name: 'Web Platform Redesign', status: 'active' }
+      { id: 1, name: 'Mobile App Development', status: 'active', assignedDepartment: 'IT' },
+      { id: 2, name: 'Web Platform Redesign', status: 'active', assignedDepartment: 'IT' }
     ],
     contactEmail: 'contact@techcorp.com',
     contactPhone: '+1 (555) 123-4567'
@@ -35,7 +35,7 @@ const mockClients = [
     departments: ['IT'],
     tags: ['Healthcare', 'Compliance'],
     projects: [
-      { id: 3, name: 'Patient Management System', status: 'active' }
+      { id: 3, name: 'Patient Management System', status: 'active', assignedDepartment: 'IT' }
     ],
     contactEmail: 'info@healthcare.com',
     contactPhone: '+1 (555) 987-6543'
@@ -48,16 +48,15 @@ const mockClients = [
     departments: ['Sales', 'Marketing'],
     tags: ['Retail', 'E-commerce'],
     projects: [
-      { id: 4, name: 'E-commerce Platform', status: 'stopped' }
+      { id: 4, name: 'E-commerce Platform', status: 'stopped', assignedDepartment: 'Sales' }
     ],
     contactEmail: 'support@retailmasters.com',
     contactPhone: '+1 (555) 456-7890'
   }
 ];
 
-const departments = ['IT', 'HR', 'Sales', 'Marketing', 'Finance'];
-
 const ManagerClients = () => {
+  const { departments } = useDepartments();
   const [clients, setClients] = useState(mockClients);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -74,7 +73,11 @@ const ManagerClients = () => {
     contactPhone: '',
     projects: []
   });
-  const [newProject, setNewProject] = useState({ name: '', status: 'active' });
+  const [newProject, setNewProject] = useState({ 
+    name: '', 
+    status: 'active', 
+    assignedDepartment: '' 
+  });
   const [newTag, setNewTag] = useState('');
 
   const filteredClients = clients.filter(client => {
@@ -105,7 +108,6 @@ const ManagerClients = () => {
     setShowCreateDialog(false);
     
     console.log('Client created successfully:', client);
-    console.log('Updated clients list:', updatedClients);
     toast.success('Client created successfully');
   };
 
@@ -121,7 +123,6 @@ const ManagerClients = () => {
     setSelectedClient(null);
     
     console.log('Client updated successfully:', selectedClient);
-    console.log('Updated clients list:', updatedClients);
     toast.success('Client updated successfully');
   };
 
@@ -162,12 +163,41 @@ const ManagerClients = () => {
     
     setClients(updatedClients);
     setSelectedClient(updatedClient);
-    setNewProject({ name: '', status: 'active' });
-    toast.success('Project added successfully');
+    setNewProject({ name: '', status: 'active', assignedDepartment: '' });
+    
+    if (project.assignedDepartment) {
+      toast.success(`Project added and assigned to ${project.assignedDepartment} department`);
+    } else {
+      toast.success('Project added successfully');
+    }
+  };
+
+  const assignProjectToDepartment = (projectId: number, department: string) => {
+    if (!selectedClient) return;
+
+    const updatedProjects = selectedClient.projects.map((project: any) => 
+      project.id === projectId 
+        ? { ...project, assignedDepartment: department }
+        : project
+    );
+
+    const updatedClient = { ...selectedClient, projects: updatedProjects };
+    const updatedClients = clients.map(client => 
+      client.id === selectedClient.id ? updatedClient : client
+    );
+    
+    setClients(updatedClients);
+    setSelectedClient(updatedClient);
+    toast.success(`Project assigned to ${department} department`);
   };
 
   const addTag = () => {
     if (!newTag || !newClient.tags) return;
+    
+    if (newClient.tags.includes(newTag)) {
+      toast.error('Tag already exists');
+      return;
+    }
     
     setNewClient({
       ...newClient,
@@ -181,6 +211,26 @@ const ManagerClients = () => {
       ...newClient,
       tags: newClient.tags.filter((_, index) => index !== tagIndex)
     });
+  };
+
+  const addTagToClient = (clientId: number, tag: string) => {
+    const updatedClients = clients.map(client => 
+      client.id === clientId 
+        ? { ...client, tags: [...client.tags, tag] }
+        : client
+    );
+    setClients(updatedClients);
+    toast.success('Tag added to client');
+  };
+
+  const removeTagFromClient = (clientId: number, tagToRemove: string) => {
+    const updatedClients = clients.map(client => 
+      client.id === clientId 
+        ? { ...client, tags: client.tags.filter(tag => tag !== tagToRemove) }
+        : client
+    );
+    setClients(updatedClients);
+    toast.success('Tag removed from client');
   };
 
   return (
@@ -271,7 +321,7 @@ const ManagerClients = () => {
                         departments: newClient.departments.filter((_, i) => i !== index)
                       })}
                     >
-                      {dept} ×
+                      {dept} <X className="h-3 w-3 ml-1" />
                     </Badge>
                   ))}
                 </div>
@@ -293,7 +343,7 @@ const ManagerClients = () => {
                     <Badge key={index} variant="outline" className="cursor-pointer"
                       onClick={() => removeTag(index)}
                     >
-                      {tag} ×
+                      {tag} <X className="h-3 w-3 ml-1" />
                     </Badge>
                   ))}
                 </div>
@@ -367,7 +417,7 @@ const ManagerClients = () => {
                       }}
                     >
                       <FolderOpen className="h-4 w-4" />
-                      View Projects
+                      Manage Projects
                     </Button>
                   </div>
 
@@ -376,9 +426,14 @@ const ManagerClients = () => {
                       <p className="text-sm font-medium text-gray-700 mb-1">Tags:</p>
                       <div className="flex flex-wrap gap-1">
                         {client.tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
+                          <Badge 
+                            key={index} 
+                            variant="secondary" 
+                            className="text-xs cursor-pointer hover:bg-red-100"
+                            onClick={() => removeTagFromClient(client.id, tag)}
+                          >
                             <Tag className="h-3 w-3 mr-1" />
-                            {tag}
+                            {tag} <X className="h-3 w-3 ml-1" />
                           </Badge>
                         ))}
                       </div>
@@ -411,7 +466,7 @@ const ManagerClients = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Edit Client Dialog */}
+      {/* Edit Client Dialog - keeping existing code structure but with enhanced tag management */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -527,50 +582,85 @@ const ManagerClients = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedClient?.name} - Projects
+              {selectedClient?.name} - Project Management
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Input
                 value={newProject.name}
                 onChange={(e) => setNewProject({...newProject, name: e.target.value})}
                 placeholder="Enter project name"
               />
-              <Button onClick={addProject}>Add Project</Button>
+              <Select 
+                value={newProject.assignedDepartment}
+                onValueChange={(value) => setNewProject({...newProject, assignedDepartment: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Assign to department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            <Button onClick={addProject} className="w-full">Add Project</Button>
             
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {selectedClient?.projects.map((project: any) => (
                 <Card key={project.id}>
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-medium">{project.name}</h3>
-                        <Badge 
-                          variant={project.status === 'active' ? 'default' : 'destructive'}
-                          className={project.status === 'active' ? 'bg-green-500' : 'bg-red-500'}
-                        >
-                          {project.status}
-                        </Badge>
+                        <div className="flex gap-2 mt-1">
+                          <Badge 
+                            variant={project.status === 'active' ? 'default' : 'destructive'}
+                            className={project.status === 'active' ? 'bg-green-500' : 'bg-red-500'}
+                          >
+                            {project.status}
+                          </Badge>
+                          {project.assignedDepartment && (
+                            <Badge variant="outline">
+                              {project.assignedDepartment}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const updatedProjects = selectedClient.projects.map((p: any) =>
-                            p.id === project.id 
-                              ? { ...p, status: p.status === 'active' ? 'stopped' : 'active' }
-                              : p
-                          );
-                          const updatedClient = { ...selectedClient, projects: updatedProjects };
-                          setClients(clients.map(c => c.id === selectedClient.id ? updatedClient : c));
-                          setSelectedClient(updatedClient);
-                          toast.success('Project status updated');
-                        }}
-                      >
-                        Toggle Status
-                      </Button>
+                      <div className="flex gap-2">
+                        <Select
+                          value={project.assignedDepartment || ''}
+                          onValueChange={(value) => assignProjectToDepartment(project.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Assign" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departments.map(dept => (
+                              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updatedProjects = selectedClient.projects.map((p: any) =>
+                              p.id === project.id 
+                                ? { ...p, status: p.status === 'active' ? 'stopped' : 'active' }
+                                : p
+                            );
+                            const updatedClient = { ...selectedClient, projects: updatedProjects };
+                            setClients(clients.map(c => c.id === selectedClient.id ? updatedClient : c));
+                            setSelectedClient(updatedClient);
+                            toast.success('Project status updated');
+                          }}
+                        >
+                          Toggle Status
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
