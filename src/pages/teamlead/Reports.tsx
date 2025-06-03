@@ -1,15 +1,14 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, FileText, Calendar, Users, TrendingUp, BarChart3, Lock } from 'lucide-react';
+import { Download, FileText, Calendar, Users, TrendingUp, BarChart3, Lock, Award, Clock, Target } from 'lucide-react';
 import { generatePDFContent, generateExcelContent, downloadFile, prepareReportData } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
 
-// Mock team data for team lead's specific department - ENHANCED WITH MORE REALISTIC DATA
+// Enhanced team data with more realistic and comprehensive information
 const teamData = [
   { 
     id: 1, 
@@ -18,10 +17,16 @@ const teamData = [
     department: 'IT', 
     performance: 92, 
     email: 'john@company.com',
-    projects: ['Mobile App Development', 'API Integration'],
-    skills: ['React', 'Node.js', 'TypeScript'],
+    projects: ['Mobile App Development', 'API Integration', 'Database Optimization'],
+    skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'],
     joinDate: '2022-01-15',
-    lastReview: '2024-11-01'
+    lastReview: '2024-11-01',
+    hoursWorked: 168,
+    tasksCompleted: 34,
+    clientSatisfaction: 4.8,
+    productivity: 95,
+    collaboration: 88,
+    timeliness: 92
   },
   { 
     id: 2, 
@@ -30,10 +35,16 @@ const teamData = [
     department: 'IT', 
     performance: 88, 
     email: 'sarah@company.com',
-    projects: ['Design System', 'User Research'],
-    skills: ['Figma', 'User Research', 'Prototyping'],
+    projects: ['Design System', 'User Research', 'Mobile App UI'],
+    skills: ['Figma', 'User Research', 'Prototyping', 'Adobe Creative Suite'],
     joinDate: '2022-03-10',
-    lastReview: '2024-10-28'
+    lastReview: '2024-10-28',
+    hoursWorked: 160,
+    tasksCompleted: 28,
+    clientSatisfaction: 4.6,
+    productivity: 86,
+    collaboration: 92,
+    timeliness: 85
   },
   { 
     id: 3, 
@@ -42,10 +53,16 @@ const teamData = [
     department: 'IT', 
     performance: 85, 
     email: 'mike@company.com',
-    projects: ['Web Platform', 'Component Library'],
-    skills: ['Vue.js', 'CSS', 'JavaScript'],
+    projects: ['Web Platform', 'Component Library', 'E-commerce Frontend'],
+    skills: ['Vue.js', 'CSS', 'JavaScript', 'Webpack'],
     joinDate: '2023-06-01',
-    lastReview: '2024-11-05'
+    lastReview: '2024-11-05',
+    hoursWorked: 164,
+    tasksCompleted: 31,
+    clientSatisfaction: 4.4,
+    productivity: 83,
+    collaboration: 87,
+    timeliness: 86
   },
   { 
     id: 4, 
@@ -54,14 +71,38 @@ const teamData = [
     department: 'IT', 
     performance: 90, 
     email: 'lisa@company.com',
-    projects: ['Database Optimization', 'Security Implementation'],
-    skills: ['Python', 'PostgreSQL', 'Docker'],
+    projects: ['Database Optimization', 'Security Implementation', 'API Development'],
+    skills: ['Python', 'PostgreSQL', 'Docker', 'AWS'],
     joinDate: '2021-09-20',
-    lastReview: '2024-10-30'
+    lastReview: '2024-10-30',
+    hoursWorked: 172,
+    tasksCompleted: 29,
+    clientSatisfaction: 4.7,
+    productivity: 91,
+    collaboration: 89,
+    timeliness: 90
   },
+  { 
+    id: 5, 
+    name: 'Emily Wilson', 
+    position: 'QA Engineer', 
+    department: 'IT', 
+    performance: 87, 
+    email: 'emily@company.com',
+    projects: ['Test Automation', 'Quality Assurance', 'Bug Tracking'],
+    skills: ['Selenium', 'Jest', 'Cypress', 'Manual Testing'],
+    joinDate: '2022-11-15',
+    lastReview: '2024-11-10',
+    hoursWorked: 156,
+    tasksCompleted: 42,
+    clientSatisfaction: 4.5,
+    productivity: 88,
+    collaboration: 85,
+    timeliness: 89
+  }
 ];
 
-// Mock projects data for the team lead's department - ENHANCED WITH MORE DETAILS
+// Enhanced projects data
 const departmentProjects = [
   { 
     id: 1, 
@@ -69,12 +110,15 @@ const departmentProjects = [
     status: 'working', 
     assignedDepartment: 'IT', 
     clientName: 'TechCorp Solutions',
-    progress: 75,
+    progress: 78,
     startDate: '2024-08-01',
     expectedCompletion: '2024-12-15',
-    teamMembers: ['John Smith', 'Mike Chen'],
+    teamMembers: ['John Smith', 'Mike Chen', 'Sarah Johnson'],
     budget: '$125,000',
-    priority: 'High'
+    priority: 'High',
+    hoursSpent: 450,
+    milestones: 8,
+    completedMilestones: 6
   },
   { 
     id: 2, 
@@ -82,12 +126,15 @@ const departmentProjects = [
     status: 'working', 
     assignedDepartment: 'IT', 
     clientName: 'TechCorp Solutions',
-    progress: 60,
+    progress: 65,
     startDate: '2024-09-15',
     expectedCompletion: '2025-01-30',
-    teamMembers: ['Sarah Johnson', 'Mike Chen'],
+    teamMembers: ['Sarah Johnson', 'Mike Chen', 'Emily Wilson'],
     budget: '$85,000',
-    priority: 'Medium'
+    priority: 'Medium',
+    hoursSpent: 320,
+    milestones: 6,
+    completedMilestones: 4
   },
   { 
     id: 3, 
@@ -95,13 +142,32 @@ const departmentProjects = [
     status: 'working', 
     assignedDepartment: 'IT', 
     clientName: 'HealthCare Inc',
-    progress: 45,
+    progress: 52,
     startDate: '2024-10-01',
     expectedCompletion: '2025-03-15',
-    teamMembers: ['Lisa Anderson', 'John Smith'],
+    teamMembers: ['Lisa Anderson', 'John Smith', 'Emily Wilson'],
     budget: '$200,000',
-    priority: 'High'
+    priority: 'High',
+    hoursSpent: 280,
+    milestones: 10,
+    completedMilestones: 5
   },
+  { 
+    id: 4, 
+    name: 'E-commerce Platform', 
+    status: 'working', 
+    assignedDepartment: 'IT', 
+    clientName: 'Retail Masters',
+    progress: 89,
+    startDate: '2024-07-01',
+    expectedCompletion: '2024-12-01',
+    teamMembers: ['Mike Chen', 'Lisa Anderson'],
+    budget: '$95,000',
+    priority: 'Medium',
+    hoursSpent: 520,
+    milestones: 7,
+    completedMilestones: 6
+  }
 ];
 
 const TeamLeadReports = () => {
@@ -110,7 +176,7 @@ const TeamLeadReports = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const userDepartment = 'IT'; // This would come from user session/context
+  const userDepartment = 'IT';
 
   const getPeriodLabel = (period: string) => {
     switch (period) {
@@ -123,7 +189,6 @@ const TeamLeadReports = () => {
   };
 
   const handleDownloadReport = (format: 'pdf' | 'csv') => {
-    // RESTRICTED ACCESS CHECK
     if (!currentUser.name || currentUser.role !== 'teamlead') {
       toast.error('Access denied: Only team leads can download reports');
       return;
@@ -132,7 +197,6 @@ const TeamLeadReports = () => {
     let data;
     let filename;
     
-    // RESTRICTED TO OWN TEAM ONLY - Remove department overview option
     switch (reportType) {
       case 'team-performance':
         data = prepareReportData(teamData, 'teamlead', userDepartment);
@@ -155,7 +219,7 @@ const TeamLeadReports = () => {
     }
 
     data.dateRange = getPeriodLabel(selectedPeriod);
-    data.restrictedAccess = true; // Flag for restricted access
+    data.restrictedAccess = true;
     data.generatedBy = `${currentUser.name} (Team Lead - ${userDepartment})`;
 
     try {
@@ -163,15 +227,6 @@ const TeamLeadReports = () => {
         const content = generatePDFContent(data);
         const success = downloadFile(content, `${filename}.txt`, 'text/plain');
         if (success) {
-          console.log('RESTRICTED PDF report generated:', {
-            reportType: data.reportType,
-            department: userDepartment,
-            teamLead: currentUser.name,
-            employeeCount: data.employees?.length || 0,
-            projectCount: data.projects?.length || 0,
-            period: data.dateRange,
-            restrictedAccess: true
-          });
           toast.success(`PDF report downloaded successfully (${userDepartment} team only)`);
         } else {
           toast.error('Failed to download PDF report');
@@ -180,15 +235,6 @@ const TeamLeadReports = () => {
         const content = generateExcelContent(data);
         const success = downloadFile(content, `${filename}.csv`, 'text/csv');
         if (success) {
-          console.log('RESTRICTED CSV report generated:', {
-            reportType: data.reportType,
-            department: userDepartment,
-            teamLead: currentUser.name,
-            employeeCount: data.employees?.length || 0,
-            projectCount: data.projects?.length || 0,
-            period: data.dateRange,
-            restrictedAccess: true
-          });
           toast.success(`CSV report downloaded successfully (${userDepartment} team only)`);
         } else {
           toast.error('Failed to download CSV report');
@@ -206,12 +252,18 @@ const TeamLeadReports = () => {
       member.performance > top.performance ? member : top
     );
     const activeProjects = departmentProjects.filter(p => p.status === 'working').length;
+    const totalHours = teamData.reduce((sum, member) => sum + member.hoursWorked, 0);
+    const totalTasks = teamData.reduce((sum, member) => sum + member.tasksCompleted, 0);
+    const avgClientSatisfaction = teamData.reduce((sum, member) => sum + member.clientSatisfaction, 0) / teamData.length;
 
     return {
       avgPerformance: avgPerformance.toFixed(1),
       topPerformer: topPerformer.name,
       activeProjects,
-      totalMembers: teamData.length
+      totalMembers: teamData.length,
+      totalHours,
+      totalTasks,
+      avgClientSatisfaction: avgClientSatisfaction.toFixed(1)
     };
   };
 
@@ -227,7 +279,7 @@ const TeamLeadReports = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Enhanced Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -264,9 +316,49 @@ const TeamLeadReports = () => {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div>
-              <p className="text-lg font-bold text-orange-600">{stats.topPerformer}</p>
-              <p className="text-sm text-gray-600">Top Performer</p>
+            <div className="flex items-center space-x-2">
+              <Award className="h-8 w-8 text-orange-600" />
+              <div>
+                <p className="text-lg font-bold text-orange-600">{stats.topPerformer}</p>
+                <p className="text-sm text-gray-600">Top Performer</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-6 w-6 text-indigo-600" />
+              <div>
+                <p className="text-xl font-bold">{stats.totalHours}</p>
+                <p className="text-sm text-gray-600">Total Hours This Month</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Target className="h-6 w-6 text-cyan-600" />
+              <div>
+                <p className="text-xl font-bold">{stats.totalTasks}</p>
+                <p className="text-sm text-gray-600">Tasks Completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Award className="h-6 w-6 text-yellow-600" />
+              <div>
+                <p className="text-xl font-bold">{stats.avgClientSatisfaction}/5</p>
+                <p className="text-sm text-gray-600">Client Satisfaction</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -284,22 +376,29 @@ const TeamLeadReports = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Team Performance</CardTitle>
-                <CardDescription>Current team member performance ratings</CardDescription>
+                <CardDescription>Current team member performance ratings with detailed metrics</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {teamData.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-sm text-gray-600">{member.position}</p>
+                    <div key={member.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-sm text-gray-600">{member.position}</p>
+                        </div>
+                        <Badge 
+                          variant={member.performance >= 90 ? 'default' : member.performance >= 80 ? 'secondary' : 'outline'}
+                          className={member.performance >= 90 ? 'bg-green-500' : member.performance >= 80 ? 'bg-blue-500' : ''}
+                        >
+                          {member.performance}%
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant={member.performance >= 90 ? 'default' : member.performance >= 80 ? 'secondary' : 'outline'}
-                        className={member.performance >= 90 ? 'bg-green-500' : member.performance >= 80 ? 'bg-blue-500' : ''}
-                      >
-                        {member.performance}%
-                      </Badge>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                        <div>Tasks: {member.tasksCompleted}</div>
+                        <div>Hours: {member.hoursWorked}</div>
+                        <div>Rating: {member.clientSatisfaction}/5</div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -309,22 +408,37 @@ const TeamLeadReports = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Department Projects</CardTitle>
-                <CardDescription>Projects assigned to {userDepartment} department</CardDescription>
+                <CardDescription>Projects assigned to {userDepartment} department with progress tracking</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {departmentProjects.map((project) => (
-                    <div key={project.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{project.name}</p>
-                        <p className="text-sm text-gray-600">{project.clientName}</p>
+                    <div key={project.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{project.name}</p>
+                          <p className="text-sm text-gray-600">{project.clientName}</p>
+                        </div>
+                        <Badge 
+                          variant={project.status === 'working' ? 'default' : 'destructive'}
+                          className={project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
+                        >
+                          {project.progress}%
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant={project.status === 'working' ? 'default' : 'destructive'}
-                        className={project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
-                      >
-                        {project.status}
-                      </Badge>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                        <div>Budget: {project.budget}</div>
+                        <div>Team: {project.teamMembers.length}</div>
+                        <div>Milestones: {project.completedMilestones}/{project.milestones}</div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                            style={{ width: `${project.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -1,8 +1,8 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamMember {
@@ -29,6 +29,11 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
 }) => {
   const [lockedMembers, setLockedMembers] = useState<Set<string>>(new Set());
 
+  // Sort members by overall rating but keep positions stable during rating
+  const sortedMembers = useMemo(() => {
+    return [...members].sort((a, b) => b.ratings.overall - a.ratings.overall);
+  }, [members]);
+
   const handleStarClick = (memberId: string, category: string, starIndex: number, event: React.MouseEvent) => {
     event.preventDefault();
     
@@ -41,10 +46,8 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
     let newRating: number;
     
     if (clickCount === 2) {
-      // Double click - full star (20%, 40%, 60%, 80%, 100%)
       newRating = (starIndex + 1) * 20;
     } else {
-      // Single click - half star (10%, 30%, 50%, 70%, 90%)
       newRating = (starIndex * 20) + 10;
     }
     
@@ -109,6 +112,14 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
     toast.success('Ratings saved and locked');
   };
 
+  const handleImageUpload = (memberId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      toast.success('Profile image uploaded successfully');
+      // In a real app, you'd upload the file and update the member's image
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -119,17 +130,32 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {members.map((member) => {
+          {sortedMembers.map((member) => {
             const isLocked = lockedMembers.has(member.id);
             
             return (
               <div key={member.id} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-blue-600">
-                        {member.name.split(' ').map(n => n[0]).join('')}
-                      </span>
+                    <div className="relative">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                        <span className="text-sm font-semibold text-blue-600">
+                          {member.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                      <label 
+                        htmlFor={`upload-${member.id}`}
+                        className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        <Upload className="h-3 w-3 text-gray-600" />
+                        <input
+                          id={`upload-${member.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(member.id, e)}
+                        />
+                      </label>
                     </div>
                     <div>
                       <h3 className="font-semibold">{member.name}</h3>
