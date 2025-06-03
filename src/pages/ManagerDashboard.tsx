@@ -1,3 +1,4 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +15,7 @@ const ManagerDashboard = () => {
   const [user, setUser] = useState<any>(null);
   const { departments } = useDepartments();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newDepartmentTeam, setNewDepartmentTeam] = useState({
+  const [newDepartment, setNewDepartment] = useState({
     name: '',
     description: '',
     teamLead: ''
@@ -39,19 +40,19 @@ const ManagerDashboard = () => {
     navigate('/manager/clients');
   };
 
-  const handleCreateDepartmentTeam = () => {
-    if (!newDepartmentTeam.name.trim()) {
-      toast.error('Department/Team name is required');
+  const handleCreateDepartment = () => {
+    if (!newDepartment.name.trim()) {
+      toast.error('Department name is required');
       return;
     }
 
-    console.log('Creating new department/team:', newDepartmentTeam);
+    console.log('Creating new department:', newDepartment);
     
-    // Simulate creating department/team
-    toast.success(`Department/Team "${newDepartmentTeam.name}" created successfully`);
+    // Simulate creating department
+    toast.success(`Department "${newDepartment.name}" created successfully`);
     
     // Reset form
-    setNewDepartmentTeam({
+    setNewDepartment({
       name: '',
       description: '',
       teamLead: ''
@@ -73,49 +74,49 @@ const ManagerDashboard = () => {
           <div className="flex gap-2">
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
+                <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4" />
-                  Create Department/Team
+                  Create Department
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create New Department/Team</DialogTitle>
+                  <DialogTitle>Create New Department</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="dept-name">Department/Team Name *</Label>
+                    <Label htmlFor="dept-name">Department Name *</Label>
                     <Input
                       id="dept-name"
-                      value={newDepartmentTeam.name}
-                      onChange={(e) => setNewDepartmentTeam({...newDepartmentTeam, name: e.target.value})}
-                      placeholder="Enter department or team name"
+                      value={newDepartment.name}
+                      onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})}
+                      placeholder="e.g., Marketing, Sales, IT"
                     />
                   </div>
                   <div>
                     <Label htmlFor="dept-description">Description</Label>
                     <Input
                       id="dept-description"
-                      value={newDepartmentTeam.description}
-                      onChange={(e) => setNewDepartmentTeam({...newDepartmentTeam, description: e.target.value})}
-                      placeholder="Enter description (optional)"
+                      value={newDepartment.description}
+                      onChange={(e) => setNewDepartment({...newDepartment, description: e.target.value})}
+                      placeholder="Brief description of department responsibilities"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="team-lead">Team Lead</Label>
+                    <Label htmlFor="team-lead">Assign Team Lead</Label>
                     <Input
                       id="team-lead"
-                      value={newDepartmentTeam.teamLead}
-                      onChange={(e) => setNewDepartmentTeam({...newDepartmentTeam, teamLead: e.target.value})}
-                      placeholder="Assign team lead (optional)"
+                      value={newDepartment.teamLead}
+                      onChange={(e) => setNewDepartment({...newDepartment, teamLead: e.target.value})}
+                      placeholder="Team lead name (optional)"
                     />
                   </div>
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateDepartmentTeam}>
-                      Create Department/Team
+                    <Button onClick={handleCreateDepartment} className="bg-blue-600 hover:bg-blue-700">
+                      Create Department
                     </Button>
                   </div>
                 </div>

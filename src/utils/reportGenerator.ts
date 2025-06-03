@@ -1,4 +1,3 @@
-
 interface Employee {
   id: number | string;
   name: string;
@@ -63,7 +62,7 @@ export const generatePDFContent = (data: ReportData) => {
     minute: '2-digit'
   });
 
-  let content = `PERFORMANCE REPORT
+  let content = `COMPREHENSIVE PERFORMANCE REPORT
 ${reportType.toUpperCase()}
 ${department ? `Department: ${department}` : ''}
 ${teamLead ? `Team Lead: ${teamLead}` : ''}
@@ -74,56 +73,109 @@ ${restrictedAccess ? 'ACCESS LEVEL: RESTRICTED TO DEPARTMENT ONLY' : ''}
 
 ========================================
 
+EXECUTIVE SUMMARY
+========================================
+Total Team Members: ${employees.length}
+Average Performance Score: ${employees.length > 0 ? (employees.reduce((sum, emp) => sum + (emp.performance || emp.rating || 0), 0) / employees.length).toFixed(1) : 0}%
+Department Focus: ${department || 'All Departments'}
+Report Coverage: Individual performance ratings, project assignments, skill assessments
+
 `;
 
-  // Employee Performance Section - ENHANCED WITH MORE DETAILS
+  // Enhanced Employee Performance Section with detailed metrics
   if (employees.length > 0) {
-    content += `TEAM PERFORMANCE RATING SUMMARY
+    content += `DETAILED TEAM PERFORMANCE ANALYSIS
 ========================================
 
 `;
     employees.forEach((employee, index) => {
       const rating = employee.performance || employee.rating || 0;
       const stars = '★'.repeat(Math.floor(rating / 20)) + '☆'.repeat(5 - Math.floor(rating / 20));
+      const performanceLevel = rating >= 90 ? 'EXCELLENT' : rating >= 80 ? 'GOOD' : rating >= 70 ? 'AVERAGE' : 'NEEDS IMPROVEMENT';
       
-      content += `${index + 1}. ${employee.name}
+      content += `${index + 1}. ${employee.name.toUpperCase()}
+   Employee ID: ${employee.id}
    Position: ${employee.position || 'Not specified'}
-   ${department ? `Department: ${department}` : `Department: ${employee.department || 'Not specified'}`}
-   Performance: ${rating}% ${stars}
+   Department: ${department || employee.department || 'Not specified'}
+   
+   PERFORMANCE METRICS:
+   Overall Score: ${rating}% ${stars} [${performanceLevel}]
    Email: ${employee.email || 'Not available'}
-   ${employee.projects ? `Active Projects: ${employee.projects.join(', ')}` : ''}
-   ${employee.skills ? `Key Skills: ${employee.skills.join(', ')}` : ''}
-   ${employee.joinDate ? `Join Date: ${employee.joinDate}` : ''}
-   ${employee.lastReview ? `Last Review: ${employee.lastReview}` : ''}
+   
+   PROJECT INVOLVEMENT:
+   ${employee.projects ? `Active Projects: ${employee.projects.join(', ')}` : 'No active projects assigned'}
+   
+   SKILL ASSESSMENT:
+   ${employee.skills ? `Technical Skills: ${employee.skills.join(', ')}` : 'Skills assessment pending'}
+   
+   EMPLOYMENT DETAILS:
+   ${employee.joinDate ? `Start Date: ${employee.joinDate}` : 'Start date not recorded'}
+   ${employee.lastReview ? `Last Performance Review: ${employee.lastReview}` : 'Performance review pending'}
+   
+   PERFORMANCE BREAKDOWN:
+   - Productivity: ${rating >= 90 ? 'Exceptional' : rating >= 80 ? 'Above Average' : rating >= 70 ? 'Satisfactory' : 'Below Expectations'}
+   - Team Collaboration: ${rating >= 85 ? 'Excellent team player' : 'Developing collaboration skills'}
+   - Quality of Work: ${rating >= 90 ? 'Consistently high quality' : 'Meeting quality standards'}
+   - Initiative & Innovation: ${rating >= 85 ? 'Proactive and innovative' : 'Follows established processes'}
+
+   DEVELOPMENT RECOMMENDATIONS:
+   ${rating >= 90 ? '- Consider for leadership roles\n   - Mentor junior team members\n   - Lead complex projects' : 
+     rating >= 80 ? '- Advanced skill training opportunities\n   - Cross-functional project assignments\n   - Professional development courses' : 
+     '- Focused skill development plan\n   - Regular mentoring sessions\n   - Performance improvement program'}
+
+========================================
 
 `;
     });
 
-    // Add enhanced summary statistics
+    // Enhanced Summary Statistics
     const avgPerformance = employees.reduce((sum, emp) => sum + (emp.performance || emp.rating || 0), 0) / employees.length;
     const topPerformer = employees.reduce((top, emp) => 
       (emp.performance || emp.rating || 0) > (top.performance || top.rating || 0) ? emp : top
     );
+    const excellentPerformers = employees.filter(e => (e.performance || e.rating || 0) >= 90);
+    const goodPerformers = employees.filter(e => (e.performance || e.rating || 0) >= 80 && (e.performance || e.rating || 0) < 90);
+    const averagePerformers = employees.filter(e => (e.performance || e.rating || 0) >= 70 && (e.performance || e.rating || 0) < 80);
+    const belowAverage = employees.filter(e => (e.performance || e.rating || 0) < 70);
 
     content += `
+COMPREHENSIVE TEAM ANALYTICS
 ========================================
-DETAILED SUMMARY STATISTICS
-========================================
 
-Total Team Members: ${employees.length}
-Average Performance: ${avgPerformance.toFixed(1)}%
-Top Performer: ${topPerformer.name} (${topPerformer.performance || topPerformer.rating || 0}%)
+PERFORMANCE DISTRIBUTION:
+- Excellent Performers (90-100%): ${excellentPerformers.length} members (${((excellentPerformers.length / employees.length) * 100).toFixed(1)}%)
+  ${excellentPerformers.map(e => `  • ${e.name} - ${e.performance || e.rating}%`).join('\n  ')}
 
-Performance Distribution:
-- Excellent (90-100%): ${employees.filter(e => (e.performance || e.rating || 0) >= 90).length} members
-- Good (80-89%): ${employees.filter(e => (e.performance || e.rating || 0) >= 80 && (e.performance || e.rating || 0) < 90).length} members
-- Average (70-79%): ${employees.filter(e => (e.performance || e.rating || 0) >= 70 && (e.performance || e.rating || 0) < 80).length} members
-- Below Average (<70%): ${employees.filter(e => (e.performance || e.rating || 0) < 70).length} members
+- Good Performers (80-89%): ${goodPerformers.length} members (${((goodPerformers.length / employees.length) * 100).toFixed(1)}%)
+  ${goodPerformers.map(e => `  • ${e.name} - ${e.performance || e.rating}%`).join('\n  ')}
 
-Team Insights:
-- Most common skills: React, JavaScript, TypeScript, Node.js
-- Recent hires: ${employees.filter(e => e.joinDate && new Date(e.joinDate) > new Date('2023-01-01')).length} members
-- Due for review: ${employees.filter(e => e.lastReview && new Date(e.lastReview) < new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).length} members
+- Average Performers (70-79%): ${averagePerformers.length} members (${((averagePerformers.length / employees.length) * 100).toFixed(1)}%)
+  ${averagePerformers.map(e => `  • ${e.name} - ${e.performance || e.rating}%`).join('\n  ')}
+
+- Below Average (<70%): ${belowAverage.length} members (${((belowAverage.length / employees.length) * 100).toFixed(1)}%)
+  ${belowAverage.map(e => `  • ${e.name} - ${e.performance || e.rating}%`).join('\n  ')}
+
+TEAM PERFORMANCE INSIGHTS:
+- Team Average: ${avgPerformance.toFixed(1)}%
+- Top Performer: ${topPerformer.name} (${topPerformer.performance || topPerformer.rating || 0}%)
+- Performance Range: ${Math.min(...employees.map(e => e.performance || e.rating || 0))}% - ${Math.max(...employees.map(e => e.performance || e.rating || 0))}%
+- Team Consistency: ${avgPerformance >= 85 ? 'High - Team consistently performs well' : avgPerformance >= 75 ? 'Moderate - Generally good with some variations' : 'Low - Significant performance gaps exist'}
+
+SKILL ANALYSIS:
+- Most Common Skills: React, JavaScript, TypeScript, Node.js, Python
+- Skill Coverage: Full-stack development capabilities
+- Training Opportunities: ${belowAverage.length > 0 ? `${belowAverage.length} members would benefit from additional training` : 'Team is well-trained across all areas'}
+
+WORKFORCE INSIGHTS:
+- Recent Hires (2023+): ${employees.filter(e => e.joinDate && new Date(e.joinDate) > new Date('2023-01-01')).length} members
+- Review Status: ${employees.filter(e => e.lastReview && new Date(e.lastReview) < new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).length} members due for review
+- Retention Recommendations: Focus on ${belowAverage.length > 0 ? 'performance improvement programs' : 'career advancement opportunities'}
+
+ACTION ITEMS:
+1. Schedule performance reviews for ${employees.filter(e => !e.lastReview || new Date(e.lastReview) < new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).length} team members
+2. Implement mentorship program pairing top performers with developing team members
+3. ${belowAverage.length > 0 ? `Create performance improvement plans for ${belowAverage.length} underperforming members` : 'Continue current performance management strategies'}
+4. Consider ${excellentPerformers.length} high performers for leadership development programs
 
 `;
   }
@@ -200,9 +252,10 @@ PROJECT ANALYTICS:
   content += `
 
 ========================================
-Report generated by Management System
-${restrictedAccess ? 'CONFIDENTIAL - DEPARTMENT ACCESS ONLY' : ''}
-${timestamp}
+CONFIDENTIAL PERFORMANCE REPORT
+Generated by: ${generatedBy || 'Management System'}
+${restrictedAccess ? 'ACCESS RESTRICTED TO AUTHORIZED PERSONNEL ONLY' : ''}
+Report Date: ${timestamp}
 ========================================`;
 
   return content;
@@ -217,7 +270,8 @@ export const generateExcelContent = (data: ReportData) => {
     day: 'numeric'
   });
 
-  let content = `Report Type,${reportType}\n`;
+  let content = `PERFORMANCE REPORT METADATA\n`;
+  content += `Report Type,${reportType}\n`;
   content += `Department,${department || 'All Departments'}\n`;
   content += `Team Lead,${teamLead || 'N/A'}\n`;
   content += `Generated By,${generatedBy || userRole || 'N/A'}\n`;
@@ -225,19 +279,37 @@ export const generateExcelContent = (data: ReportData) => {
   content += `Period,${dateRange}\n`;
   content += `Access Level,${restrictedAccess ? 'RESTRICTED' : 'STANDARD'}\n\n`;
 
-  // Employee Data - ENHANCED WITH MORE COLUMNS
+  // Enhanced Employee Performance Data
   if (employees.length > 0) {
-    content += 'EMPLOYEE PERFORMANCE DATA\n';
-    content += 'Employee ID,Name,Position,Department,Performance Score,Rating,Email,Projects,Skills,Join Date,Last Review\n';
+    content += 'DETAILED EMPLOYEE PERFORMANCE DATA\n';
+    content += 'Employee ID,Name,Position,Department,Performance Score,Performance Level,Rating Stars,Email,Active Projects,Key Skills,Join Date,Last Review,Development Priority,Recommended Actions\n';
 
     employees.forEach(employee => {
       const performance = employee.performance || employee.rating || 0;
-      const rating = performance >= 90 ? 'Excellent' : 
-                    performance >= 80 ? 'Good' : 
-                    performance >= 70 ? 'Average' : 'Below Average';
+      const level = performance >= 90 ? 'EXCELLENT' : 
+                   performance >= 80 ? 'GOOD' : 
+                   performance >= 70 ? 'AVERAGE' : 'NEEDS IMPROVEMENT';
+      const stars = '★'.repeat(Math.floor(performance / 20)) + '☆'.repeat(5 - Math.floor(performance / 20));
+      const priority = performance >= 90 ? 'Leadership Development' : 
+                      performance >= 80 ? 'Skill Enhancement' : 
+                      performance >= 70 ? 'Performance Monitoring' : 'Immediate Improvement';
+      const actions = performance >= 90 ? 'Consider for leadership roles; Mentor others' : 
+                     performance >= 80 ? 'Advanced training; Complex projects' : 
+                     performance >= 70 ? 'Regular coaching; Skill development' : 'Performance improvement plan; Close monitoring';
       
-      content += `${employee.id},"${employee.name}","${employee.position || 'Not specified'}","${department || employee.department || 'Not specified'}",${performance}%,${rating},"${employee.email || 'Not available'}","${employee.projects?.join('; ') || 'None'}","${employee.skills?.join('; ') || 'None'}","${employee.joinDate || 'N/A'}","${employee.lastReview || 'N/A'}"\n`;
+      content += `${employee.id},"${employee.name}","${employee.position || 'Not specified'}","${department || employee.department || 'Not specified'}",${performance}%,${level},"${stars}","${employee.email || 'Not available'}","${employee.projects?.join('; ') || 'None assigned'}","${employee.skills?.join('; ') || 'Assessment pending'}","${employee.joinDate || 'Not recorded'}","${employee.lastReview || 'Pending'}","${priority}","${actions}"\n`;
     });
+    
+    // Add summary statistics
+    const avgPerformance = employees.reduce((sum, emp) => sum + (emp.performance || emp.rating || 0), 0) / employees.length;
+    content += `\nPERFORMANCE SUMMARY\n`;
+    content += `Metric,Value\n`;
+    content += `Total Employees,${employees.length}\n`;
+    content += `Average Performance,${avgPerformance.toFixed(1)}%\n`;
+    content += `Excellent Performers (90%+),${employees.filter(e => (e.performance || e.rating || 0) >= 90).length}\n`;
+    content += `Good Performers (80-89%),${employees.filter(e => (e.performance || e.rating || 0) >= 80 && (e.performance || e.rating || 0) < 90).length}\n`;
+    content += `Average Performers (70-79%),${employees.filter(e => (e.performance || e.rating || 0) >= 70 && (e.performance || e.rating || 0) < 80).length}\n`;
+    content += `Below Average (<70%),${employees.filter(e => (e.performance || e.rating || 0) < 70).length}\n`;
     content += '\n';
   }
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,18 +29,11 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
   onRatingUpdate 
 }) => {
   const [lockedMembers, setLockedMembers] = useState<Set<string>>(new Set());
-  const [isRatingInProgress, setIsRatingInProgress] = useState(false);
 
-  // Keep original order during rating, only sort when not rating
+  // Always maintain original order - no sorting during rating process
   const displayMembers = useMemo(() => {
-    if (isRatingInProgress) {
-      // Maintain original order during rating
-      return [...members];
-    } else {
-      // Sort by overall rating when not rating
-      return [...members].sort((a, b) => b.ratings.overall - a.ratings.overall);
-    }
-  }, [members, isRatingInProgress]);
+    return [...members];
+  }, [members]);
 
   const handleStarClick = (memberId: string, category: string, starIndex: number, event: React.MouseEvent) => {
     event.preventDefault();
@@ -48,8 +42,6 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
       toast.error('This member\'s ratings are locked');
       return;
     }
-
-    setIsRatingInProgress(true);
     
     const clickCount = event.detail;
     let newRating: number;
@@ -118,7 +110,6 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
 
   const handleSaveAndLock = (memberId: string) => {
     setLockedMembers(prev => new Set([...prev, memberId]));
-    setIsRatingInProgress(false);
     toast.success('Ratings saved and locked');
   };
 
