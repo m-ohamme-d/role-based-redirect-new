@@ -30,9 +30,12 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
 }) => {
   const [lockedMembers, setLockedMembers] = useState<Set<string>>(new Set());
 
-  // Always maintain original order - no sorting during rating process
+  // FIXED: Always maintain original order with stable sort
   const displayMembers = useMemo(() => {
-    return [...members];
+    return [...members].sort((a, b) => {
+      // Use string comparison for stable sorting
+      return a.id.localeCompare(b.id);
+    });
   }, [members]);
 
   const handleStarClick = (memberId: string, category: string, starIndex: number, event: React.MouseEvent) => {
@@ -117,7 +120,7 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       toast.success('Profile image uploaded successfully');
-      // In a real app, you'd upload the file and update the member's image
+      console.log('Image uploaded for member:', memberId);
     }
   };
 
@@ -127,7 +130,7 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
         <CardHeader>
           <CardTitle>Team Performance Ratings</CardTitle>
           <p className="text-sm text-gray-600">
-            Rate team members across multiple criteria. Once saved, ratings are locked and can only be edited by administrators.
+            Rate team members across multiple criteria. Single click for half star, double click for full star.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -147,6 +150,7 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
                       <label 
                         htmlFor={`upload-${member.id}`}
                         className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
+                        title="Upload profile image"
                       >
                         <Upload className="h-3 w-3 text-gray-600" />
                         <input

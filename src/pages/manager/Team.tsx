@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDepartments } from '@/hooks/useDepartments';
+import TeamPerformanceRating from '@/components/TeamPerformanceRating';
 
 // Enhanced teams data with members and team leads
 const teamsData = [
@@ -20,9 +21,9 @@ const teamsData = [
     leadEmail: 'john.smith@company.com',
     leadPhone: '+1 (555) 123-4567',
     members: [
-      { id: 101, name: 'Alice Johnson', position: 'Senior Developer', performance: 92, avatar: null },
-      { id: 102, name: 'Bob Wilson', position: 'Frontend Developer', performance: 88, avatar: null },
-      { id: 103, name: 'Carol Brown', position: 'Backend Developer', performance: 90, avatar: null }
+      { id: 101, name: 'Alice Johnson', position: 'Senior Developer', ratings: { productivity: 92, collaboration: 88, timeliness: 90, overall: 90 }, avatar: null },
+      { id: 102, name: 'Bob Wilson', position: 'Frontend Developer', ratings: { productivity: 85, collaboration: 92, timeliness: 88, overall: 88 }, avatar: null },
+      { id: 103, name: 'Carol Brown', position: 'Backend Developer', ratings: { productivity: 90, collaboration: 85, timeliness: 92, overall: 89 }, avatar: null }
     ],
     department: 'IT', 
     performance: 92 
@@ -34,8 +35,8 @@ const teamsData = [
     leadEmail: 'emily.wilson@company.com',
     leadPhone: '+1 (555) 987-6543',
     members: [
-      { id: 201, name: 'David Lee', position: 'UI Designer', performance: 89, avatar: null },
-      { id: 202, name: 'Emma Davis', position: 'UX Designer', performance: 91, avatar: null }
+      { id: 201, name: 'David Lee', position: 'UI Designer', ratings: { productivity: 89, collaboration: 91, timeliness: 87, overall: 89 }, avatar: null },
+      { id: 202, name: 'Emma Davis', position: 'UX Designer', ratings: { productivity: 93, collaboration: 89, timeliness: 91, overall: 91 }, avatar: null }
     ],
     department: 'IT', 
     performance: 88 
@@ -51,21 +52,19 @@ const ManagerTeam = () => {
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
-  const [showUnifiedForm, setShowUnifiedForm] = useState(false);
   
-  // Unified form states - SIMPLIFIED TO SINGLE OPTION
-  const [formData, setFormData] = useState({
+  // Simplified form states - ONLY for department creation
+  const [showCreateDepartmentDialog, setShowCreateDepartmentDialog] = useState(false);
+  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [newDepartmentDescription, setNewDepartmentDescription] = useState('');
+  
+  // Team creation form
+  const [showCreateTeamDialog, setShowCreateTeamDialog] = useState(false);
+  const [newTeam, setNewTeam] = useState({
     name: '',
-    type: 'department' as 'department' | 'team',
-    manager: '',
-    description: '',
     teamLead: '',
     department: '',
-    customOptions: {
-      budget: '',
-      location: '',
-      workType: 'hybrid'
-    }
+    description: ''
   });
   
   // Department management states
@@ -76,59 +75,54 @@ const ManagerTeam = () => {
   const [showTeamLeadDetails, setShowTeamLeadDetails] = useState(false);
   const [selectedTeamLead, setSelectedTeamLead] = useState<any>(null);
   
-  // Missing state variables for notification dialog
+  // Notification dialog states
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
 
-  // Unified form submission
-  const handleUnifiedFormSubmit = () => {
-    if (formData.type === 'department') {
-      if (!formData.name.trim() || !formData.manager.trim()) {
-        toast.error('Please fill in all required fields');
-        return;
-      }
-
-      if (addDepartment(formData.name.trim())) {
-        toast.success(`Department "${formData.name}" created successfully with custom options`);
-        console.log('Department created with custom options:', formData);
-      } else {
-        toast.error('Department already exists');
-      }
-    } else {
-      if (!formData.name.trim() || !formData.department || !formData.teamLead.trim()) {
-        toast.error('Please fill in all required fields');
-        return;
-      }
-
-      const newTeam = {
-        id: Math.max(...teams.map(t => t.id)) + 1,
-        name: formData.name.trim(),
-        lead: formData.teamLead.trim(),
-        leadEmail: `${formData.teamLead.toLowerCase().replace(' ', '.')}@company.com`,
-        leadPhone: '+1 (555) 000-0000',
-        members: [],
-        department: formData.department,
-        performance: 0
-      };
-      setTeams([...teams, newTeam]);
-      
-      // Send notification to team lead
-      toast.success(`Team "${formData.name}" created and notification sent to ${formData.teamLead}`);
-      console.log('Team created and notification sent to team lead:', newTeam);
+  // Department creation
+  const handleCreateDepartment = () => {
+    if (!newDepartmentName.trim()) {
+      toast.error('Department name is required');
+      return;
     }
 
-    // Reset form
-    setFormData({
-      name: '',
-      type: 'department',
-      manager: '',
-      description: '',
-      teamLead: '',
-      department: '',
-      customOptions: { budget: '', location: '', workType: 'hybrid' }
-    });
-    setShowUnifiedForm(false);
+    if (addDepartment(newDepartmentName.trim())) {
+      toast.success(`Department "${newDepartmentName}" created successfully`);
+      console.log('Department created:', { name: newDepartmentName, description: newDepartmentDescription });
+    } else {
+      toast.error('Department already exists');
+    }
+
+    setNewDepartmentName('');
+    setNewDepartmentDescription('');
+    setShowCreateDepartmentDialog(false);
+  };
+
+  // Team creation
+  const handleCreateTeam = () => {
+    if (!newTeam.name.trim() || !newTeam.department || !newTeam.teamLead.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const team = {
+      id: Math.max(...teams.map(t => t.id)) + 1,
+      name: newTeam.name.trim(),
+      lead: newTeam.teamLead.trim(),
+      leadEmail: `${newTeam.teamLead.toLowerCase().replace(' ', '.')}@company.com`,
+      leadPhone: '+1 (555) 000-0000',
+      members: [],
+      department: newTeam.department,
+      performance: 0
+    };
+    setTeams([...teams, team]);
+    
+    toast.success(`Team "${newTeam.name}" created and notification sent to ${newTeam.teamLead}`);
+    console.log('Team created:', team);
+
+    setNewTeam({ name: '', teamLead: '', department: '', description: '' });
+    setShowCreateTeamDialog(false);
   };
 
   // Department management functions
@@ -269,15 +263,18 @@ const ManagerTeam = () => {
     }
   };
 
-  const handleRatingChange = (memberId: number, rating: number) => {
+  const handleRatingUpdate = (memberId: string, category: string, rating: number) => {
     if (selectedTeam) {
       const updatedMembers = selectedTeam.members.map((member: any) => 
-        member.id === memberId ? { ...member, performance: rating } : member
+        member.id.toString() === memberId ? { 
+          ...member, 
+          ratings: { ...member.ratings, [category]: rating }
+        } : member
       );
       const updatedTeam = { ...selectedTeam, members: updatedMembers };
       setSelectedTeam(updatedTeam);
       setTeams(teams.map(team => team.id === selectedTeam.id ? updatedTeam : team));
-      toast.success('Rating updated');
+      console.log('Rating updated for member:', memberId, 'category:', category, 'rating:', rating);
     }
   };
 
@@ -286,163 +283,104 @@ const ManagerTeam = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
         <div className="space-x-2">
-          <Dialog open={showUnifiedForm} onOpenChange={setShowUnifiedForm}>
+          <Dialog open={showCreateDepartmentDialog} onOpenChange={setShowCreateDepartmentDialog}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create Department/Team
+                <Building className="h-4 w-4" />
+                Create Department
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px]">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Department or Team</DialogTitle>
+                <DialogTitle>Create New Department</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 pt-2">
+              <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">What would you like to create?</label>
+                  <label className="text-sm font-medium">Department Name *</label>
+                  <Input
+                    value={newDepartmentName}
+                    onChange={(e) => setNewDepartmentName(e.target.value)}
+                    placeholder="Enter department name"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Description</label>
+                  <Textarea
+                    value={newDepartmentDescription}
+                    onChange={(e) => setNewDepartmentDescription(e.target.value)}
+                    placeholder="Brief description of the department"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowCreateDepartmentDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateDepartment}>
+                    Create Department
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showCreateTeamDialog} onOpenChange={setShowCreateTeamDialog}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Create Team
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Team</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Team Name *</label>
+                  <Input
+                    value={newTeam.name}
+                    onChange={(e) => setNewTeam({...newTeam, name: e.target.value})}
+                    placeholder="Enter team name"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Department *</label>
                   <Select 
-                    value={formData.type} 
-                    onValueChange={(val: 'department' | 'team') => setFormData({...formData, type: val})}
+                    value={newTeam.department} 
+                    onValueChange={(val) => setNewTeam({...newTeam, department: val})}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose type" />
+                      <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="department">
-                        <div className="flex items-center gap-2">
-                          <Building className="h-4 w-4" />
-                          Department
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="team">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          Team
-                        </div>
-                      </SelectItem>
+                      {departments.map(dept => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium">Name</label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      placeholder={formData.type === 'department' ? "Department name" : "Team name"}
-                    />
-                  </div>
-                  
-                  {formData.type === 'department' ? (
-                    <>
-                      <div>
-                        <label className="text-sm font-medium">Department Manager</label>
-                        <Input
-                          value={formData.manager}
-                          onChange={(e) => setFormData({...formData, manager: e.target.value})}
-                          placeholder="Manager's name"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Department Description</label>
-                        <Textarea
-                          value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
-                          placeholder="Brief description about the department"
-                        />
-                      </div>
-                      <div className="space-y-3 border p-3 rounded-md">
-                        <h3 className="font-medium">Department Options</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-sm font-medium">Budget</label>
-                            <Input
-                              value={formData.customOptions.budget}
-                              onChange={(e) => setFormData({
-                                ...formData, 
-                                customOptions: {...formData.customOptions, budget: e.target.value}
-                              })}
-                              placeholder="Annual budget"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Location</label>
-                            <Input
-                              value={formData.customOptions.location}
-                              onChange={(e) => setFormData({
-                                ...formData, 
-                                customOptions: {...formData.customOptions, location: e.target.value}
-                              })}
-                              placeholder="Office location"
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-sm font-medium">Work Type</label>
-                            <Select 
-                              value={formData.customOptions.workType}
-                              onValueChange={(val) => setFormData({
-                                ...formData,
-                                customOptions: {...formData.customOptions, workType: val}
-                              })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select work type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="remote">Remote</SelectItem>
-                                <SelectItem value="onsite">Onsite</SelectItem>
-                                <SelectItem value="hybrid">Hybrid</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="text-sm font-medium">Department</label>
-                        <Select 
-                          value={formData.department} 
-                          onValueChange={(val) => setFormData({...formData, department: val})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {departments.map(dept => (
-                              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Team Lead</label>
-                        <Input
-                          value={formData.teamLead}
-                          onChange={(e) => setFormData({...formData, teamLead: e.target.value})}
-                          placeholder="Team lead's name"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Team Description</label>
-                        <Textarea
-                          value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
-                          placeholder="Brief description about the team"
-                        />
-                      </div>
-                    </>
-                  )}
+                <div>
+                  <label className="text-sm font-medium">Team Lead *</label>
+                  <Input
+                    value={newTeam.teamLead}
+                    onChange={(e) => setNewTeam({...newTeam, teamLead: e.target.value})}
+                    placeholder="Team lead's name"
+                  />
                 </div>
-                
-                <div className="flex justify-end space-x-2 pt-2">
-                  <Button variant="outline" onClick={() => setShowUnifiedForm(false)}>
+                <div>
+                  <label className="text-sm font-medium">Description</label>
+                  <Textarea
+                    value={newTeam.description}
+                    onChange={(e) => setNewTeam({...newTeam, description: e.target.value})}
+                    placeholder="Brief description of the team"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowCreateTeamDialog(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleUnifiedFormSubmit}>
-                    Create {formData.type === 'department' ? 'Department' : 'Team'}
+                  <Button onClick={handleCreateTeam}>
+                    Create Team
                   </Button>
                 </div>
               </div>
@@ -469,7 +407,7 @@ const ManagerTeam = () => {
                 Notify
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Send Notification</DialogTitle>
               </DialogHeader>
@@ -480,7 +418,6 @@ const ManagerTeam = () => {
                     value={notificationText}
                     onChange={(e) => setNotificationText(e.target.value)}
                     placeholder="Enter notification message..."
-                    className="mt-1"
                   />
                 </div>
                 <div>
@@ -489,7 +426,6 @@ const ManagerTeam = () => {
                     type="datetime-local"
                     value={reminderDate}
                     onChange={(e) => setReminderDate(e.target.value)}
-                    className="mt-1"
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
@@ -632,63 +568,30 @@ const ManagerTeam = () => {
         </CardContent>
       </Card>
 
-      {/* Team Details Dialog */}
+      {/* Team Details Dialog with Team Performance Rating */}
       <Dialog open={showTeamDetails} onOpenChange={setShowTeamDetails}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className="sm:max-w-[1000px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedTeam?.name} - Team Members</DialogTitle>
+            <DialogTitle>{selectedTeam?.name} - Team Performance Rating</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 max-h-[500px] overflow-y-auto">
-            {selectedTeam?.members?.map((member: any) => (
-              <Card key={member.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="relative group">
-                        <Avatar className="h-12 w-12 cursor-pointer">
-                          <AvatarImage src={member.avatar} />
-                          <AvatarFallback>{member.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center transition-all">
-                          <Upload className="h-4 w-4 text-white opacity-0 group-hover:opacity-100" />
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={(e) => {}}
-                        />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{member.name}</h3>
-                        <p className="text-sm text-gray-600">{member.position}</p>
-                        <Badge variant="outline">ID: {member.id}</Badge>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Rating:</span>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`h-4 w-4 cursor-pointer ${
-                                star <= Math.round(member.performance / 20) 
-                                  ? 'fill-yellow-400 text-yellow-400' 
-                                  : 'text-gray-300'
-                              }`}
-                              onClick={() => handleRatingChange(member.id, star * 20)}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-600">({member.performance}%)</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {selectedTeam && selectedTeam.members && selectedTeam.members.length > 0 && (
+            <TeamPerformanceRating
+              members={selectedTeam.members.map((member: any) => ({
+                id: member.id.toString(),
+                name: member.name,
+                position: member.position,
+                department: selectedTeam.department,
+                ratings: member.ratings
+              }))}
+              onRatingUpdate={handleRatingUpdate}
+            />
+          )}
+          {selectedTeam && (!selectedTeam.members || selectedTeam.members.length === 0) && (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No team members assigned to this team yet.</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
