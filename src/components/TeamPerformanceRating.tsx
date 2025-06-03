@@ -28,11 +28,18 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
   onRatingUpdate 
 }) => {
   const [lockedMembers, setLockedMembers] = useState<Set<string>>(new Set());
+  const [isRatingInProgress, setIsRatingInProgress] = useState(false);
 
-  // Sort members by overall rating but keep positions stable during rating
-  const sortedMembers = useMemo(() => {
-    return [...members].sort((a, b) => b.ratings.overall - a.ratings.overall);
-  }, [members]);
+  // Keep original order during rating, only sort when not rating
+  const displayMembers = useMemo(() => {
+    if (isRatingInProgress) {
+      // Maintain original order during rating
+      return [...members];
+    } else {
+      // Sort by overall rating when not rating
+      return [...members].sort((a, b) => b.ratings.overall - a.ratings.overall);
+    }
+  }, [members, isRatingInProgress]);
 
   const handleStarClick = (memberId: string, category: string, starIndex: number, event: React.MouseEvent) => {
     event.preventDefault();
@@ -42,6 +49,8 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
       return;
     }
 
+    setIsRatingInProgress(true);
+    
     const clickCount = event.detail;
     let newRating: number;
     
@@ -109,6 +118,7 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
 
   const handleSaveAndLock = (memberId: string) => {
     setLockedMembers(prev => new Set([...prev, memberId]));
+    setIsRatingInProgress(false);
     toast.success('Ratings saved and locked');
   };
 
@@ -130,7 +140,7 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {sortedMembers.map((member) => {
+          {displayMembers.map((member) => {
             const isLocked = lockedMembers.has(member.id);
             
             return (

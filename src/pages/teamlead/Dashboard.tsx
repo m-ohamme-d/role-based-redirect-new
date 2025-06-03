@@ -155,23 +155,26 @@ const TeamLeadDashboard = () => {
     const hasHalfStar = (rating % 20) >= 10;
     
     return (
-      <div className="flex items-center gap-1">
-        {[0, 1, 2, 3, 4].map((starIndex) => (
-          <div key={starIndex} className="relative">
-            <span className="text-gray-300 text-lg">★</span>
-            {starIndex < fullStars && (
-              <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
-            )}
-            {starIndex === fullStars && hasHalfStar && (
-              <span 
-                className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
-                style={{ width: '50%' }}
-              >
-                ★
-              </span>
-            )}
-          </div>
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {[0, 1, 2, 3, 4].map((starIndex) => (
+            <div key={starIndex} className="relative">
+              <span className="text-gray-300 text-lg">★</span>
+              {starIndex < fullStars && (
+                <span className="absolute inset-0 text-yellow-400 text-lg">★</span>
+              )}
+              {starIndex === fullStars && hasHalfStar && (
+                <span 
+                  className="absolute inset-0 text-yellow-400 text-lg overflow-hidden"
+                  style={{ width: '50%' }}
+                >
+                  ★
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+        <span className="text-sm text-gray-600">{rating}%</span>
       </div>
     );
   };
@@ -410,10 +413,7 @@ const TeamLeadDashboard = () => {
                                   className="w-12 h-12 rounded-full object-cover"
                                 />
                               ) : (
-                                <div className="flex flex-col items-center justify-center">
-                                  <Camera className="h-4 w-4 text-gray-400" />
-                                  <span className="text-xs text-gray-400 mt-1">Upload</span>
-                                </div>
+                                <Upload className="h-5 w-5 text-gray-400" />
                               )}
                               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-full flex items-center justify-center">
                                 <Upload className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -445,11 +445,7 @@ const TeamLeadDashboard = () => {
                         <td className="py-3 px-4">{member.name}</td>
                         <td className="py-3 px-4">{member.designation}</td>
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            {getRatingStarsReadOnly(member.rating)}
-                            <span className="text-sm text-gray-600 ml-2">{member.rating}%</span>
-                            <span className="text-xs text-gray-400">(Read-only)</span>
-                          </div>
+                          {getRatingStarsReadOnly(member.rating)}
                         </td>
                         <td className="py-3 px-4">
                           <span className="text-sm truncate max-w-[150px] block">{member.notes}</span>

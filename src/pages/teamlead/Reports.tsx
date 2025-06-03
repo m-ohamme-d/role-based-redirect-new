@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Download, FileText, Calendar, Users, TrendingUp, BarChart3, Lock, Award
 import { generatePDFContent, generateExcelContent, downloadFile, prepareReportData } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
 
-// Enhanced team data with more realistic and comprehensive information
+// Enhanced team data with comprehensive realistic information
 const teamData = [
   { 
     id: 1, 
@@ -26,7 +27,14 @@ const teamData = [
     clientSatisfaction: 4.8,
     productivity: 95,
     collaboration: 88,
-    timeliness: 92
+    timeliness: 92,
+    salary: '$85,000',
+    bonus: '$8,500',
+    trainingHours: 24,
+    certifications: ['AWS Certified', 'React Professional'],
+    teamLead: 'Michael Johnson',
+    location: 'New York',
+    workType: 'Hybrid'
   },
   { 
     id: 2, 
@@ -44,7 +52,14 @@ const teamData = [
     clientSatisfaction: 4.6,
     productivity: 86,
     collaboration: 92,
-    timeliness: 85
+    timeliness: 85,
+    salary: '$72,000',
+    bonus: '$7,200',
+    trainingHours: 32,
+    certifications: ['UX Certification', 'Design Thinking'],
+    teamLead: 'Michael Johnson',
+    location: 'San Francisco',
+    workType: 'Remote'
   },
   { 
     id: 3, 
@@ -62,7 +77,14 @@ const teamData = [
     clientSatisfaction: 4.4,
     productivity: 83,
     collaboration: 87,
-    timeliness: 86
+    timeliness: 86,
+    salary: '$68,000',
+    bonus: '$6,800',
+    trainingHours: 18,
+    certifications: ['Vue.js Certified', 'JavaScript ES6'],
+    teamLead: 'Michael Johnson',
+    location: 'Austin',
+    workType: 'Hybrid'
   },
   { 
     id: 4, 
@@ -80,7 +102,14 @@ const teamData = [
     clientSatisfaction: 4.7,
     productivity: 91,
     collaboration: 89,
-    timeliness: 90
+    timeliness: 90,
+    salary: '$82,000',
+    bonus: '$8,200',
+    trainingHours: 28,
+    certifications: ['Python Professional', 'AWS Solutions Architect'],
+    teamLead: 'Michael Johnson',
+    location: 'Seattle',
+    workType: 'On-site'
   },
   { 
     id: 5, 
@@ -98,11 +127,18 @@ const teamData = [
     clientSatisfaction: 4.5,
     productivity: 88,
     collaboration: 85,
-    timeliness: 89
+    timeliness: 89,
+    salary: '$65,000',
+    bonus: '$6,500',
+    trainingHours: 20,
+    certifications: ['ISTQB Certified', 'Automation Testing'],
+    teamLead: 'Michael Johnson',
+    location: 'Chicago',
+    workType: 'Remote'
   }
 ];
 
-// Enhanced projects data
+// Enhanced projects data with comprehensive details
 const departmentProjects = [
   { 
     id: 1, 
@@ -110,15 +146,22 @@ const departmentProjects = [
     status: 'working', 
     assignedDepartment: 'IT', 
     clientName: 'TechCorp Solutions',
+    clientIndustry: 'Technology',
     progress: 78,
     startDate: '2024-08-01',
     expectedCompletion: '2024-12-15',
+    actualCompletion: null,
     teamMembers: ['John Smith', 'Mike Chen', 'Sarah Johnson'],
     budget: '$125,000',
+    actualCost: '$98,000',
     priority: 'High',
     hoursSpent: 450,
     milestones: 8,
-    completedMilestones: 6
+    completedMilestones: 6,
+    riskLevel: 'Low',
+    clientSatisfaction: 4.7,
+    technologies: ['React Native', 'Node.js', 'MongoDB'],
+    projectManager: 'Michael Johnson'
   },
   { 
     id: 2, 
@@ -126,15 +169,22 @@ const departmentProjects = [
     status: 'working', 
     assignedDepartment: 'IT', 
     clientName: 'TechCorp Solutions',
+    clientIndustry: 'Technology',
     progress: 65,
     startDate: '2024-09-15',
     expectedCompletion: '2025-01-30',
+    actualCompletion: null,
     teamMembers: ['Sarah Johnson', 'Mike Chen', 'Emily Wilson'],
     budget: '$85,000',
+    actualCost: '$55,000',
     priority: 'Medium',
     hoursSpent: 320,
     milestones: 6,
-    completedMilestones: 4
+    completedMilestones: 4,
+    riskLevel: 'Medium',
+    clientSatisfaction: 4.5,
+    technologies: ['React', 'TypeScript', 'Tailwind CSS'],
+    projectManager: 'Michael Johnson'
   },
   { 
     id: 3, 
@@ -142,15 +192,22 @@ const departmentProjects = [
     status: 'working', 
     assignedDepartment: 'IT', 
     clientName: 'HealthCare Inc',
+    clientIndustry: 'Healthcare',
     progress: 52,
     startDate: '2024-10-01',
     expectedCompletion: '2025-03-15',
+    actualCompletion: null,
     teamMembers: ['Lisa Anderson', 'John Smith', 'Emily Wilson'],
     budget: '$200,000',
+    actualCost: '$104,000',
     priority: 'High',
     hoursSpent: 280,
     milestones: 10,
-    completedMilestones: 5
+    completedMilestones: 5,
+    riskLevel: 'High',
+    clientSatisfaction: 4.8,
+    technologies: ['Python', 'Django', 'PostgreSQL'],
+    projectManager: 'Michael Johnson'
   },
   { 
     id: 4, 
@@ -158,15 +215,22 @@ const departmentProjects = [
     status: 'working', 
     assignedDepartment: 'IT', 
     clientName: 'Retail Masters',
+    clientIndustry: 'Retail',
     progress: 89,
     startDate: '2024-07-01',
     expectedCompletion: '2024-12-01',
+    actualCompletion: null,
     teamMembers: ['Mike Chen', 'Lisa Anderson'],
     budget: '$95,000',
+    actualCost: '$84,500',
     priority: 'Medium',
     hoursSpent: 520,
     milestones: 7,
-    completedMilestones: 6
+    completedMilestones: 6,
+    riskLevel: 'Low',
+    clientSatisfaction: 4.6,
+    technologies: ['Vue.js', 'Python', 'MySQL'],
+    projectManager: 'Michael Johnson'
   }
 ];
 
@@ -188,6 +252,98 @@ const TeamLeadReports = () => {
     }
   };
 
+  const generateEnhancedPDFContent = (data: any) => {
+    return `
+=== ${data.reportType} ===
+Generated: ${new Date().toLocaleString()}
+Period: ${data.dateRange}
+Department: ${data.department}
+Team Lead: ${data.teamLead}
+
+=== EXECUTIVE SUMMARY ===
+Total Team Members: ${teamData.length}
+Average Performance: ${(teamData.reduce((sum, member) => sum + member.performance, 0) / teamData.length).toFixed(1)}%
+Total Hours Worked: ${teamData.reduce((sum, member) => sum + member.hoursWorked, 0)}
+Total Tasks Completed: ${teamData.reduce((sum, member) => sum + member.tasksCompleted, 0)}
+Average Client Satisfaction: ${(teamData.reduce((sum, member) => sum + member.clientSatisfaction, 0) / teamData.length).toFixed(1)}/5
+
+=== TEAM PERFORMANCE DETAILS ===
+${teamData.map(member => `
+Employee: ${member.name}
+Position: ${member.position}
+Email: ${member.email}
+Performance Rating: ${member.performance}%
+Tasks Completed: ${member.tasksCompleted}
+Hours Worked: ${member.hoursWorked}
+Client Satisfaction: ${member.clientSatisfaction}/5
+Productivity: ${member.productivity}%
+Collaboration: ${member.collaboration}%
+Timeliness: ${member.timeliness}%
+Salary: ${member.salary}
+Bonus: ${member.bonus}
+Training Hours: ${member.trainingHours}
+Certifications: ${member.certifications.join(', ')}
+Work Type: ${member.workType}
+Location: ${member.location}
+Projects: ${member.projects.join(', ')}
+Skills: ${member.skills.join(', ')}
+Join Date: ${member.joinDate}
+Last Review: ${member.lastReview}
+`).join('\n')}
+
+=== PROJECT STATUS REPORT ===
+${departmentProjects.map(project => `
+Project: ${project.name}
+Client: ${project.clientName} (${project.clientIndustry})
+Status: ${project.status}
+Progress: ${project.progress}%
+Budget: ${project.budget}
+Actual Cost: ${project.actualCost}
+Priority: ${project.priority}
+Risk Level: ${project.riskLevel}
+Start Date: ${project.startDate}
+Expected Completion: ${project.expectedCompletion}
+Team Members: ${project.teamMembers.join(', ')}
+Technologies: ${project.technologies.join(', ')}
+Hours Spent: ${project.hoursSpent}
+Milestones: ${project.completedMilestones}/${project.milestones}
+Client Satisfaction: ${project.clientSatisfaction}/5
+Project Manager: ${project.projectManager}
+`).join('\n')}
+
+=== FINANCIAL SUMMARY ===
+Total Project Budgets: $${departmentProjects.reduce((sum, project) => sum + parseInt(project.budget.replace(/[$,]/g, '')), 0).toLocaleString()}
+Total Actual Costs: $${departmentProjects.reduce((sum, project) => sum + parseInt(project.actualCost.replace(/[$,]/g, '')), 0).toLocaleString()}
+Total Team Salaries: $${teamData.reduce((sum, member) => sum + parseInt(member.salary.replace(/[$,]/g, '')), 0).toLocaleString()}
+Total Bonuses: $${teamData.reduce((sum, member) => sum + parseInt(member.bonus.replace(/[$,]/g, '')), 0).toLocaleString()}
+
+=== TRAINING & DEVELOPMENT ===
+Total Training Hours: ${teamData.reduce((sum, member) => sum + member.trainingHours, 0)}
+Total Certifications: ${teamData.reduce((sum, member) => sum + member.certifications.length, 0)}
+
+=== ACCESS LOG ===
+Report Generated By: ${data.generatedBy}
+Access Level: Team Lead - ${data.department} Department Only
+Timestamp: ${new Date().toISOString()}
+`;
+  };
+
+  const generateEnhancedCSVContent = (data: any) => {
+    const teamCSV = `
+Employee Name,Position,Email,Performance %,Tasks Completed,Hours Worked,Client Satisfaction,Productivity %,Collaboration %,Timeliness %,Salary,Bonus,Training Hours,Certifications,Work Type,Location,Join Date,Last Review
+${teamData.map(member => 
+  `"${member.name}","${member.position}","${member.email}",${member.performance},${member.tasksCompleted},${member.hoursWorked},${member.clientSatisfaction},${member.productivity},${member.collaboration},${member.timeliness},"${member.salary}","${member.bonus}",${member.trainingHours},"${member.certifications.join('; ')}","${member.workType}","${member.location}","${member.joinDate}","${member.lastReview}"`
+).join('\n')}
+
+PROJECT DATA:
+Project Name,Client,Industry,Status,Progress %,Budget,Actual Cost,Priority,Risk Level,Start Date,Expected Completion,Team Size,Technologies,Hours Spent,Milestones,Client Satisfaction,Project Manager
+${departmentProjects.map(project => 
+  `"${project.name}","${project.clientName}","${project.clientIndustry}","${project.status}",${project.progress},"${project.budget}","${project.actualCost}","${project.priority}","${project.riskLevel}","${project.startDate}","${project.expectedCompletion}",${project.teamMembers.length},"${project.technologies.join('; ')}",${project.hoursSpent},"${project.completedMilestones}/${project.milestones}",${project.clientSatisfaction},"${project.projectManager}"`
+).join('\n')}
+`;
+    return teamCSV;
+  };
+
   const handleDownloadReport = (format: 'pdf' | 'csv') => {
     if (!currentUser.name || currentUser.role !== 'teamlead') {
       toast.error('Access denied: Only team leads can download reports');
@@ -196,21 +352,30 @@ const TeamLeadReports = () => {
 
     let data;
     let filename;
+    let content;
     
     switch (reportType) {
       case 'team-performance':
-        data = prepareReportData(teamData, 'teamlead', userDepartment);
-        data.reportType = 'Team Performance Report';
-        data.teamLead = currentUser.name;
-        data.department = userDepartment;
+        data = {
+          reportType: 'Team Performance Report',
+          teamLead: currentUser.name,
+          department: userDepartment,
+          dateRange: getPeriodLabel(selectedPeriod),
+          restrictedAccess: true,
+          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
+        };
         filename = `team-performance-${userDepartment}-${selectedPeriod}`;
         break;
       case 'project-status':
-        data = prepareReportData(departmentProjects, 'teamlead', userDepartment);
-        data.reportType = 'Project Status Report';
-        data.projects = departmentProjects;
-        data.teamLead = currentUser.name;
-        data.department = userDepartment;
+        data = {
+          reportType: 'Project Status Report',
+          projects: departmentProjects,
+          teamLead: currentUser.name,
+          department: userDepartment,
+          dateRange: getPeriodLabel(selectedPeriod),
+          restrictedAccess: true,
+          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
+        };
         filename = `project-status-${userDepartment}-${selectedPeriod}`;
         break;
       default:
@@ -218,13 +383,9 @@ const TeamLeadReports = () => {
         return;
     }
 
-    data.dateRange = getPeriodLabel(selectedPeriod);
-    data.restrictedAccess = true;
-    data.generatedBy = `${currentUser.name} (Team Lead - ${userDepartment})`;
-
     try {
       if (format === 'pdf') {
-        const content = generatePDFContent(data);
+        content = generateEnhancedPDFContent(data);
         const success = downloadFile(content, `${filename}.txt`, 'text/plain');
         if (success) {
           toast.success(`PDF report downloaded successfully (${userDepartment} team only)`);
@@ -232,7 +393,7 @@ const TeamLeadReports = () => {
           toast.error('Failed to download PDF report');
         }
       } else {
-        const content = generateExcelContent(data);
+        content = generateEnhancedCSVContent(data);
         const success = downloadFile(content, `${filename}.csv`, 'text/csv');
         if (success) {
           toast.success(`CSV report downloaded successfully (${userDepartment} team only)`);
@@ -452,9 +613,9 @@ const TeamLeadReports = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5 text-red-600" />
-                Generate Reports - Restricted Access
+                Generate Enhanced Reports - Restricted Access
               </CardTitle>
-              <CardDescription>Download detailed reports for your team only. You cannot access reports from other departments.</CardDescription>
+              <CardDescription>Download comprehensive reports with detailed team and project data. Reports include financial data, training records, and performance analytics.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -465,8 +626,8 @@ const TeamLeadReports = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="team-performance">My Team Performance</SelectItem>
-                      <SelectItem value="project-status">My Team Projects</SelectItem>
+                      <SelectItem value="team-performance">Comprehensive Team Performance</SelectItem>
+                      <SelectItem value="project-status">Detailed Project Portfolio</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -486,13 +647,25 @@ const TeamLeadReports = () => {
                 </div>
               </div>
 
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">Report Contents Include:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Detailed employee performance metrics and ratings</li>
+                  <li>• Comprehensive project status and financial data</li>
+                  <li>• Training records and certification tracking</li>
+                  <li>• Client satisfaction scores and feedback</li>
+                  <li>• Salary, bonus, and compensation details</li>
+                  <li>• Resource allocation and time tracking</li>
+                </ul>
+              </div>
+
               <div className="flex gap-4">
                 <Button 
                   onClick={() => handleDownloadReport('pdf')}
                   className="flex items-center gap-2"
                 >
                   <FileText className="h-4 w-4" />
-                  Download PDF
+                  Download Enhanced PDF
                 </Button>
                 <Button 
                   onClick={() => handleDownloadReport('csv')}
@@ -500,7 +673,7 @@ const TeamLeadReports = () => {
                   className="flex items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Download CSV
+                  Download Enhanced CSV
                 </Button>
               </div>
 
@@ -510,10 +683,11 @@ const TeamLeadReports = () => {
                   <div>
                     <p className="text-sm text-red-800 font-medium">Access Restrictions</p>
                     <ul className="text-sm text-red-700 mt-1 space-y-1">
-                      <li>• Reports are restricted to your department ({userDepartment}) only</li>
-                      <li>• You cannot download reports for other teams or departments</li>
-                      <li>• All report downloads are logged and monitored</li>
-                      <li>• Contact your manager for cross-department reports</li>
+                      <li>• Reports contain sensitive financial and performance data</li>
+                      <li>• Access restricted to {userDepartment} department only</li>
+                      <li>• All downloads are logged and monitored</li>
+                      <li>• Reports include salary, bonus, and compensation details</li>
+                      <li>• Contact your manager for cross-department access</li>
                     </ul>
                   </div>
                 </div>
