@@ -111,7 +111,6 @@ const TeamLeadDashboard = () => {
       const updatedMembers = [...teamMembers, member];
       setTeamMembers(updatedMembers);
       
-      // Sync logging for live updates
       console.log('Team member added - syncing to Manager and Admin dashboards:', member);
       console.log('Updated team members list:', updatedMembers);
       
@@ -183,10 +182,8 @@ const TeamLeadDashboard = () => {
     let newRating: number;
     
     if (clickCount === 2) {
-      // Double click - full star (20%, 40%, 60%, 80%, 100%)
       newRating = (starIndex + 1) * 20;
     } else {
-      // Single click - half star (10%, 30%, 50%, 70%, 90%)
       newRating = (starIndex * 20) + 10;
     }
     
@@ -397,8 +394,6 @@ const TeamLeadDashboard = () => {
                 </thead>
                 <tbody>
                   {filteredMembers.map(member => {
-                    const { fullStars, hasHalfStar } = getRatingStarsReadOnly(member.rating);
-                    
                     return (
                       <tr key={member.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4">
@@ -430,12 +425,10 @@ const TeamLeadDashboard = () => {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  // Validate file size (max 5MB)
                                   if (file.size > 5 * 1024 * 1024) {
                                     toast.error('Image must be smaller than 5MB');
                                     return;
                                   }
-                                  // Validate file type
                                   if (!file.type.startsWith('image/')) {
                                     toast.error('Please select a valid image file');
                                     return;

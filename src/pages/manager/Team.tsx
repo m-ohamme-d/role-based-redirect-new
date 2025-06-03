@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -259,13 +258,13 @@ const ManagerTeam = () => {
     if (team) {
       setFormData({
         name: team.name,
+        type: 'team',
         manager: '',
         description: '',
         teamLead: team.lead,
         department: team.department,
         customOptions: { budget: '', location: '', workType: 'hybrid' }
       });
-      setCreationType('team');
       setShowUnifiedForm(true);
     }
   };
