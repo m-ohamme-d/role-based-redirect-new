@@ -2,27 +2,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 import { Home, Users, FileText, HelpCircle, Settings, User, Building } from 'lucide-react';
 
 const TeamLeadLayout = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.role !== 'teamlead') {
-        navigate('/login');
-        return;
-      }
-      setUser(parsedUser);
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  if (!user) return null;
+  const { profile } = useAuth();
 
   const sidebarLinks = [
     { to: "/teamlead/dashboard", icon: <Home size={20} />, label: "Dashboard" },
@@ -35,7 +20,9 @@ const TeamLeadLayout = () => {
   ];
 
   return (
-    <MainLayout links={sidebarLinks} role="teamlead" userName={user.name} />
+    <ProtectedRoute allowedRoles={['teamlead']}>
+      <MainLayout links={sidebarLinks} role="teamlead" userName={profile?.name || 'Team Lead'} />
+    </ProtectedRoute>
   );
 };
 

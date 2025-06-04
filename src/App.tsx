@@ -4,10 +4,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -52,74 +54,77 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          
-          {/* Manager Routes */}
-          <Route path="/manager" element={<ManagerLayout />}>
-            <Route index element={<ManagerDashboard />} />
-            <Route path="dashboard" element={<ManagerDashboard />} />
-            <Route path="team" element={<ManagerTeam />} />
-            <Route path="clients" element={<ManagerClients />} />
-            <Route path="alerts" element={<ManagerAlerts />} />
-            <Route path="department/:deptId" element={<ManagerDepartment />} />
-            <Route path="employee/:employeeId" element={<ManagerEmployee />} />
-            <Route path="settings" element={<ManagerSettings />} />
-            <Route path="profile" element={<ManagerProfile />} />
-            {/* Common Pages */}
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="support" element={<Support />} />
-          </Route>
-          
-          {/* Team Lead Routes */}
-          <Route path="/teamlead" element={<TeamLeadLayout />}>
-            <Route index element={<TeamLeadDashboard />} />
-            <Route path="dashboard" element={<TeamLeadDashboard />} />
-            <Route path="team" element={<TeamLeadTeam />} />
-            <Route path="team/:deptId" element={<TeamLeadTeamDepartment />} />
-            <Route path="clients" element={<TeamLeadClients />} />
-            <Route path="settings" element={<TeamLeadSettings />} />
-            <Route path="profile" element={<TeamLeadProfile />} />
-            {/* Common Pages */}
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="support" element={<Support />} />
-          </Route>
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="departments" element={<AdminDepartments />} />
-            <Route path="records" element={<AdminRecords />} />
-            <Route path="audit-log" element={<AdminAuditLog />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="profile" element={<AdminProfile />} />
-            {/* Common Pages */}
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="support" element={<Support />} />
-          </Route>
-          
-          {/* Legacy routes for backward compatibility */}
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/manager-dashboard" element={<ManagerDashboard />} />
-          <Route path="/teamlead-dashboard" element={<TeamLeadDashboard />} />
-          
-          {/* Catch-all route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            
+            {/* Manager Routes */}
+            <Route path="/manager" element={<ManagerLayout />}>
+              <Route index element={<ManagerDashboard />} />
+              <Route path="dashboard" element={<ManagerDashboard />} />
+              <Route path="team" element={<ManagerTeam />} />
+              <Route path="clients" element={<ManagerClients />} />
+              <Route path="alerts" element={<ManagerAlerts />} />
+              <Route path="department/:deptId" element={<ManagerDepartment />} />
+              <Route path="employee/:employeeId" element={<ManagerEmployee />} />
+              <Route path="settings" element={<ManagerSettings />} />
+              <Route path="profile" element={<ManagerProfile />} />
+              {/* Common Pages */}
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="support" element={<Support />} />
+            </Route>
+            
+            {/* Team Lead Routes */}
+            <Route path="/teamlead" element={<TeamLeadLayout />}>
+              <Route index element={<TeamLeadDashboard />} />
+              <Route path="dashboard" element={<TeamLeadDashboard />} />
+              <Route path="team" element={<TeamLeadTeam />} />
+              <Route path="team/:deptId" element={<TeamLeadTeamDepartment />} />
+              <Route path="clients" element={<TeamLeadClients />} />
+              <Route path="settings" element={<TeamLeadSettings />} />
+              <Route path="profile" element={<TeamLeadProfile />} />
+              {/* Common Pages */}
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="support" element={<Support />} />
+            </Route>
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="departments" element={<AdminDepartments />} />
+              <Route path="records" element={<AdminRecords />} />
+              <Route path="audit-log" element={<AdminAuditLog />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="profile" element={<AdminProfile />} />
+              {/* Common Pages */}
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="support" element={<Support />} />
+            </Route>
+            
+            {/* Legacy routes for backward compatibility */}
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/manager-dashboard" element={<ManagerDashboard />} />
+            <Route path="/teamlead-dashboard" element={<TeamLeadDashboard />} />
+            
+            {/* Catch-all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

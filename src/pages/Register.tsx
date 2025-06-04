@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +22,7 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,33 +40,24 @@ const Register = () => {
       return;
     }
 
-    // Mock registration logic
-    setTimeout(() => {
-      const userData = {
-        name: formData.name,
-        email: formData.email,
-        role: formData.role
-      };
+    try {
+      const { error } = await signUp(formData.email, formData.password, formData.name, formData.role);
       
-      localStorage.setItem('user', JSON.stringify(userData));
-      toast.success('Account created successfully!');
-      
-      // Redirect based on role
-      switch (formData.role) {
-        case 'admin':
-          navigate('/admin-dashboard');
-          break;
-        case 'manager':
-          navigate('/manager-dashboard');
-          break;
-        case 'teamlead':
-          navigate('/teamlead/dashboard');
-          break;
-        default:
-          navigate('/teamlead/dashboard');
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast.error('An account with this email already exists');
+        } else {
+          toast.error(error.message || 'Registration failed');
+        }
+      } else {
+        toast.success('Account created successfully! Please check your email to verify your account.');
+        navigate('/login');
       }
+    } catch (error: any) {
+      toast.error('An unexpected error occurred');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
