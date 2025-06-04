@@ -250,16 +250,8 @@ const ManagerTeam = () => {
   const handleEditTeam = (teamId: number) => {
     const team = teams.find(t => t.id === teamId);
     if (team) {
-      setFormData({
-        name: team.name,
-        type: 'team',
-        manager: '',
-        description: '',
-        teamLead: team.lead,
-        department: team.department,
-        customOptions: { budget: '', location: '', workType: 'hybrid' }
-      });
-      setShowUnifiedForm(true);
+      // Just show a simple toast for now since form dialog was removed
+      toast.success(`Edit functionality for ${team.name} - Feature coming soon`);
     }
   };
 
