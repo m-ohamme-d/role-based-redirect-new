@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -22,7 +22,6 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +40,24 @@ const Register = () => {
     }
 
     try {
-      const { error } = await signUp(formData.email, formData.password, formData.name, formData.role);
+      // Clean up any existing auth state
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            role: formData.role,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
       
       if (error) {
         if (error.message.includes('already registered')) {
@@ -54,7 +70,8 @@ const Register = () => {
         navigate('/login');
       }
     } catch (error: any) {
-      toast.error('An unexpected error occurred');
+      console.error('Registration error:', error);
+      toast.error('An unexpected error occurred during registration');
     } finally {
       setLoading(false);
     }
