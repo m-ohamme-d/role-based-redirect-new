@@ -14,16 +14,23 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
   const navigate = useNavigate();
   const { signIn, profile, loading: authLoading } = useAuth();
 
   // Redirect if already logged in - but only redirect to home, let Index handle role-based routing
   useEffect(() => {
-    if (!authLoading && profile) {
+    // Prevent multiple redirects and only redirect if we haven't already done so
+    if (!authLoading && profile && !hasRedirected) {
       console.log('User already logged in, redirecting to home');
-      navigate('/', { replace: true });
+      setHasRedirected(true);
+      
+      // Use a small timeout to prevent rapid navigation calls
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
     }
-  }, [profile, authLoading, navigate]);
+  }, [profile, authLoading, navigate, hasRedirected]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +47,11 @@ const Login = () => {
         }
       } else {
         toast.success('Login successful!');
+        setHasRedirected(true);
         // Navigate to home and let Index handle role-based redirection
-        navigate('/', { replace: true });
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 100);
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -58,6 +68,18 @@ const Login = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is logged in and we've already handled the redirect, show loading
+  if (profile && hasRedirected) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting...</p>
         </div>
       </div>
     );
