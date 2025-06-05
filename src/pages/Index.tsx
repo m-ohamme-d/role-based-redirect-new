@@ -1,18 +1,24 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
+    // Prevent multiple rapid redirects
+    if (hasRedirected || loading) return;
+
     console.log('Index - Auth state:', { profile, loading });
     
-    if (!loading) {
+    // Add a small delay to prevent rapid navigation calls
+    const redirectTimer = setTimeout(() => {
       if (profile) {
         console.log('Redirecting user with role:', profile.role);
+        setHasRedirected(true);
         // Redirect based on role
         switch (profile.role) {
           case 'admin':
@@ -30,10 +36,13 @@ const Index = () => {
         }
       } else {
         console.log('No profile found, redirecting to login');
+        setHasRedirected(true);
         navigate('/login', { replace: true });
       }
-    }
-  }, [profile, loading, navigate]);
+    }, 100);
+
+    return () => clearTimeout(redirectTimer);
+  }, [profile, loading, navigate, hasRedirected]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">

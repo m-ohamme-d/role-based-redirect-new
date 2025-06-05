@@ -17,23 +17,11 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn, profile, loading: authLoading } = useAuth();
 
-  // Redirect if already logged in
+  // Redirect if already logged in - but only redirect to home, let Index handle role-based routing
   useEffect(() => {
     if (!authLoading && profile) {
-      // Redirect based on role
-      switch (profile.role) {
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        case 'manager':
-          navigate('/manager/dashboard');
-          break;
-        case 'teamlead':
-          navigate('/teamlead/dashboard');
-          break;
-        default:
-          navigate('/');
-      }
+      console.log('User already logged in, redirecting to home');
+      navigate('/', { replace: true });
     }
   }, [profile, authLoading, navigate]);
 
@@ -52,7 +40,8 @@ const Login = () => {
         }
       } else {
         toast.success('Login successful!');
-        // The redirection will be handled by the useEffect above
+        // Navigate to home and let Index handle role-based redirection
+        navigate('/', { replace: true });
       }
     } catch (error: any) {
       console.error('Login error:', error);
