@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,27 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, profile, loading: authLoading } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && profile) {
+      // Redirect based on role
+      switch (profile.role) {
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        case 'manager':
+          navigate('/manager/dashboard');
+          break;
+        case 'teamlead':
+          navigate('/teamlead/dashboard');
+          break;
+        default:
+          navigate('/');
+      }
+    }
+  }, [profile, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,14 +52,27 @@ const Login = () => {
         }
       } else {
         toast.success('Login successful!');
-        // Navigation will be handled by the auth context
+        // The redirection will be handled by the useEffect above
       }
     } catch (error: any) {
+      console.error('Login error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading if auth is still being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">

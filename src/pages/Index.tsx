@@ -8,24 +8,29 @@ const Index = () => {
   const { profile, loading } = useAuth();
 
   useEffect(() => {
+    console.log('Index - Auth state:', { profile, loading });
+    
     if (!loading) {
       if (profile) {
+        console.log('Redirecting user with role:', profile.role);
         // Redirect based on role
         switch (profile.role) {
           case 'admin':
-            navigate('/admin/dashboard');
+            navigate('/admin/dashboard', { replace: true });
             break;
           case 'manager':
-            navigate('/manager/dashboard');
+            navigate('/manager/dashboard', { replace: true });
             break;
           case 'teamlead':
-            navigate('/teamlead/dashboard');
+            navigate('/teamlead/dashboard', { replace: true });
             break;
           default:
-            navigate('/login');
+            console.log('Unknown role, redirecting to login');
+            navigate('/login', { replace: true });
         }
       } else {
-        navigate('/login');
+        console.log('No profile found, redirecting to login');
+        navigate('/login', { replace: true });
       }
     }
   }, [profile, loading, navigate]);
