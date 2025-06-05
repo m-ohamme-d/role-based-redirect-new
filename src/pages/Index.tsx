@@ -1,25 +1,25 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
-  const [hasRedirected, setHasRedirected] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent multiple rapid redirects
-    if (hasRedirected || loading) return;
+    // Only redirect once and prevent multiple redirects
+    if (hasRedirectedRef.current || loading) return;
 
     console.log('Index - Auth state:', { profile, loading });
     
-    // Add a small delay to prevent rapid navigation calls
-    const redirectTimer = setTimeout(() => {
-      if (profile) {
-        console.log('Redirecting user with role:', profile.role);
-        setHasRedirected(true);
-        // Redirect based on role
+    if (profile) {
+      console.log('Redirecting user with role:', profile.role);
+      hasRedirectedRef.current = true;
+      
+      // Use a single timeout to prevent rapid navigation
+      const timer = setTimeout(() => {
         switch (profile.role) {
           case 'admin':
             navigate('/admin/dashboard', { replace: true });
@@ -34,15 +34,19 @@ const Index = () => {
             console.log('Unknown role, redirecting to login');
             navigate('/login', { replace: true });
         }
-      } else {
-        console.log('No profile found, redirecting to login');
-        setHasRedirected(true);
-        navigate('/login', { replace: true });
-      }
-    }, 100);
+      }, 100);
 
-    return () => clearTimeout(redirectTimer);
-  }, [profile, loading, navigate, hasRedirected]);
+      return () => clearTimeout(timer);
+    } else {
+      console.log('No profile found, redirecting to login');
+      hasRedirectedRef.current = true;
+      const timer = setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [profile, loading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
