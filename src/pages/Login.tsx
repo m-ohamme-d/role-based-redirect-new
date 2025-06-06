@@ -17,20 +17,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn, profile, loading: authLoading } = useAuth();
 
-  // Simple redirect for already logged in users - no loops
-  if (!authLoading && profile) {
-    // Just redirect once to home, let Index handle the role routing
-    navigate('/', { replace: true });
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -46,7 +32,8 @@ const Login = () => {
         }
       } else {
         toast.success('Login successful!');
-        // Don't navigate here - let the auth state change handle it
+        // Navigate to home and let Index handle role routing
+        navigate('/', { replace: true });
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -66,6 +53,12 @@ const Login = () => {
         </div>
       </div>
     );
+  }
+
+  // If user is already logged in, redirect to home
+  if (profile) {
+    navigate('/', { replace: true });
+    return null;
   }
 
   return (

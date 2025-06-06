@@ -9,16 +9,18 @@ const Index = () => {
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    // Only redirect once and prevent multiple redirects
+    // Prevent multiple redirects
     if (hasRedirectedRef.current || loading) return;
 
     console.log('Index - Auth state:', { profile, loading });
     
+    // Set the flag immediately to prevent duplicate runs
+    hasRedirectedRef.current = true;
+    
     if (profile) {
       console.log('Redirecting user with role:', profile.role);
-      hasRedirectedRef.current = true;
       
-      // Use a single timeout to prevent rapid navigation
+      // Use setTimeout to defer navigation and prevent rapid calls
       const timer = setTimeout(() => {
         switch (profile.role) {
           case 'admin':
@@ -34,19 +36,25 @@ const Index = () => {
             console.log('Unknown role, redirecting to login');
             navigate('/login', { replace: true });
         }
-      }, 100);
+      }, 50);
 
       return () => clearTimeout(timer);
     } else {
       console.log('No profile found, redirecting to login');
-      hasRedirectedRef.current = true;
       const timer = setTimeout(() => {
         navigate('/login', { replace: true });
-      }, 100);
+      }, 50);
 
       return () => clearTimeout(timer);
     }
   }, [profile, loading, navigate]);
+
+  // Reset the redirect flag when component unmounts
+  useEffect(() => {
+    return () => {
+      hasRedirectedRef.current = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
