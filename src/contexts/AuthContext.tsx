@@ -36,14 +36,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
 
   const fetchProfile = async (userId: string) => {
-    // Prevent multiple simultaneous profile fetches
-    if (profileLoading) return;
-    
     try {
-      setProfileLoading(true);
       console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
@@ -60,29 +55,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
-    } finally {
-      setProfileLoading(false);
     }
   };
 
   useEffect(() => {
-    let mounted = true;
-
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-        
         console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && !profileLoading) {
-          // Only fetch profile if we don't already have it or if it's a different user
-          if (!profile || profile.id !== session.user.id) {
-            await fetchProfile(session.user.id);
-          }
-        } else if (!session?.user) {
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
           setProfile(null);
         }
         
@@ -92,32 +78,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      
       console.log('Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Clean up any existing auth state
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Continue even if this fails
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -163,15 +140,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Clean up local state first
       setUser(null);
       setSession(null);
       setProfile(null);
       
-      // Sign out from Supabase
-      await supabase.auth.signOut({ scope: 'global' });
+      await supabase.auth.signOut();
       
-      // Force page reload for clean state
       window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out:', error);

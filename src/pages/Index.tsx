@@ -1,21 +1,16 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
-  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    // Don't do anything while loading or if we already redirected
-    if (loading || hasRedirected) return;
+    if (loading) return;
 
-    console.log('Index - Auth state:', { profile, loading, hasRedirected });
-    
-    // Mark that we're redirecting
-    setHasRedirected(true);
+    console.log('Index - Auth state:', { profile, loading });
     
     if (profile) {
       console.log('Redirecting user with role:', profile.role);
@@ -38,7 +33,7 @@ const Index = () => {
       console.log('No profile found, redirecting to login');
       navigate('/login', { replace: true });
     }
-  }, [profile, loading, navigate, hasRedirected]);
+  }, [profile, loading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">

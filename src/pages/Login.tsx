@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,7 +31,6 @@ const Login = () => {
         }
       } else {
         toast.success('Login successful!');
-        // Don't navigate here - let the auth state change and Index component handle it
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -41,7 +40,6 @@ const Login = () => {
     }
   };
 
-  // Show loading if auth is still being checked
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -53,7 +51,6 @@ const Login = () => {
     );
   }
 
-  // If user is already logged in, show loading while Index handles redirect
   if (profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
