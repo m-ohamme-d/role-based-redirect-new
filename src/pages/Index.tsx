@@ -9,19 +9,19 @@ const Index = () => {
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent multiple redirects
+    // Prevent multiple redirects and wait for auth to load
     if (hasRedirectedRef.current || loading) return;
 
     console.log('Index - Auth state:', { profile, loading });
     
-    // Set the flag immediately to prevent duplicate runs
+    // Mark that we've attempted redirect to prevent loops
     hasRedirectedRef.current = true;
     
-    if (profile) {
-      console.log('Redirecting user with role:', profile.role);
-      
-      // Use setTimeout to defer navigation and prevent rapid calls
-      const timer = setTimeout(() => {
+    // Use a longer delay to ensure auth state is fully settled
+    const timer = setTimeout(() => {
+      if (profile) {
+        console.log('Redirecting user with role:', profile.role);
+        
         switch (profile.role) {
           case 'admin':
             navigate('/admin/dashboard', { replace: true });
@@ -36,26 +36,17 @@ const Index = () => {
             console.log('Unknown role, redirecting to login');
             navigate('/login', { replace: true });
         }
-      }, 50);
-
-      return () => clearTimeout(timer);
-    } else {
-      console.log('No profile found, redirecting to login');
-      const timer = setTimeout(() => {
+      } else {
+        console.log('No profile found, redirecting to login');
         navigate('/login', { replace: true });
-      }, 50);
+      }
+    }, 100);
 
-      return () => clearTimeout(timer);
-    }
+    return () => clearTimeout(timer);
   }, [profile, loading, navigate]);
 
-  // Reset the redirect flag when component unmounts
-  useEffect(() => {
-    return () => {
-      hasRedirectedRef.current = false;
-    };
-  }, []);
-
+  // Don't reset the flag on unmount to prevent issues during navigation
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">

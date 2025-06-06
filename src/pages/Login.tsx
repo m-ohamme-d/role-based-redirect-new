@@ -14,7 +14,6 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const { signIn, profile, loading: authLoading } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,8 +31,7 @@ const Login = () => {
         }
       } else {
         toast.success('Login successful!');
-        // Navigate to home and let Index handle role routing
-        navigate('/', { replace: true });
+        // Don't navigate here - let the auth state change and Index component handle it
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -55,10 +53,16 @@ const Login = () => {
     );
   }
 
-  // If user is already logged in, redirect to home
+  // If user is already logged in, show loading while Index handles redirect
   if (profile) {
-    navigate('/', { replace: true });
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
