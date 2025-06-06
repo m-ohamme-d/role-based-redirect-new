@@ -1,39 +1,47 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || hasRedirected) return;
 
     console.log('Index - Auth state:', { profile, loading });
     
     if (profile) {
       console.log('Redirecting user with role:', profile.role);
+      setHasRedirected(true);
       
-      switch (profile.role) {
-        case 'admin':
-          navigate('/admin/dashboard', { replace: true });
-          break;
-        case 'manager':
-          navigate('/manager/dashboard', { replace: true });
-          break;
-        case 'teamlead':
-          navigate('/teamlead/dashboard', { replace: true });
-          break;
-        default:
-          console.log('Unknown role, redirecting to login');
-          navigate('/login', { replace: true });
-      }
+      // Use setTimeout to avoid redirect loops
+      setTimeout(() => {
+        switch (profile.role) {
+          case 'admin':
+            navigate('/admin/dashboard', { replace: true });
+            break;
+          case 'manager':
+            navigate('/manager/dashboard', { replace: true });
+            break;
+          case 'teamlead':
+            navigate('/teamlead/dashboard', { replace: true });
+            break;
+          default:
+            console.log('Unknown role, redirecting to login');
+            navigate('/login', { replace: true });
+        }
+      }, 100);
     } else {
       console.log('No profile found, redirecting to login');
-      navigate('/login', { replace: true });
+      setHasRedirected(true);
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 100);
     }
-  }, [profile, loading, navigate]);
+  }, [profile, loading, navigate, hasRedirected]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
