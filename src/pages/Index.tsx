@@ -1,52 +1,45 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
-  const hasRedirectedRef = useRef(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    // Prevent multiple redirects and wait for auth to load
-    if (hasRedirectedRef.current || loading) return;
+    // Don't do anything while loading or if we already redirected
+    if (loading || hasRedirected) return;
 
-    console.log('Index - Auth state:', { profile, loading });
+    console.log('Index - Auth state:', { profile, loading, hasRedirected });
     
-    // Mark that we've attempted redirect to prevent loops
-    hasRedirectedRef.current = true;
+    // Mark that we're redirecting
+    setHasRedirected(true);
     
-    // Use a longer delay to ensure auth state is fully settled
-    const timer = setTimeout(() => {
-      if (profile) {
-        console.log('Redirecting user with role:', profile.role);
-        
-        switch (profile.role) {
-          case 'admin':
-            navigate('/admin/dashboard', { replace: true });
-            break;
-          case 'manager':
-            navigate('/manager/dashboard', { replace: true });
-            break;
-          case 'teamlead':
-            navigate('/teamlead/dashboard', { replace: true });
-            break;
-          default:
-            console.log('Unknown role, redirecting to login');
-            navigate('/login', { replace: true });
-        }
-      } else {
-        console.log('No profile found, redirecting to login');
-        navigate('/login', { replace: true });
+    if (profile) {
+      console.log('Redirecting user with role:', profile.role);
+      
+      switch (profile.role) {
+        case 'admin':
+          navigate('/admin/dashboard', { replace: true });
+          break;
+        case 'manager':
+          navigate('/manager/dashboard', { replace: true });
+          break;
+        case 'teamlead':
+          navigate('/teamlead/dashboard', { replace: true });
+          break;
+        default:
+          console.log('Unknown role, redirecting to login');
+          navigate('/login', { replace: true });
       }
-    }, 100);
+    } else {
+      console.log('No profile found, redirecting to login');
+      navigate('/login', { replace: true });
+    }
+  }, [profile, loading, navigate, hasRedirected]);
 
-    return () => clearTimeout(timer);
-  }, [profile, loading, navigate]);
-
-  // Don't reset the flag on unmount to prevent issues during navigation
-  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
