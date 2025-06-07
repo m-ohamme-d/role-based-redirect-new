@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell } from "lucide-react";
+import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell, UserPlus } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Mock data for charts
 const employeeOverviewData = [
@@ -86,8 +85,8 @@ const ManagerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
-  const [showCreateDeptDialog, setShowCreateDeptDialog] = useState(false);
-  const [newDeptName, setNewDeptName] = useState('');
+  const [showAssignProjectDialog, setShowAssignProjectDialog] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
 
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
@@ -111,15 +110,23 @@ const ManagerDashboard = () => {
     }
   };
 
-  const handleCreateDepartment = () => {
-    if (!newDeptName.trim()) {
-      toast.error('Department name is required');
-      return;
+  const handleAssignProject = (project: any) => {
+    setSelectedProject(project);
+    setShowAssignProjectDialog(true);
+  };
+
+  const assignProjectToDepartment = (departmentName: string) => {
+    if (selectedProject && selectedClient) {
+      const updatedProjects = selectedClient.projects.map((project: any) => 
+        project.id === selectedProject.id 
+          ? { ...project, department: departmentName }
+          : project
+      );
+      setSelectedClient({ ...selectedClient, projects: updatedProjects });
+      setShowAssignProjectDialog(false);
+      setSelectedProject(null);
+      toast.success(`Project "${selectedProject.name}" assigned to ${departmentName} department`);
     }
-    
-    toast.success(`Department "${newDeptName}" created successfully`);
-    setNewDeptName('');
-    setShowCreateDeptDialog(false);
   };
 
   return (
@@ -127,38 +134,6 @@ const ManagerDashboard = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
         <div className="flex gap-2">
-          <Dialog open={showCreateDeptDialog} onOpenChange={setShowCreateDeptDialog}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                Create Department
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle>Create New Department</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="dept-name">Department Name</Label>
-                  <Input
-                    id="dept-name"
-                    value={newDeptName}
-                    onChange={(e) => setNewDeptName(e.target.value)}
-                    placeholder="Enter department name"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowCreateDeptDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateDepartment}>
-                    Create
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
           <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
@@ -233,7 +208,7 @@ const ManagerDashboard = () => {
         />
       </div>
 
-      {/* Clients Section - SIMPLIFIED WITHOUT DEPARTMENT ASSIGNMENT */}
+      {/* Clients Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -305,7 +280,7 @@ const ManagerDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Client Projects Dialog - SIMPLIFIED */}
+      {/* Client Projects Dialog */}
       <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -327,6 +302,11 @@ const ManagerDashboard = () => {
                         >
                           {project.status === 'working' ? 'Working' : 'Stopped'}
                         </Badge>
+                        {project.department && (
+                          <Badge variant="outline">
+                            {project.department}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
@@ -337,11 +317,62 @@ const ManagerDashboard = () => {
                       >
                         Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleAssignProject(project)}
+                        className="flex items-center gap-2"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        Assign Dept
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Project Dialog */}
+      <Dialog open={showAssignProjectDialog} onOpenChange={setShowAssignProjectDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Assign Project to Department</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedProject && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold">{selectedProject.name}</h3>
+                <p className="text-sm text-gray-600">
+                  Current: {selectedProject.department || 'Unassigned'}
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Department:</label>
+              <Select onValueChange={assignProjectToDepartment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAssignProjectDialog(false)}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

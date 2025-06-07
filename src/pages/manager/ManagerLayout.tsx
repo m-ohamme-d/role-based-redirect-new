@@ -2,12 +2,27 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layouts/MainLayout';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
 import { Home, Users, FileText, HelpCircle, Settings, User, Bell, Building } from 'lucide-react';
 
 const ManagerLayout = () => {
-  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.role !== 'manager') {
+        navigate('/login');
+        return;
+      }
+      setUser(parsedUser);
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  if (!user) return null;
 
   const sidebarLinks = [
     { to: "/manager/dashboard", icon: <Home size={20} />, label: "Dashboard" },
@@ -22,9 +37,7 @@ const ManagerLayout = () => {
   ];
 
   return (
-    <ProtectedRoute allowedRoles={['manager']}>
-      <MainLayout links={sidebarLinks} role="manager" userName={profile?.name || 'Manager'} />
-    </ProtectedRoute>
+    <MainLayout links={sidebarLinks} role="manager" userName={user.name} />
   );
 };
 
