@@ -15,33 +15,44 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, profile, loading: authLoading } = useAuth();
+  const { signIn, profile, loading: authLoading, user, session } = useAuth();
 
   useEffect(() => {
-    // Debug: log state each render
-    console.log("[Login debug] authLoading:", authLoading, "profile:", profile);
+    // Enhanced debug logging
+    console.log("[Login] Auth state:", { 
+      authLoading, 
+      profile: !!profile, 
+      profileRole: profile?.role,
+      user: !!user,
+      session: !!session 
+    });
+    
+    // Only redirect if we're not loading and we have a profile
     if (!authLoading && profile) {
+      console.log("[Login] Redirecting user with role:", profile.role);
       navigate('/', { replace: true });
     }
-  }, [profile, authLoading, navigate]);
+  }, [profile, authLoading, navigate, user, session]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      console.log("[Login] Attempting login...");
       const { error } = await signIn(email, password);
       
       if (error) {
+        console.error("[Login] Login error:", error);
         if (error.message.includes('Invalid login credentials')) {
           toast.error('Invalid email or password');
         } else {
           toast.error(error.message || 'Login failed');
         }
       } else {
+        console.log("[Login] Login successful, waiting for redirect...");
         toast.success('Login successful!');
-        // Navigate to home, which will handle the role-based redirect
-        navigate('/', { replace: true });
+        // Don't navigate here - let the useEffect handle it
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -52,19 +63,12 @@ const Login = () => {
   };
 
   if (authLoading) {
-    // Debug statement
-    console.log("[Login debug] Still loading ...", { authLoading, profile });
+    console.log("[Login] Still loading auth state...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">
-            Loading...
-            <br />
-            <span className="text-xs text-red-500 font-mono">
-              (Debug: authLoading={String(authLoading)})
-            </span>
-          </p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );

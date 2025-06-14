@@ -1,7 +1,9 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cleanupAuthState } from '@/utils/authCleanup';
 
 interface Profile {
   id: string;
@@ -36,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('[AuthProvider] Current state:', { loading, user: !!user, profile: !!profile });
+  console.log('[AuthProvider] Current state:', { loading, user: !!user, profile: !!profile, sessionUser: !!session?.user });
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -66,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
-        console.log('[AuthProvider] Setting up auth listener...');
+        console.log('[AuthProvider] Setting up auth...');
         
         // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -76,35 +78,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               return;
             }
 
-            console.log('[AuthProvider] Auth state change:', event, session?.user?.id);
+            console.log('[AuthProvider] Auth state change:', event, 'Session exists:', !!session);
 
-            // Update session and user immediately
+            // Update state immediately
             setSession(session);
             setUser(session?.user ?? null);
 
-            // Handle profile fetching separately without blocking loading state
+            // Handle profile fetching
             if (session?.user) {
-              // Use setTimeout to defer profile fetching and prevent blocking
+              console.log('[AuthProvider] User found, fetching profile...');
               setTimeout(async () => {
                 if (!mounted) return;
                 try {
                   const profileData = await fetchProfile(session.user.id);
                   if (mounted) {
                     setProfile(profileData);
-                    console.log('[AuthProvider] Profile loaded:', profileData);
+                    console.log('[AuthProvider] Profile set:', profileData);
                   }
                 } catch (err) {
-                  console.error("Error in profile fetch in listener", err);
+                  console.error("Error fetching profile:", err);
                   if (mounted) setProfile(null);
                 }
-              }, 0);
+              }, 100);
             } else {
+              console.log('[AuthProvider] No user, clearing profile');
               setProfile(null);
             }
             
-            // Always set loading to false when auth state changes
+            // Set loading to false
             if (mounted) {
-              console.log('[AuthProvider] Setting loading to false after auth change');
+              console.log('[AuthProvider] Setting loading to false');
               setLoading(false);
             }
           }
@@ -112,7 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Check for existing session
         console.log('[AuthProvider] Checking for existing session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('[AuthProvider] Error getting session:', error);
@@ -120,36 +123,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (!mounted) return;
 
-        console.log('[AuthProvider] Initial session check:', session?.user?.id);
+        console.log('[AuthProvider] Existing session check complete:', !!existingSession);
         
-        // Update session and user immediately
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        // Handle profile fetching for initial session
-        if (session?.user) {
-          // Use setTimeout to defer profile fetching
-          setTimeout(async () => {
-            if (!mounted) return;
-            try {
-              const profileData = await fetchProfile(session.user.id);
-              if (mounted) {
-                setProfile(profileData);
-                console.log('[AuthProvider] Initial profile loaded:', profileData);
-              }
-            } catch (err) {
-              console.error("Error in profile fetch in initial session", err);
-              if (mounted) setProfile(null);
-            }
-          }, 0);
-        } else {
+        // If no session found initially, make sure loading is false
+        if (!existingSession) {
+          setSession(null);
+          setUser(null);
           setProfile(null);
-        }
-
-        // Always set loading to false after initial check
-        if (mounted) {
-          console.log('[AuthProvider] Setting loading to false after initial check');
           setLoading(false);
+          console.log('[AuthProvider] No existing session, loading set to false');
         }
 
         return () => {
@@ -159,7 +141,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.error('[AuthProvider] Error in initializeAuth:', error);
         if (mounted) {
-          console.log('[AuthProvider] Setting loading to false due to error');
           setLoading(false);
         }
       }
@@ -176,13 +157,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('[AuthProvider] Starting sign in...');
+      
+      // Clean up any existing state first
+      cleanupAuthState();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Sign in error:', error);
+        throw error;
+      }
 
+      console.log('[AuthProvider] Sign in successful:', !!data.user);
       return { error: null };
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -193,6 +183,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, name: string, role: string) => {
     try {
       console.log('Attempting signup with:', { email, name, role });
+
+      // Clean up any existing state first
+      cleanupAuthState();
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -221,12 +214,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      console.log('[AuthProvider] Starting sign out...');
+      
+      // Clear state first
       setUser(null);
       setSession(null);
       setProfile(null);
 
-      await supabase.auth.signOut();
+      // Clean up auth state
+      cleanupAuthState();
 
+      await supabase.auth.signOut({ scope: 'global' });
+
+      // Force page reload to ensure clean state
       window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out:', error);
