@@ -1,39 +1,39 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-
-// Move the guard outside component scope
-let hasRedirectedThisSession = false;
 
 export default function Index() {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // local state just to trigger one re-render after redirect
+  // Guards against StrictMode double mount, and ensures redirect can occur every page load
+  const hasRedirectedRef = useRef(false);
+
+  // Triggers re-render after navigation so we can bail out in render
   const [, forceUpdate] = useState<{}>({});
 
   useEffect(() => {
-    if (loading || hasRedirectedThisSession) return;
+    if (loading || hasRedirectedRef.current) return;
 
-    hasRedirectedThisSession = true;
+    hasRedirectedRef.current = true;
     const dest = profile
       ? profile.role === 'admin'
         ? '/admin/dashboard'
         : profile.role === 'manager'
-          ? '/manager/dashboard'
-          : profile.role === 'teamlead'
-            ? '/teamlead/dashboard'
-            : '/login'
+        ? '/manager/dashboard'
+        : profile.role === 'teamlead'
+        ? '/teamlead/dashboard'
+        : '/login'
       : '/login';
 
     navigate(dest, { replace: true });
-    // force one re-render so we can bail out in render below
+    // Force re-render to trigger null return
     forceUpdate({});
   }, [loading, profile, navigate]);
 
-  // Show spinner while loading or *just* after navigating
-  if (loading || !hasRedirectedThisSession) {
+  // Show spinner while loading or right after navigating
+  if (loading || !hasRedirectedRef.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -44,6 +44,6 @@ export default function Index() {
     );
   }
 
-  // After redirect, render nothing so router can swap us out
+  // Hide everything after navigation, so router can swap us out
   return null;
 }
