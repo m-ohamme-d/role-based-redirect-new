@@ -18,7 +18,8 @@ const Login = () => {
   const { signIn, profile, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // If user is already logged in, redirect to home (which will handle role-based redirect)
+    // Debug: log state each render
+    console.log("[Login debug] authLoading:", authLoading, "profile:", profile);
     if (!authLoading && profile) {
       navigate('/', { replace: true });
     }
@@ -51,11 +52,19 @@ const Login = () => {
   };
 
   if (authLoading) {
+    // Debug statement
+    console.log("[Login debug] Still loading ...", { authLoading, profile });
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">
+            Loading...
+            <br />
+            <span className="text-xs text-red-500 font-mono">
+              (Debug: authLoading={String(authLoading)})
+            </span>
+          </p>
         </div>
       </div>
     );
