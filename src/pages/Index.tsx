@@ -6,18 +6,24 @@ import { useAuth } from '@/contexts/AuthContext';
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
+  // Ensure hasRedirectedRef persists across rapid re-renders/mounts
   const hasRedirectedRef = useRef(false);
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    // Only attempt redirect when NOT loading and haven't already redirected
-    if (loading) return; // IMPORTANT: absolutely never redirect while loading
+    // Absolutely never redirect when loading
+    if (loading) return;
+    // If we've already redirected, do nothing
     if (hasRedirectedRef.current) return;
 
-    // After loading is done—proceed with redirects
+    // Nothing to do until loading is complete
+    if (typeof loading === "undefined") return;
+
+    // After loading, decide where to redirect
+    hasRedirectedRef.current = true;
+    setRedirecting(true);
+
     if (profile) {
-      hasRedirectedRef.current = true;
-      setRedirecting(true);
       switch (profile.role) {
         case 'admin':
           navigate('/admin/dashboard', { replace: true });
@@ -32,23 +38,31 @@ const Index = () => {
           navigate('/login', { replace: true });
       }
     } else {
-      // No profile found AFTER loading is finished
-      hasRedirectedRef.current = true;
-      setRedirecting(true);
+      // No profile after loading
       navigate('/login', { replace: true });
     }
   }, [profile, loading, navigate]);
 
-  if (redirecting) {
-    return null;
+  if (redirecting || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            Loading...
+          </p>
+        </div>
+      </div>
+    );
   }
 
+  // Non-authenticated fallback (should almost never occur)
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
         <p className="mt-4 text-gray-600">
-          {loading ? 'Loading...' : 'Redirecting to your dashboard...'}
+          Redirecting to your dashboard...
         </p>
       </div>
     </div>
@@ -56,3 +70,4 @@ const Index = () => {
 };
 
 export default Index;
+
