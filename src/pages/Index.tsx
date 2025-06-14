@@ -7,37 +7,38 @@ const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Guard to prevent redirect loop
+  // Guards to prevent infinite redirect loop
   const hasRedirectedRef = useRef(false);
+  const prevProfileRef = useRef<typeof profile | null>(null);
   const [redirecting, setRedirecting] = useState(false);
 
-  // Reset guards ONLY once when a user fully logs out
+  // Only reset guards if user just fully logged out (profile went from not-null to null while not loading)
   useEffect(() => {
-    // Only reset guards when user explicitly logs out (profile just transitioned to null)
-    if (!loading && !profile && hasRedirectedRef.current) {
+    if (
+      prevProfileRef.current &&         // previously logged in
+      !profile &&                      // now logged out
+      !loading &&                      // auth idle
+      hasRedirectedRef.current         // we've redirected earlier
+    ) {
       hasRedirectedRef.current = false;
       setRedirecting(false);
-      console.log('[Index] Resetting redirect guards: fully logged out');
+      // Optionally clear any other state if needed
+      // console.log('[Index] Reset: user just logged out');
     }
-    // Do NOT reset if already logged out, or if logging in
-  }, [loading, profile]);
+    prevProfileRef.current = profile;
+  }, [profile, loading]);
 
-  // Main redirect logic - only redirect ONCE after log in
+  // Perform redirect exactly ONCE (per login session) - not on every state change!
   useEffect(() => {
     if (typeof loading === 'undefined' || loading) return;
     if (hasRedirectedRef.current || redirecting) return;
 
-    /**
-     * Safe navigation: redirect only if needed
-     */
     function safeNavigate(dest: string) {
       if (window.location.pathname === dest) {
-        console.log('[Index] Already at target:', dest);
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      console.log('[Index] Navigating to:', dest);
       navigate(dest, { replace: true });
     }
 
@@ -56,9 +57,9 @@ const Index = () => {
           safeNavigate('/login');
       }
     } else {
-      // Not authenticated, go to login if not already there
       safeNavigate('/login');
     }
+  // Only re-run if absolutely necessary
   }, [profile, loading, redirecting, navigate]);
 
   // Show loading/redirect spinner
@@ -75,7 +76,7 @@ const Index = () => {
     );
   }
 
-  // Fallback (should rarely render)
+  // Fallback UI; should never render
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
