@@ -1,22 +1,22 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Move the guard outside component scope
+let hasRedirectedThisSession = false;
 
 export default function Index() {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Guards against StrictMode double mount
-  const hasRedirectedRef = useRef(false);
-
-  // Triggers re-render after navigation so we can bail out in render
+  // local state just to trigger one re-render after redirect
   const [, forceUpdate] = useState<{}>({});
 
   useEffect(() => {
-    if (loading || hasRedirectedRef.current) return;
+    if (loading || hasRedirectedThisSession) return;
 
-    hasRedirectedRef.current = true;
+    hasRedirectedThisSession = true;
     const dest = profile
       ? profile.role === 'admin'
         ? '/admin/dashboard'
@@ -28,12 +28,12 @@ export default function Index() {
       : '/login';
 
     navigate(dest, { replace: true });
-    // Force re-render to trigger null return
+    // force one re-render so we can bail out in render below
     forceUpdate({});
   }, [loading, profile, navigate]);
 
-  // Show spinner while loading or right after navigating
-  if (loading || !hasRedirectedRef.current) {
+  // Show spinner while loading or *just* after navigating
+  if (loading || !hasRedirectedThisSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -44,6 +44,6 @@ export default function Index() {
     );
   }
 
-  // Hide everything after navigation, so router can swap us out
+  // After redirect, render nothing so router can swap us out
   return null;
 }
