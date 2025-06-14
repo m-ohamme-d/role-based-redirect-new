@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,113 +7,70 @@ const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Prevents repeated redirects
+  // Single “did I already run?” guard
   const hasRedirectedRef = useRef(false);
   const prevProfileRef = useRef<typeof profile | null>(null);
-  const [redirecting, setRedirecting] = useState(false);
 
-  // Only reset redirect guard ONCE after a *real* logout
+  // Reset the guard when we go from logged-in → logged-out
   useEffect(() => {
-    // If we were authenticated before, but now not authenticated, and not loading, and we redirected previously
     if (
-      prevProfileRef.current !== null && // previously authenticated
-      profile === null &&                // now logged out
-      !loading &&                        // not loading
-      hasRedirectedRef.current           // redirected previously
+      prevProfileRef.current !== null &&  // we were logged in
+      profile === null &&                 // now logged out
+      !loading &&                         // finished loading
+      hasRedirectedRef.current           // and had redirected
     ) {
       hasRedirectedRef.current = false;
-      setRedirecting(false);
     }
     prevProfileRef.current = profile;
   }, [profile, loading]);
 
+  // Do one‐and‐only‐one redirect per auth state change
   useEffect(() => {
-    if (loading) return;
-    // Don't redirect if we've already done so for this session/transition
-    if (hasRedirectedRef.current || redirecting) return;
-
-    // Function to normalize URLs for comparison (removes trailing slashes)
-    function normalizeLocation(url: string) {
-      let u = url;
-      if (u.endsWith('/') && u.length > 1) u = u.slice(0, -1);
-      return u;
-    }
-    function currentPathWithSearchHash() {
-      return (
-        window.location.pathname +
-        window.location.search +
-        window.location.hash
-      );
+    if (loading || hasRedirectedRef.current) {
+      return;
     }
 
-    // Only navigate if not at the desired destination
-    function safeNavigate(dest: string) {
-      const destNorm = normalizeLocation(dest);
-      const currNorm = normalizeLocation(currentPathWithSearchHash());
-      // For debugging:
-      // console.log("[Index] safeNavigate? dest:", dest, "curr:", currentPathWithSearchHash(), "normalized: ", currNorm, destNorm);
+    // Normalize path + search + hash (strip trailing “/”)
+    const normalize = (u: string) =>
+      u.endsWith('/') && u.length > 1 ? u.slice(0, -1) : u;
+    const current = normalize(
+      window.location.pathname +
+      window.location.search +
+      window.location.hash
+    );
 
-      if (currNorm === destNorm) {
-        // Already at destination, no redirection necessary
-        hasRedirectedRef.current = true;
-        setRedirecting(false);
-        // console.log("[Index] safeNavigate: NOOP already at dest", destNorm);
-        return;
-      }
-      hasRedirectedRef.current = true;
-      setRedirecting(true);
-      // console.log("[Index] safeNavigate: navigating to", destNorm);
-      navigate(dest, { replace: true });
-    }
-
+    // Compute where we ought to go
+    let destination: string;
     if (profile) {
       switch (profile.role) {
-        case 'admin':
-          safeNavigate('/admin/dashboard');
-          break;
-        case 'manager':
-          safeNavigate('/manager/dashboard');
-          break;
-        case 'teamlead':
-          safeNavigate('/teamlead/dashboard');
-          break;
-        default:
-          safeNavigate('/login');
+        case 'admin':    destination = '/admin/dashboard';    break;
+        case 'manager':  destination = '/manager/dashboard';  break;
+        case 'teamlead': destination = '/teamlead/dashboard'; break;
+        default:         destination = '/login';
       }
     } else {
-      // Not logged in
-      const currNorm = normalizeLocation(currentPathWithSearchHash());
-      const loginPaths = ['/login', '/login/'].map(normalizeLocation);
-      if (loginPaths.includes(currNorm)) {
-        // Already on login page, no redirect needed
-        hasRedirectedRef.current = true;
-        setRedirecting(false);
-      } else {
-        safeNavigate('/login');
-      }
+      destination = '/login';
     }
-  }, [profile, loading, redirecting, navigate]);
 
-  if (loading || redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">
-            Loading...
-          </p>
-        </div>
-      </div>
-    );
-  }
+    // If we’re already there, just mark as done
+    const destNorm = normalize(destination);
+    if (current === destNorm) {
+      hasRedirectedRef.current = true;
+      return;
+    }
 
-  // Fallback UI (should never render, but is safe)
+    // Else navigate exactly once
+    hasRedirectedRef.current = true;
+    navigate(destination, { replace: true });
+  }, [loading, profile, navigate]);
+
+  // Always render a spinner while we decide
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
         <p className="mt-4 text-gray-600">
-          Redirecting to your dashboard...
+          {loading ? 'Loading…' : 'Redirecting…'}
         </p>
       </div>
     </div>
