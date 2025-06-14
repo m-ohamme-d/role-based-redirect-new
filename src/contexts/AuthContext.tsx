@@ -36,6 +36,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log('[AuthProvider] Current state:', { loading, user: !!user, profile: !!profile });
+
   const fetchProfile = async (userId: string) => {
     try {
       console.log('Fetching profile for user:', userId);
@@ -59,62 +61,97 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log('[AuthProvider] useEffect starting...');
     let mounted = true;
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const initializeAuth = async () => {
+      try {
+        console.log('[AuthProvider] Setting up auth listener...');
+        
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!mounted) {
+              console.log('[AuthProvider] Component unmounted, ignoring auth change');
+              return;
+            }
+
+            console.log('[AuthProvider] Auth state change:', event, session?.user?.id);
+
+            setSession(session);
+            setUser(session?.user ?? null);
+
+            if (session?.user) {
+              try {
+                const profileData = await fetchProfile(session.user.id);
+                if (mounted) {
+                  setProfile(profileData);
+                }
+              } catch (err) {
+                console.error("Error in profile fetch in listener", err);
+                if (mounted) setProfile(null);
+              }
+            } else {
+              setProfile(null);
+            }
+            
+            if (mounted) {
+              console.log('[AuthProvider] Setting loading to false after auth change');
+              setLoading(false);
+            }
+          }
+        );
+
+        // Check for existing session
+        console.log('[AuthProvider] Checking for existing session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AuthProvider] Error getting session:', error);
+        }
+
         if (!mounted) return;
 
-        console.log('Auth state change:', event, session?.user?.id);
-
+        console.log('[AuthProvider] Initial session check:', session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
 
-        try {
-          if (session?.user) {
-            const profileData = await fetchProfile(session.user.id);
-            if (mounted) {
-              setProfile(profileData);
-            }
-          } else {
-            setProfile(null);
-          }
-        } catch (err) {
-          console.error("Error in profile fetch in listener", err);
-          if (mounted) setProfile(null);
-        }
-        if (mounted) setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-
-      console.log('Initial session check:', session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      try {
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          if (mounted) setProfile(profileData);
+          try {
+            const profileData = await fetchProfile(session.user.id);
+            if (mounted) setProfile(profileData);
+          } catch (err) {
+            console.error("Error in profile fetch in initial session", err);
+            if (mounted) setProfile(null);
+          }
+        } else {
+          setProfile(null);
         }
-      } catch (err) {
-        console.error("Error in profile fetch in initial session", err);
-        if (mounted) setProfile(null);
-      }
 
-      if (mounted) setLoading(false);
-    }).catch((err) => {
-      if (mounted) setLoading(false);
-      console.error("getSession threw error:", err);
-    });
+        if (mounted) {
+          console.log('[AuthProvider] Setting loading to false after initial check');
+          setLoading(false);
+        }
+
+        return () => {
+          console.log('[AuthProvider] Cleaning up subscription');
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('[AuthProvider] Error in initializeAuth:', error);
+        if (mounted) {
+          console.log('[AuthProvider] Setting loading to false due to error');
+          setLoading(false);
+        }
+      }
+    };
+
+    const cleanup = initializeAuth();
 
     return () => {
+      console.log('[AuthProvider] useEffect cleanup');
       mounted = false;
-      subscription.unsubscribe();
+      cleanup.then(cleanupFn => cleanupFn?.());
     };
   }, []);
 
