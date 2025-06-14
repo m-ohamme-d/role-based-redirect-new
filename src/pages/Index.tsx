@@ -10,20 +10,24 @@ const Index = () => {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
-    if (typeof loading === "undefined") return;
-    if (hasRedirectedRef.current) return;
+    if (typeof loading === "undefined" || loading) return;
+    if (hasRedirectedRef.current || redirecting) return; // extra guard
 
-    // Helper: Safe navigation, only different destination, set redirected first!
     function safeNavigate(dest: string) {
-      if (window.location.pathname === dest) {
-        // Already there, just bail
+      // Never redirect to yourself, and never if already redirected!
+      if (
+        window.location.pathname === dest ||
+        hasRedirectedRef.current ||
+        redirecting
+      ) {
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      console.log('[Index] Redirecting from', window.location.pathname, 'to', dest);
-      navigate(dest, { replace: true });
+      // Small timeout to break render chain loop for safety
+      setTimeout(() => {
+        navigate(dest, { replace: true });
+      }, 0);
     }
 
     // Main redirect logic
@@ -44,8 +48,13 @@ const Index = () => {
     } else {
       safeNavigate('/login');
     }
-  }, [profile, loading, navigate]);
 
+    // Failsafe: clear redirecting after 2s (if for some reason not redirected)
+    const reset = setTimeout(() => setRedirecting(false), 2000);
+    return () => clearTimeout(reset);
+  }, [profile, loading, navigate, redirecting]);
+
+  // Show loading OR redirect in progress
   if (redirecting || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
