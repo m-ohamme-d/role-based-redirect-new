@@ -14,8 +14,6 @@ const Index = () => {
 
   // Only reset guard ONCE after a *real* logout
   useEffect(() => {
-    // Only reset if profile transitioned from a logged-in user to logged-out,
-    // and we're not loading, and there was a previous redirect.
     if (
       prevProfileRef.current !== null && // previously authenticated
       profile === null &&                // now logged out
@@ -24,30 +22,36 @@ const Index = () => {
     ) {
       hasRedirectedRef.current = false;
       setRedirecting(false);
-      // prevProfileRef gets set below at the end of effect.
     }
     prevProfileRef.current = profile;
   }, [profile, loading]);
 
   // One-time-per-transition redirection
   useEffect(() => {
-    // Wait until auth loading state is done
     if (loading) return;
 
-    // If already redirected this transition, skip
     if (hasRedirectedRef.current || redirecting) return;
 
-    // Helper to navigate only if not already at dest
+    // Helper to navigate only if not already at dest (compare full path)
     function safeNavigate(dest: string) {
-      if (window.location.pathname === dest) {
+      const currentFullPath =
+        window.location.pathname + window.location.search + window.location.hash;
+
+      // Accept either with/without trailing slash
+      const normalize = (str: string) =>
+        str.endsWith('/') && str.length > 1 ? str.slice(0, -1) : str;
+      if (
+        normalize(currentFullPath) === normalize(dest)
+      ) {
         // Already at destination, don't navigate
+        // console.log('[Index] Already at dest', currentFullPath, dest);
         hasRedirectedRef.current = true;
         setRedirecting(false);
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      // Use replace to not pollute browser history
+      // console.log('[Index] Redirecting to:', dest);
       navigate(dest, { replace: true });
     }
 
@@ -67,7 +71,10 @@ const Index = () => {
       }
     } else {
       // Not logged in
-      if (window.location.pathname === '/login') {
+      if (
+        window.location.pathname === '/login' ||
+        window.location.pathname === '/login/'
+      ) {
         hasRedirectedRef.current = true;
         setRedirecting(false);
       } else {
@@ -104,4 +111,3 @@ const Index = () => {
 };
 
 export default Index;
-
