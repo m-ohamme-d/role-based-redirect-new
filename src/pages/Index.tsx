@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,11 +9,17 @@ const Index = () => {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (loading || hasRedirectedRef.current) return;
+    console.log('[Index] EFFECT: profile:', profile, 'loading:', loading, 'hasRedirected:', hasRedirectedRef.current);
+
+    if (loading || hasRedirectedRef.current) {
+      console.log('[Index] Skipping redirect. loading:', loading, 'hasRedirected:', hasRedirectedRef.current);
+      return;
+    }
 
     if (profile) {
       hasRedirectedRef.current = true;
       setRedirecting(true);
+      console.log('[Index] Redirecting to dashboard for role:', profile.role);
       switch (profile.role) {
         case 'admin':
           navigate('/admin/dashboard', { replace: true });
@@ -31,12 +36,18 @@ const Index = () => {
     } else {
       hasRedirectedRef.current = true;
       setRedirecting(true);
+      console.log('[Index] No profile, redirecting to /login');
       navigate('/login', { replace: true });
     }
   }, [profile, loading, navigate]);
 
   // Prevent further rendering after redirect to break redirect loops
-  if (redirecting) return null;
+  if (redirecting) {
+    console.log('[Index] RETURNING null post-redirect');
+    return null;
+  }
+
+  console.log('[Index] RENDER: Showing loading spinner. loading:', loading, 'redirecting:', redirecting);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -51,4 +62,3 @@ const Index = () => {
 };
 
 export default Index;
-

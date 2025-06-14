@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,18 +17,11 @@ const Login = () => {
   const { signIn, profile, loading: authLoading, user } = useAuth();
 
   useEffect(() => {
-    console.log('[Login] Auth state update:', { 
-      authLoading, 
-      profile: !!profile, 
-      profileRole: profile?.role,
-      user: !!user
-    });
-    
+    console.log('[Login] EFFECT start. authLoading:', authLoading, 'profile:', profile, 'user:', user);
+
     // Only redirect if we're not loading and we have a profile
     if (!authLoading && profile) {
-      console.log('[Login] Profile found, redirecting to dashboard based on role:', profile.role);
-      
-      // Small delay to ensure state is stable
+      console.log('[Login] EFFECT: Profile found, redirecting to /');
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 100);
@@ -65,16 +57,18 @@ const Login = () => {
 
   // Show loading screen while auth is initializing
   if (authLoading) {
-    console.log('[Login] Showing loading screen - auth still initializing');
+    console.log('[Login] RENDER: Showing loading screen - authLoading:', authLoading);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Loading... (authLoading: {String(authLoading)})</p>
         </div>
       </div>
     );
   }
+
+  console.log('[Login] RENDER: Not loading. profile:', profile, 'authLoading:', authLoading);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">

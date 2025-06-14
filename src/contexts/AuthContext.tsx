@@ -62,67 +62,75 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     console.log('[AuthProvider] Starting auth initialization...');
-    
+
+    let subscriptionObject: any = null;
+
+    const setStatesFromSession = (sessionObj: Session | null) => {
+      setSession(sessionObj);
+      setUser(sessionObj?.user ?? null);
+    };
+
     const initAuth = async () => {
       try {
-        // Get current session
+        // Set up auth state listener FIRST
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            console.log('[AuthProvider] onAuthStateChange:', event, 'Session:', !!session);
+            setStatesFromSession(session);
+
+            if (session?.user && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
+              // Defer profile fetch to avoid deadlock
+              setTimeout(async () => {
+                const profileData = await fetchProfile(session.user.id);
+                setProfile(profileData);
+                console.log('[AuthProvider] PROFILE SET after onAuthStateChange', profileData);
+              }, 0);
+            } else {
+              setProfile(null);
+              console.log('[AuthProvider] Profile cleared after auth state change');
+            }
+          }
+        );
+        subscriptionObject = subscription;
+
+        // THEN get current session
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('[AuthProvider] Error getting session:', error);
           setLoading(false);
           return;
         }
 
-        console.log('[AuthProvider] Current session check:', !!currentSession);
+        console.log('[AuthProvider] Current session check: ', !!currentSession);
 
-        // Set initial state
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        setStatesFromSession(currentSession);
 
-        // Fetch profile if user exists
         if (currentSession?.user) {
-          console.log('[AuthProvider] Fetching profile for existing user...');
-          const profileData = await fetchProfile(currentSession.user.id);
-          setProfile(profileData);
+          // Defer fetchProfile just in case
+          setTimeout(async () => {
+            const profileData = await fetchProfile(currentSession.user.id);
+            setProfile(profileData);
+            console.log('[AuthProvider] PROFILE SET at init', profileData);
+            setLoading(false);
+          }, 0);
+        } else {
+          setProfile(null);
+          setLoading(false);
         }
-
-        // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            console.log('[AuthProvider] Auth state change:', event, 'Session:', !!session);
-            
-            setSession(session);
-            setUser(session?.user ?? null);
-
-            if (session?.user && event === 'SIGNED_IN') {
-              console.log('[AuthProvider] User signed in, fetching profile...');
-              const profileData = await fetchProfile(session.user.id);
-              setProfile(profileData);
-            } else {
-              console.log('[AuthProvider] No user or signed out, clearing profile');
-              setProfile(null);
-            }
-          }
-        );
-
-        console.log('[AuthProvider] Auth initialization complete, setting loading to false');
-        setLoading(false);
-
-        return () => {
-          console.log('[AuthProvider] Cleaning up auth subscription');
-          subscription.unsubscribe();
-        };
       } catch (error) {
         console.error('[AuthProvider] Error in auth initialization:', error);
         setLoading(false);
       }
     };
 
-    const cleanup = initAuth();
+    initAuth();
 
     return () => {
-      cleanup.then(cleanupFn => cleanupFn?.());
+      if (subscriptionObject) {
+        subscriptionObject.unsubscribe();
+        console.log('[AuthProvider] Subscription cleaned up.');
+      }
     };
   }, []);
 
