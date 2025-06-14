@@ -6,40 +6,38 @@ import { useAuth } from '@/contexts/AuthContext';
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
-  // Ensure hasRedirectedRef persists across rapid re-renders/mounts
   const hasRedirectedRef = useRef(false);
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    // Absolutely never redirect when loading
     if (loading) return;
-    // If we've already redirected, do nothing
     if (hasRedirectedRef.current) return;
+    if (typeof loading === 'undefined') return;
 
-    // Nothing to do until loading is complete
-    if (typeof loading === "undefined") return;
-
-    // After loading, decide where to redirect
-    hasRedirectedRef.current = true;
-    setRedirecting(true);
+    // Route logic: don't redirect if already at dest route
+    function safeNavigate(dest: string) {
+      if (window.location.pathname === dest) return;
+      hasRedirectedRef.current = true;
+      setRedirecting(true);
+      navigate(dest, { replace: true });
+    }
 
     if (profile) {
       switch (profile.role) {
         case 'admin':
-          navigate('/admin/dashboard', { replace: true });
+          safeNavigate('/admin/dashboard');
           break;
         case 'manager':
-          navigate('/manager/dashboard', { replace: true });
+          safeNavigate('/manager/dashboard');
           break;
         case 'teamlead':
-          navigate('/teamlead/dashboard', { replace: true });
+          safeNavigate('/teamlead/dashboard');
           break;
         default:
-          navigate('/login', { replace: true });
+          safeNavigate('/login');
       }
     } else {
-      // No profile after loading
-      navigate('/login', { replace: true });
+      safeNavigate('/login');
     }
   }, [profile, loading, navigate]);
 
