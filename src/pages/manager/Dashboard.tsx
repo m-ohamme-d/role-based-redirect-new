@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DepartmentCard from "@/components/manager/DepartmentCard";
+import ClientCard from "@/components/manager/ClientCard";
 
 // Mock data for charts
 const employeeOverviewData = [
@@ -166,35 +168,37 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
+      {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total Employees"
           value="107"
-          icon={<Users size={24} color="#2563eb" />} /* Blue */
+          icon={<Users size={24} className="text-blue-600" />} /* Blue */
           change="+5.3% from last month"
           trend="up"
         />
         <StatCard 
           title="New Employees"
           value="12"
-          icon={<User size={24} color="#22c55e" />} /* Green */
+          icon={<User size={24} className="text-green-500" />} /* Green */
           change="+2 from last week"
           trend="up"
         />
         <StatCard 
           title="Departments"
           value={departments.length.toString()}
-          icon={<Users size={24} color="#10b981" />} /* Emerald */
+          icon={<Users size={24} className="text-emerald-600" />} /* Emerald */
         />
         <StatCard 
           title="Average Performance"
           value="78%"
-          icon={<BarChart3 size={24} color="#f59e42" />} /* Orange */
+          icon={<BarChart3 size={24} className="text-orange-400" />} /* Orange */
           change="+2.5% from last quarter"
           trend="up"
         />
       </div>
 
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LineChart 
           data={employeeOverviewData} 
@@ -208,7 +212,7 @@ const ManagerDashboard = () => {
         />
       </div>
 
-      {/* Clients Section */}
+      {/* Client Portfolio section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -216,7 +220,7 @@ const ManagerDashboard = () => {
             <Button 
               onClick={handleViewAllClients}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 border-sky-400 text-sky-600 hover:bg-sky-50"
             >
               <Eye className="h-4 w-4 text-sky-600" />
               View All Clients
@@ -226,24 +230,7 @@ const ManagerDashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {clientsData.slice(0, 3).map(client => (
-              <Card 
-                key={client.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleClientClick(client)}
-              >
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">{client.name}</h3>
-                    <p className="text-sm text-gray-600">{client.company}</p>
-                    <Badge 
-                      variant={client.status === 'working' ? 'default' : 'destructive'}
-                      className={client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
-                    >
-                      {client.status === 'working' ? 'Working' : 'Stopped'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+              <ClientCard key={client.id} client={client} onClick={handleClientClick} />
             ))}
           </div>
         </CardContent>
@@ -257,25 +244,14 @@ const ManagerDashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {departments.map(dept => (
-              <Card key={dept.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <Link to={`/manager/department/${dept.id}`}>
-                    <div>
-                      <h3 className="font-semibold">{dept.name}</h3>
-                      <p className="text-sm text-gray-500">{dept.employeeCount} employees</p>
-                    </div>
-                  </Link>
-                  <div className={`text-sm font-medium flex items-center mt-2 ${
-                    dept.trend === 'up' ? 'text-green-500' : 
-                    dept.trend === 'down' ? 'text-red-500' : 'text-gray-500'
-                  }`}>
-                    {dept.growth}
-                    {dept.trend === 'up' && <ArrowUp size={16} className="ml-1" color="#22c55e" />}  {/* Green */}
-                    {dept.trend === 'down' && <ArrowDown size={16} className="ml-1" color="#ef4444" />} {/* Red */}
-                    {dept.trend === 'neutral' && null}
-                  </div>
-                </CardContent>
-              </Card>
+              <DepartmentCard
+                key={dept.id}
+                id={dept.id}
+                name={dept.name}
+                employeeCount={dept.employeeCount}
+                growth={dept.growth}
+                trend={dept.trend}
+              />
             ))}
           </div>
         </CardContent>
