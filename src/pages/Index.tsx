@@ -9,28 +9,43 @@ const Index = () => {
   const hasRedirectedRef = useRef(false);
   const [redirecting, setRedirecting] = useState(false);
 
+  // Debug effect for development
+  useEffect(() => {
+    console.log('[Index] Effect - loading:', loading, 'profile:', profile, 'redirecting:', redirecting, 'hasRedirected:', hasRedirectedRef.current);
+  }, [profile, loading, redirecting]);
+
+  useEffect(() => {
+    if (typeof loading === "undefined" || loading) {
+      return;
+    }
+
+    // Reset redirecting on every fresh load
+    setRedirecting(false);
+    hasRedirectedRef.current = false;
+    // eslint-disable-next-line
+  }, [profile?.id]);
+
   useEffect(() => {
     if (typeof loading === "undefined" || loading) return;
-    if (hasRedirectedRef.current || redirecting) return; // extra guard
+    if (hasRedirectedRef.current || redirecting) return;
 
     function safeNavigate(dest: string) {
-      // Never redirect to yourself, and never if already redirected!
       if (
         window.location.pathname === dest ||
         hasRedirectedRef.current ||
         redirecting
       ) {
+        console.log('[Index] Not navigating because already at destination or already redirecting.');
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      // Small timeout to break render chain loop for safety
       setTimeout(() => {
+        console.log('[Index] Navigating to', dest);
         navigate(dest, { replace: true });
       }, 0);
     }
 
-    // Main redirect logic
     if (profile) {
       switch (profile.role) {
         case 'admin':
@@ -49,12 +64,12 @@ const Index = () => {
       safeNavigate('/login');
     }
 
-    // Failsafe: clear redirecting after 2s (if for some reason not redirected)
-    const reset = setTimeout(() => setRedirecting(false), 2000);
-    return () => clearTimeout(reset);
+    // Anti-stuck failsafe
+    const resetTimeout = setTimeout(() => setRedirecting(false), 2500);
+    return () => clearTimeout(resetTimeout);
   }, [profile, loading, navigate, redirecting]);
 
-  // Show loading OR redirect in progress
+  // Show loading or in-progress redirect
   if (redirecting || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -68,7 +83,7 @@ const Index = () => {
     );
   }
 
-  // Non-authenticated fallback (should almost never occur)
+  // Fallback (should almost never render)
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
