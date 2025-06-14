@@ -1,11 +1,39 @@
 
-import { Navigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Index() {
+  const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  if (loading) {
+  // Guards against StrictMode double mount
+  const hasRedirectedRef = useRef(false);
+
+  // Triggers re-render after navigation so we can bail out in render
+  const [, forceUpdate] = useState<{}>({});
+
+  useEffect(() => {
+    if (loading || hasRedirectedRef.current) return;
+
+    hasRedirectedRef.current = true;
+    const dest = profile
+      ? profile.role === 'admin'
+        ? '/admin/dashboard'
+        : profile.role === 'manager'
+          ? '/manager/dashboard'
+          : profile.role === 'teamlead'
+            ? '/teamlead/dashboard'
+            : '/login'
+      : '/login';
+
+    navigate(dest, { replace: true });
+    // Force re-render to trigger null return
+    forceUpdate({});
+  }, [loading, profile, navigate]);
+
+  // Show spinner while loading or right after navigating
+  if (loading || !hasRedirectedRef.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -16,20 +44,6 @@ export default function Index() {
     );
   }
 
-  // No spinner fallback here—Navigate immediately unmounts Index
-  if (!profile) {
-    return <Navigate to="/login" replace />;
-  }
-  if (profile.role === 'admin') {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-  if (profile.role === 'manager') {
-    return <Navigate to="/manager/dashboard" replace />;
-  }
-  if (profile.role === 'teamlead') {
-    return <Navigate to="/teamlead/dashboard" replace />;
-  }
-
-  // Fallback to login if an unknown role is detected
-  return <Navigate to="/login" replace />;
+  // Hide everything after navigation, so router can swap us out
+  return null;
 }
