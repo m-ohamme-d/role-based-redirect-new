@@ -15,26 +15,30 @@ const Index = () => {
   // Only reset guards if user just fully logged out (profile went from not-null to null while not loading)
   useEffect(() => {
     if (
-      prevProfileRef.current &&         // previously logged in
-      !profile &&                      // now logged out
-      !loading &&                      // auth idle
-      hasRedirectedRef.current         // we've redirected earlier
+      prevProfileRef.current &&           // previously logged in
+      !profile &&                        // now logged out
+      !loading &&                        // auth idle
+      hasRedirectedRef.current           // we've redirected earlier
     ) {
       hasRedirectedRef.current = false;
       setRedirecting(false);
-      // Optionally clear any other state if needed
-      // console.log('[Index] Reset: user just logged out');
     }
     prevProfileRef.current = profile;
   }, [profile, loading]);
 
-  // Perform redirect exactly ONCE (per login session) - not on every state change!
+  // Only perform redirect exactly ONCE per login/logout transition
   useEffect(() => {
     if (typeof loading === 'undefined' || loading) return;
     if (hasRedirectedRef.current || redirecting) return;
 
+    const currentPath = window.location.pathname + window.location.search + window.location.hash;
+
+    // Only navigate if destination is different from current path
     function safeNavigate(dest: string) {
       if (window.location.pathname === dest) {
+        // Already at destination, do nothing and set guard anyway.
+        hasRedirectedRef.current = true;
+        setRedirecting(false);
         return;
       }
       hasRedirectedRef.current = true;
@@ -57,7 +61,13 @@ const Index = () => {
           safeNavigate('/login');
       }
     } else {
-      safeNavigate('/login');
+      // Not authenticated. If we are already at login, set guard and do nothing
+      if (window.location.pathname === '/login') {
+        hasRedirectedRef.current = true;
+        setRedirecting(false);
+      } else {
+        safeNavigate('/login');
+      }
     }
   // Only re-run if absolutely necessary
   }, [profile, loading, redirecting, navigate]);
