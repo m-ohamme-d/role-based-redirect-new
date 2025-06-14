@@ -11,17 +11,22 @@ const Index = () => {
 
   useEffect(() => {
     if (loading) return;
+    if (typeof loading === "undefined") return;
     if (hasRedirectedRef.current) return;
-    if (typeof loading === 'undefined') return;
 
-    // Route logic: don't redirect if already at dest route
+    // Helper: Safe navigation, only different destination, set redirected first!
     function safeNavigate(dest: string) {
-      if (window.location.pathname === dest) return;
+      if (window.location.pathname === dest) {
+        // Already there, just bail
+        return;
+      }
       hasRedirectedRef.current = true;
       setRedirecting(true);
+      console.log('[Index] Redirecting from', window.location.pathname, 'to', dest);
       navigate(dest, { replace: true });
     }
 
+    // Main redirect logic
     if (profile) {
       switch (profile.role) {
         case 'admin':
@@ -68,4 +73,3 @@ const Index = () => {
 };
 
 export default Index;
-
