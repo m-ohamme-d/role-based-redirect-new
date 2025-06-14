@@ -1,40 +1,55 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { profile, loading } = useAuth();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in and redirect based on role
-    const user = localStorage.getItem('user');
-    const authToken = localStorage.getItem('authToken');
+    if (loading || hasRedirected) return;
+
+    console.log('Index - Auth state:', { profile, loading });
     
-    if (user && authToken) {
-      const userData = JSON.parse(user);
-      switch (userData.role) {
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        case 'manager':
-          navigate('/manager/dashboard');
-          break;
-        case 'teamlead':
-          navigate('/teamlead/dashboard');
-          break;
-        default:
-          navigate('/login');
-      }
+    if (profile) {
+      console.log('Redirecting user with role:', profile.role);
+      setHasRedirected(true);
+      
+      // Use setTimeout to avoid redirect loops
+      setTimeout(() => {
+        switch (profile.role) {
+          case 'admin':
+            navigate('/admin/dashboard', { replace: true });
+            break;
+          case 'manager':
+            navigate('/manager/dashboard', { replace: true });
+            break;
+          case 'teamlead':
+            navigate('/teamlead/dashboard', { replace: true });
+            break;
+          default:
+            console.log('Unknown role, redirecting to login');
+            navigate('/login', { replace: true });
+        }
+      }, 100);
     } else {
-      navigate('/login');
+      console.log('No profile found, redirecting to login');
+      setHasRedirected(true);
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 100);
     }
-  }, [navigate]);
+  }, [profile, loading, navigate, hasRedirected]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Redirecting to your dashboard...</p>
+        <p className="mt-4 text-gray-600">
+          {loading ? 'Loading...' : 'Redirecting to your dashboard...'}
+        </p>
       </div>
     </div>
   );
