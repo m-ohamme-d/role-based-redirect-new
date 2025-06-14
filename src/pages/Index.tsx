@@ -1,47 +1,43 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
-  const [hasRedirected, setHasRedirected] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    if (loading || hasRedirected) return;
+    if (loading || hasRedirectedRef.current) return;
 
     console.log('Index - Auth state:', { profile, loading });
-    
+
     if (profile) {
       console.log('Redirecting user with role:', profile.role);
-      setHasRedirected(true);
-      
-      // Use setTimeout to avoid redirect loops
-      setTimeout(() => {
-        switch (profile.role) {
-          case 'admin':
-            navigate('/admin/dashboard', { replace: true });
-            break;
-          case 'manager':
-            navigate('/manager/dashboard', { replace: true });
-            break;
-          case 'teamlead':
-            navigate('/teamlead/dashboard', { replace: true });
-            break;
-          default:
-            console.log('Unknown role, redirecting to login');
-            navigate('/login', { replace: true });
-        }
-      }, 100);
+      hasRedirectedRef.current = true;
+
+      // Redirect user based on role
+      switch (profile.role) {
+        case 'admin':
+          navigate('/admin/dashboard', { replace: true });
+          break;
+        case 'manager':
+          navigate('/manager/dashboard', { replace: true });
+          break;
+        case 'teamlead':
+          navigate('/teamlead/dashboard', { replace: true });
+          break;
+        default:
+          console.log('Unknown role, redirecting to login');
+          navigate('/login', { replace: true });
+      }
     } else {
       console.log('No profile found, redirecting to login');
-      setHasRedirected(true);
-      setTimeout(() => {
-        navigate('/login', { replace: true });
-      }, 100);
+      hasRedirectedRef.current = true;
+      navigate('/login', { replace: true });
     }
-  }, [profile, loading, navigate, hasRedirected]);
+  }, [profile, loading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
