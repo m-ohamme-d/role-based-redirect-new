@@ -1,20 +1,17 @@
 
-import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Index() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile, loading } = useAuth();
 
-  const hasRedirectedRef = useRef(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    // Only redirect if not loading and not already redirected
-    if (loading || hasRedirectedRef.current) return;
-
-    // Set redirect flag first to prevent any duplicate navigation
-    hasRedirectedRef.current = true;
+    if (loading || hasRedirected) return;
 
     const dest = profile
       ? profile.role === 'admin'
@@ -26,10 +23,14 @@ export default function Index() {
         : '/login'
       : '/login';
 
-    navigate(dest, { replace: true });
-  }, [loading, profile, navigate]);
+    // Only redirect if not already there
+    if (location.pathname !== dest) {
+      setHasRedirected(true);
+      navigate(dest, { replace: true });
+    }
+  }, [loading, profile, navigate, location.pathname, hasRedirected]);
 
-  // Show spinner while auth is loading
+  // If loading auth, show spinner
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -41,12 +42,10 @@ export default function Index() {
     );
   }
 
-  // After triggering navigation, render nothing so router can swap route
-  if (hasRedirectedRef.current) {
-    return null;
-  }
+  // If we've triggered a redirect, render nothing
+  if (hasRedirected) return null;
 
-  // (This should not be reached, but fallback spinner for any edge case)
+  // Fallback spinner if something is really strange
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
