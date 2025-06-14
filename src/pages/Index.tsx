@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,17 +7,14 @@ const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
   const hasRedirectedRef = useRef(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     if (loading || hasRedirectedRef.current) return;
 
-    console.log('Index - Auth state:', { profile, loading });
-
     if (profile) {
-      console.log('Redirecting user with role:', profile.role);
       hasRedirectedRef.current = true;
-
-      // Redirect user based on role
+      setRedirecting(true);
       switch (profile.role) {
         case 'admin':
           navigate('/admin/dashboard', { replace: true });
@@ -29,15 +26,17 @@ const Index = () => {
           navigate('/teamlead/dashboard', { replace: true });
           break;
         default:
-          console.log('Unknown role, redirecting to login');
           navigate('/login', { replace: true });
       }
     } else {
-      console.log('No profile found, redirecting to login');
       hasRedirectedRef.current = true;
+      setRedirecting(true);
       navigate('/login', { replace: true });
     }
   }, [profile, loading, navigate]);
+
+  // Prevent further rendering after redirect to break redirect loops
+  if (redirecting) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -52,3 +51,4 @@ const Index = () => {
 };
 
 export default Index;
+
