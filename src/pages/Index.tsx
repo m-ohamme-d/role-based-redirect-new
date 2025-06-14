@@ -11,33 +11,39 @@ const Index = () => {
   const hasRedirectedRef = useRef(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  // Clear guards ONLY when fully logged out and loading is finished
+  // Only reset guards if a full logout occurs (not on every profile state change!)
   useEffect(() => {
     if (!loading && !profile) {
-      // Reset guards on explicit logout/state reset only
+      // User is definitely logged out and authentication is idle
       hasRedirectedRef.current = false;
       setRedirecting(false);
-      console.log('[Index] Reset redirecting state (logout or no profile)');
+      console.log('[Index] (Logout) Reset redirecting state');
     }
-  }, [profile, loading]);
+    // DO NOT reset on profile change while logged in!
+  }, [loading, profile]);
 
-  // Main redirect logic: only runs when profile (auth) is ready
+  // Main redirect logic - only redirect ONCE after freshly logging in or out
   useEffect(() => {
-    if (typeof loading === "undefined" || loading) return;
+    if (typeof loading === "undefined" || loading) return; // Wait for auth to finish loading
+
+    // If we've already redirected this session, abort
     if (hasRedirectedRef.current || redirecting) {
-      console.log('[Index] Navigation is already in progress or completed:', { hasRedirected: hasRedirectedRef.current, redirecting });
+      // Only for debug:
+      // console.log('[Index] Navigation already performed or in progress:', { hasRedirected: hasRedirectedRef.current, redirecting });
       return;
     }
 
+    /**
+     * @param dest {string} - destination URL
+     */
     function safeNavigate(dest: string) {
-      // Do not navigate if already at the right route
       if (window.location.pathname === dest) {
-        console.log('[Index] Already at destination:', dest);
+        // Already at destination, no need to navigate
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      console.log('[Index] Navigating to', dest);
+      // Only after guards are set, do navigate
       navigate(dest, { replace: true });
     }
 
@@ -62,7 +68,7 @@ const Index = () => {
   }, [profile, loading, redirecting, navigate]);
 
   // Show loading or redirect in progress
-  if (redirecting || loading) {
+  if (loading || redirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
