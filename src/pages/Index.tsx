@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,17 +10,14 @@ const Index = () => {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    console.log('[Index] EFFECT: profile:', profile, 'loading:', loading, 'hasRedirected:', hasRedirectedRef.current);
+    // Only attempt redirect when NOT loading and haven't already redirected
+    if (loading) return; // IMPORTANT: absolutely never redirect while loading
+    if (hasRedirectedRef.current) return;
 
-    if (loading || hasRedirectedRef.current) {
-      console.log('[Index] Skipping redirect. loading:', loading, 'hasRedirected:', hasRedirectedRef.current);
-      return;
-    }
-
+    // After loading is done—proceed with redirects
     if (profile) {
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      console.log('[Index] Redirecting to dashboard for role:', profile.role);
       switch (profile.role) {
         case 'admin':
           navigate('/admin/dashboard', { replace: true });
@@ -34,20 +32,16 @@ const Index = () => {
           navigate('/login', { replace: true });
       }
     } else {
+      // No profile found AFTER loading is finished
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      console.log('[Index] No profile, redirecting to /login');
       navigate('/login', { replace: true });
     }
   }, [profile, loading, navigate]);
 
-  // Prevent further rendering after redirect to break redirect loops
   if (redirecting) {
-    console.log('[Index] RETURNING null post-redirect');
     return null;
   }
-
-  console.log('[Index] RENDER: Showing loading spinner. loading:', loading, 'redirecting:', redirecting);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
