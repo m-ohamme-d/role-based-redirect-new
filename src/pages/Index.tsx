@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -8,10 +8,11 @@ export default function Index() {
   const location = useLocation();
   const { profile, loading } = useAuth();
 
-  const [hasRedirected, setHasRedirected] = useState(false);
+  // UseRef (not useState!) so it persists even if the component remounts
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (loading || hasRedirected) return;
+    if (loading || hasRedirected.current) return;
 
     const dest = profile
       ? profile.role === 'admin'
@@ -23,14 +24,13 @@ export default function Index() {
         : '/login'
       : '/login';
 
-    // Only redirect if not already there
+    // Only trigger navigation if not already at the correct path
     if (location.pathname !== dest) {
-      setHasRedirected(true);
+      hasRedirected.current = true;
       navigate(dest, { replace: true });
     }
-  }, [loading, profile, navigate, location.pathname, hasRedirected]);
+  }, [loading, profile, location.pathname, navigate]);
 
-  // If loading auth, show spinner
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -42,10 +42,10 @@ export default function Index() {
     );
   }
 
-  // If we've triggered a redirect, render nothing
-  if (hasRedirected) return null;
+  // If we triggered a redirect, render nothing
+  if (hasRedirected.current) return null;
 
-  // Fallback spinner if something is really strange
+  // Fallback spinner
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
