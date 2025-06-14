@@ -7,13 +7,15 @@ export default function Index() {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Track if we've already navigated during this mount
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
+    // Only redirect if not loading and not already redirected
     if (loading || hasRedirectedRef.current) return;
 
+    // Set redirect flag first to prevent any duplicate navigation
     hasRedirectedRef.current = true;
+
     const dest = profile
       ? profile.role === 'admin'
         ? '/admin/dashboard'
@@ -25,12 +27,10 @@ export default function Index() {
       : '/login';
 
     navigate(dest, { replace: true });
-    // After navigation, we do not want to do anything else in this render
-    // The component will be unmounted after navigation, so this is safe.
   }, [loading, profile, navigate]);
 
-  // While loading auth or before redirect, show spinner
-  if (loading || !hasRedirectedRef.current) {
+  // Show spinner while auth is loading
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -41,6 +41,18 @@ export default function Index() {
     );
   }
 
-  // After redirect, render nothing so router can replace this route
-  return null;
+  // After triggering navigation, render nothing so router can swap route
+  if (hasRedirectedRef.current) {
+    return null;
+  }
+
+  // (This should not be reached, but fallback spinner for any edge case)
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading…</p>
+      </div>
+    </div>
+  );
 }
