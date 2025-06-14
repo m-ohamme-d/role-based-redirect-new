@@ -137,7 +137,7 @@ const ManagerDashboard = () => {
           <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
+                <Bell className="h-4 w-4 text-yellow-500" />
                 Send Alert
               </Button>
             </DialogTrigger>
@@ -170,26 +170,26 @@ const ManagerDashboard = () => {
         <StatCard 
           title="Total Employees"
           value="107"
-          icon={<Users size={24} />}
+          icon={<Users size={24} color="#2563eb" />} /* Blue */
           change="+5.3% from last month"
           trend="up"
         />
         <StatCard 
           title="New Employees"
           value="12"
-          icon={<User size={24} />}
+          icon={<User size={24} color="#22c55e" />} /* Green */
           change="+2 from last week"
           trend="up"
         />
         <StatCard 
           title="Departments"
           value={departments.length.toString()}
-          icon={<Users size={24} />}
+          icon={<Users size={24} color="#10b981" />} /* Emerald */
         />
         <StatCard 
           title="Average Performance"
           value="78%"
-          icon={<BarChart3 size={24} />}
+          icon={<BarChart3 size={24} color="#f59e42" />} /* Orange */
           change="+2.5% from last quarter"
           trend="up"
         />
@@ -218,7 +218,7 @@ const ManagerDashboard = () => {
               variant="outline"
               className="flex items-center gap-2"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-4 w-4 text-sky-600" />
               View All Clients
             </Button>
           </div>
@@ -270,8 +270,9 @@ const ManagerDashboard = () => {
                     dept.trend === 'down' ? 'text-red-500' : 'text-gray-500'
                   }`}>
                     {dept.growth}
-                    {dept.trend === 'up' && <ArrowUp size={16} className="ml-1" />}
-                    {dept.trend === 'down' && <ArrowDown size={16} className="ml-1" />}
+                    {dept.trend === 'up' && <ArrowUp size={16} className="ml-1" color="#22c55e" />}  {/* Green */}
+                    {dept.trend === 'down' && <ArrowDown size={16} className="ml-1" color="#ef4444" />} {/* Red */}
+                    {dept.trend === 'neutral' && null}
                   </div>
                 </CardContent>
               </Card>
@@ -315,6 +316,9 @@ const ManagerDashboard = () => {
                         size="sm"
                         onClick={() => toggleProjectStatus(project.id)}
                       >
+                        {project.status === 'working'
+                          ? <ArrowDown className="mr-1 text-red-500" size={16} />
+                          : <ArrowUp className="mr-1 text-green-500" size={16} />}
                         Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
                       </Button>
                       <Button 
@@ -323,7 +327,7 @@ const ManagerDashboard = () => {
                         onClick={() => handleAssignProject(project)}
                         className="flex items-center gap-2"
                       >
-                        <UserPlus className="h-4 w-4" />
+                        <UserPlus className="h-4 w-4 text-blue-500" />
                         Assign Dept
                       </Button>
                     </div>
