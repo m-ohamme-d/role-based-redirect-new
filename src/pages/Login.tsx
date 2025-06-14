@@ -15,55 +15,57 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, profile, loading: authLoading, user, session } = useAuth();
+  const { signIn, profile, loading: authLoading, user } = useAuth();
 
   useEffect(() => {
-    // Enhanced debug logging
-    console.log("[Login] Auth state:", { 
+    console.log('[Login] Auth state update:', { 
       authLoading, 
       profile: !!profile, 
       profileRole: profile?.role,
-      user: !!user,
-      session: !!session 
+      user: !!user
     });
     
     // Only redirect if we're not loading and we have a profile
     if (!authLoading && profile) {
-      console.log("[Login] Redirecting user with role:", profile.role);
-      navigate('/', { replace: true });
+      console.log('[Login] Profile found, redirecting to dashboard based on role:', profile.role);
+      
+      // Small delay to ensure state is stable
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
     }
-  }, [profile, authLoading, navigate, user, session]);
+  }, [profile, authLoading, navigate, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      console.log("[Login] Attempting login...");
+      console.log('[Login] Attempting login...');
       const { error } = await signIn(email, password);
       
       if (error) {
-        console.error("[Login] Login error:", error);
+        console.error('[Login] Login error:', error);
         if (error.message.includes('Invalid login credentials')) {
           toast.error('Invalid email or password');
         } else {
           toast.error(error.message || 'Login failed');
         }
       } else {
-        console.log("[Login] Login successful, waiting for redirect...");
+        console.log('[Login] Login successful');
         toast.success('Login successful!');
-        // Don't navigate here - let the useEffect handle it
       }
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('[Login] Login exception:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
+  // Show loading screen while auth is initializing
   if (authLoading) {
-    console.log("[Login] Still loading auth state...");
+    console.log('[Login] Showing loading screen - auth still initializing');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
