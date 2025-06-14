@@ -1,68 +1,29 @@
 
-import { useEffect, useRef } from 'react';
+// Move this outside the component so it isn’t reset on remount
+let didRedirectThisSession = false;
+
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-const Index = () => {
+export default function Index() {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Guard so we only ever redirect once per login/logout cycle
-  const hasRedirectedRef = useRef(false);
-  const prevProfileRef   = useRef<typeof profile | null>(null);
-
-  // Reset the guard when we go from logged-in → logged-out
   useEffect(() => {
-    if (
-      prevProfileRef.current !== null &&  // we were logged in
-      profile === null &&                 // now logged out
-      !loading &&                         // and loading has finished
-      hasRedirectedRef.current            // and we had redirected
-    ) {
-      hasRedirectedRef.current = false;
-    }
-    prevProfileRef.current = profile;
-  }, [profile, loading]);
+    if (loading || didRedirectThisSession) return;
 
-  // One-time redirect effect — with console logs
-  useEffect(() => {
-    if (loading || hasRedirectedRef.current) {
-      return;
-    }
+    didRedirectThisSession = true;
+    const dest = profile
+      ? profile.role === 'admin'    ? '/admin/dashboard'
+        : profile.role === 'manager'  ? '/manager/dashboard'
+        : profile.role === 'teamlead' ? '/teamlead/dashboard'
+        : '/login'
+      : '/login';
 
-    console.log('🔄 [Index] effect run, loading=', loading, 'profile=', profile);
-
-    const normalize = (u: string) =>
-      u.endsWith('/') && u.length > 1 ? u.slice(0, -1) : u;
-    const current = normalize(
-      window.location.pathname +
-      window.location.search +
-      window.location.hash
-    );
-
-    let destination: string;
-    if (profile) {
-      switch (profile.role) {
-        case 'admin':    destination = '/admin/dashboard';    break;
-        case 'manager':  destination = '/manager/dashboard';  break;
-        case 'teamlead': destination = '/teamlead/dashboard'; break;
-        default:         destination = '/login';
-      }
-    } else {
-      destination = '/login';
-    }
-
-    const destNorm = normalize(destination);
-    if (current !== destNorm) {
-      hasRedirectedRef.current = true;
-      console.log('➡️ [Index] navigating to', destination);
-      navigate(destination, { replace: true });
-    } else {
-      hasRedirectedRef.current = true;
-    }
+    navigate(dest, { replace: true });
   }, [loading, profile, navigate]);
 
-  // Spinner while loading or redirecting
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
@@ -73,6 +34,4 @@ const Index = () => {
       </div>
     </div>
   );
-};
-
-export default Index;
+}
