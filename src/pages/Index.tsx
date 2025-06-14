@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,11 +7,8 @@ export default function Index() {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Guards against StrictMode double mount, and ensures redirect can occur every page load
+  // Track if we've already navigated during this mount
   const hasRedirectedRef = useRef(false);
-
-  // Triggers re-render after navigation so we can bail out in render
-  const [, forceUpdate] = useState<{}>({});
 
   useEffect(() => {
     if (loading || hasRedirectedRef.current) return;
@@ -28,11 +25,11 @@ export default function Index() {
       : '/login';
 
     navigate(dest, { replace: true });
-    // Force re-render to trigger null return
-    forceUpdate({});
+    // After navigation, we do not want to do anything else in this render
+    // The component will be unmounted after navigation, so this is safe.
   }, [loading, profile, navigate]);
 
-  // Show spinner while loading or right after navigating
+  // While loading auth or before redirect, show spinner
   if (loading || !hasRedirectedRef.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -44,6 +41,6 @@ export default function Index() {
     );
   }
 
-  // Hide everything after navigation, so router can swap us out
+  // After redirect, render nothing so router can replace this route
   return null;
 }
