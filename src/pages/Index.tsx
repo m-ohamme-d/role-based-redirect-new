@@ -7,42 +7,47 @@ const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Guards to prevent infinite redirect loop
+  // Prevents repeated redirects
   const hasRedirectedRef = useRef(false);
   const prevProfileRef = useRef<typeof profile | null>(null);
   const [redirecting, setRedirecting] = useState(false);
 
-  // Only reset guards if user just fully logged out (profile went from not-null to null while not loading)
+  // Only reset guard ONCE after a *real* logout
   useEffect(() => {
+    // Only reset if profile transitioned from a logged-in user to logged-out,
+    // and we're not loading, and there was a previous redirect.
     if (
-      prevProfileRef.current &&           // previously logged in
-      !profile &&                        // now logged out
-      !loading &&                        // auth idle
-      hasRedirectedRef.current           // we've redirected earlier
+      prevProfileRef.current !== null && // previously authenticated
+      profile === null &&                // now logged out
+      !loading &&                        // not loading
+      hasRedirectedRef.current           // we redirected previously
     ) {
       hasRedirectedRef.current = false;
       setRedirecting(false);
+      // prevProfileRef gets set below at the end of effect.
     }
     prevProfileRef.current = profile;
   }, [profile, loading]);
 
-  // Only perform redirect exactly ONCE per login/logout transition
+  // One-time-per-transition redirection
   useEffect(() => {
-    if (typeof loading === 'undefined' || loading) return;
+    // Wait until auth loading state is done
+    if (loading) return;
+
+    // If already redirected this transition, skip
     if (hasRedirectedRef.current || redirecting) return;
 
-    const currentPath = window.location.pathname + window.location.search + window.location.hash;
-
-    // Only navigate if destination is different from current path
+    // Helper to navigate only if not already at dest
     function safeNavigate(dest: string) {
       if (window.location.pathname === dest) {
-        // Already at destination, do nothing and set guard anyway.
+        // Already at destination, don't navigate
         hasRedirectedRef.current = true;
         setRedirecting(false);
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
+      // Use replace to not pollute browser history
       navigate(dest, { replace: true });
     }
 
@@ -61,7 +66,7 @@ const Index = () => {
           safeNavigate('/login');
       }
     } else {
-      // Not authenticated. If we are already at login, set guard and do nothing
+      // Not logged in
       if (window.location.pathname === '/login') {
         hasRedirectedRef.current = true;
         setRedirecting(false);
@@ -69,10 +74,9 @@ const Index = () => {
         safeNavigate('/login');
       }
     }
-  // Only re-run if absolutely necessary
   }, [profile, loading, redirecting, navigate]);
 
-  // Show loading/redirect spinner
+  // Spinner UI while loading or redirecting
   if (loading || redirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -86,7 +90,7 @@ const Index = () => {
     );
   }
 
-  // Fallback UI; should never render
+  // Fallback UI (should never render, but is safe)
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
