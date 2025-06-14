@@ -6,44 +6,39 @@ import { useAuth } from '@/contexts/AuthContext';
 const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
+
+  // Guards to prevent infinite loop navigation
   const hasRedirectedRef = useRef(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  // Debug effect for development
+  // Clear guards ONLY when fully logged out and loading is finished
   useEffect(() => {
-    console.log('[Index] Effect - loading:', loading, 'profile:', profile, 'redirecting:', redirecting, 'hasRedirected:', hasRedirectedRef.current);
-  }, [profile, loading, redirecting]);
+    if (!loading && !profile) {
+      // Reset guards on explicit logout/state reset only
+      hasRedirectedRef.current = false;
+      setRedirecting(false);
+      console.log('[Index] Reset redirecting state (logout or no profile)');
+    }
+  }, [profile, loading]);
 
+  // Main redirect logic: only runs when profile (auth) is ready
   useEffect(() => {
-    if (typeof loading === "undefined" || loading) {
+    if (typeof loading === "undefined" || loading) return;
+    if (hasRedirectedRef.current || redirecting) {
+      console.log('[Index] Navigation is already in progress or completed:', { hasRedirected: hasRedirectedRef.current, redirecting });
       return;
     }
 
-    // Reset redirecting on every fresh load
-    setRedirecting(false);
-    hasRedirectedRef.current = false;
-    // eslint-disable-next-line
-  }, [profile?.id]);
-
-  useEffect(() => {
-    if (typeof loading === "undefined" || loading) return;
-    if (hasRedirectedRef.current || redirecting) return;
-
     function safeNavigate(dest: string) {
-      if (
-        window.location.pathname === dest ||
-        hasRedirectedRef.current ||
-        redirecting
-      ) {
-        console.log('[Index] Not navigating because already at destination or already redirecting.');
+      // Do not navigate if already at the right route
+      if (window.location.pathname === dest) {
+        console.log('[Index] Already at destination:', dest);
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      setTimeout(() => {
-        console.log('[Index] Navigating to', dest);
-        navigate(dest, { replace: true });
-      }, 0);
+      console.log('[Index] Navigating to', dest);
+      navigate(dest, { replace: true });
     }
 
     if (profile) {
@@ -61,15 +56,12 @@ const Index = () => {
           safeNavigate('/login');
       }
     } else {
+      // Not logged in, go to login if not already there
       safeNavigate('/login');
     }
+  }, [profile, loading, redirecting, navigate]);
 
-    // Anti-stuck failsafe
-    const resetTimeout = setTimeout(() => setRedirecting(false), 2500);
-    return () => clearTimeout(resetTimeout);
-  }, [profile, loading, navigate, redirecting]);
-
-  // Show loading or in-progress redirect
+  // Show loading or redirect in progress
   if (redirecting || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -83,7 +75,7 @@ const Index = () => {
     );
   }
 
-  // Fallback (should almost never render)
+  // Fallback (should rarely render)
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
