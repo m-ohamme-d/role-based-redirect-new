@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
+          (event, session) => {
             if (!mounted) {
               console.log('[AuthProvider] Component unmounted, ignoring auth change');
               return;
@@ -78,23 +78,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             console.log('[AuthProvider] Auth state change:', event, session?.user?.id);
 
+            // Update session and user immediately
             setSession(session);
             setUser(session?.user ?? null);
 
+            // Handle profile fetching separately without blocking loading state
             if (session?.user) {
-              try {
-                const profileData = await fetchProfile(session.user.id);
-                if (mounted) {
-                  setProfile(profileData);
+              // Use setTimeout to defer profile fetching and prevent blocking
+              setTimeout(async () => {
+                if (!mounted) return;
+                try {
+                  const profileData = await fetchProfile(session.user.id);
+                  if (mounted) {
+                    setProfile(profileData);
+                    console.log('[AuthProvider] Profile loaded:', profileData);
+                  }
+                } catch (err) {
+                  console.error("Error in profile fetch in listener", err);
+                  if (mounted) setProfile(null);
                 }
-              } catch (err) {
-                console.error("Error in profile fetch in listener", err);
-                if (mounted) setProfile(null);
-              }
+              }, 0);
             } else {
               setProfile(null);
             }
             
+            // Always set loading to false when auth state changes
             if (mounted) {
               console.log('[AuthProvider] Setting loading to false after auth change');
               setLoading(false);
@@ -113,21 +121,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!mounted) return;
 
         console.log('[AuthProvider] Initial session check:', session?.user?.id);
+        
+        // Update session and user immediately
         setSession(session);
         setUser(session?.user ?? null);
 
+        // Handle profile fetching for initial session
         if (session?.user) {
-          try {
-            const profileData = await fetchProfile(session.user.id);
-            if (mounted) setProfile(profileData);
-          } catch (err) {
-            console.error("Error in profile fetch in initial session", err);
-            if (mounted) setProfile(null);
-          }
+          // Use setTimeout to defer profile fetching
+          setTimeout(async () => {
+            if (!mounted) return;
+            try {
+              const profileData = await fetchProfile(session.user.id);
+              if (mounted) {
+                setProfile(profileData);
+                console.log('[AuthProvider] Initial profile loaded:', profileData);
+              }
+            } catch (err) {
+              console.error("Error in profile fetch in initial session", err);
+              if (mounted) setProfile(null);
+            }
+          }, 0);
         } else {
           setProfile(null);
         }
 
+        // Always set loading to false after initial check
         if (mounted) {
           console.log('[AuthProvider] Setting loading to false after initial check');
           setLoading(false);
