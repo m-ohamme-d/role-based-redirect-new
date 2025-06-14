@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,11 +24,13 @@ const Index = () => {
     prevProfileRef.current = profile;
   }, [profile, loading]);
 
-  // One-time redirect effect — fix loop here
+  // One-time redirect effect — with console logs
   useEffect(() => {
     if (loading || hasRedirectedRef.current) {
       return;
     }
+
+    console.log('🔄 [Index] effect run, loading=', loading, 'profile=', profile);
 
     const normalize = (u: string) =>
       u.endsWith('/') && u.length > 1 ? u.slice(0, -1) : u;
@@ -50,11 +53,9 @@ const Index = () => {
     }
 
     const destNorm = normalize(destination);
-    // Fix: Always set guard BEFORE navigating
     if (current !== destNorm) {
       hasRedirectedRef.current = true;
-      // For debugging, you may want to log here
-      // console.log('Redirecting from', current, 'to', destNorm);
+      console.log('➡️ [Index] navigating to', destination);
       navigate(destination, { replace: true });
     } else {
       hasRedirectedRef.current = true;
