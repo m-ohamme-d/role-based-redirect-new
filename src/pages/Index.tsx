@@ -7,7 +7,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
 
-  // Prevents repeated redirects
   const hasRedirectedRef = useRef(false);
   const prevProfileRef = useRef<typeof profile | null>(null);
   const [redirecting, setRedirecting] = useState(false);
@@ -29,29 +28,39 @@ const Index = () => {
   // One-time-per-transition redirection
   useEffect(() => {
     if (loading) return;
-
     if (hasRedirectedRef.current || redirecting) return;
 
-    // Helper to navigate only if not already at dest (compare full path)
-    function safeNavigate(dest: string) {
-      const currentFullPath =
-        window.location.pathname + window.location.search + window.location.hash;
+    // Helper to compare locations
+    function normalizeLocation(url: string) {
+      let u = url;
+      if (u.endsWith('/') && u.length > 1) u = u.slice(0, -1);
+      return u;
+    }
+    function currentPathWithSearchHash() {
+      return (
+        window.location.pathname +
+        window.location.search +
+        window.location.hash
+      );
+    }
 
-      // Accept either with/without trailing slash
-      const normalize = (str: string) =>
-        str.endsWith('/') && str.length > 1 ? str.slice(0, -1) : str;
-      if (
-        normalize(currentFullPath) === normalize(dest)
-      ) {
+    // Helper to navigate only if not already at dest (full match)
+    function safeNavigate(dest: string) {
+      const destNorm = normalizeLocation(dest);
+      const currNorm = normalizeLocation(currentPathWithSearchHash());
+      // Extra debug
+      // console.log("[Index] safeNavigate? dest:", dest, "curr:", currentPathWithSearchHash(), "normalized: ", currNorm, destNorm);
+
+      if (currNorm === destNorm) {
         // Already at destination, don't navigate
-        // console.log('[Index] Already at dest', currentFullPath, dest);
         hasRedirectedRef.current = true;
         setRedirecting(false);
+        // console.log("[Index] safeNavigate: NOOP already at dest", destNorm);
         return;
       }
       hasRedirectedRef.current = true;
       setRedirecting(true);
-      // console.log('[Index] Redirecting to:', dest);
+      // console.log("[Index] safeNavigate: navigating to", destNorm);
       navigate(dest, { replace: true });
     }
 
@@ -71,10 +80,9 @@ const Index = () => {
       }
     } else {
       // Not logged in
-      if (
-        window.location.pathname === '/login' ||
-        window.location.pathname === '/login/'
-      ) {
+      const currNorm = normalizeLocation(currentPathWithSearchHash());
+      const loginPaths = ['/login', '/login/'].map(normalizeLocation);
+      if (loginPaths.includes(currNorm)) {
         hasRedirectedRef.current = true;
         setRedirecting(false);
       } else {
@@ -83,7 +91,6 @@ const Index = () => {
     }
   }, [profile, loading, redirecting, navigate]);
 
-  // Spinner UI while loading or redirecting
   if (loading || redirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
