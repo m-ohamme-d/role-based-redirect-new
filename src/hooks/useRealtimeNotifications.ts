@@ -1,112 +1,94 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
-interface RealtimeNotification {
+interface Notification {
   id: string;
+  type: 'system' | 'performance' | 'team' | 'rating';
   title: string;
   message: string;
-  type: 'performance' | 'system' | 'team' | 'rating';
   timestamp: string;
   read: boolean;
-  userId?: string;
+  priority: 'low' | 'medium' | 'high';
 }
 
 export const useRealtimeNotifications = () => {
-  const { profile } = useAuth();
-  const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!profile) return;
-
-    // Simulate initial notifications
-    const initialNotifications: RealtimeNotification[] = [
+    // Initialize with some mock notifications
+    const mockNotifications: Notification[] = [
       {
         id: '1',
-        title: 'Performance Rating Updated',
-        message: 'Team member John Smith\'s rating has been updated',
-        type: 'performance',
-        timestamp: new Date().toISOString(),
-        read: false
+        type: 'system',
+        title: 'System Maintenance',
+        message: 'Scheduled maintenance will occur tonight at 2 AM',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        read: false,
+        priority: 'medium'
       },
       {
         id: '2',
-        title: 'New Team Member',
-        message: 'Sarah Johnson joined the Engineering team',
+        type: 'performance',
+        title: 'Performance Alert',
+        message: 'Team productivity has increased by 15% this week',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+        read: false,
+        priority: 'high'
+      },
+      {
+        id: '3',
         type: 'team',
-        timestamp: new Date(Date.now() - 30000).toISOString(),
-        read: false
+        title: 'New Team Member',
+        message: 'John Doe has joined the Engineering team',
+        timestamp: new Date(Date.now() - 10800000).toISOString(),
+        read: true,
+        priority: 'low'
       }
     ];
 
-    setNotifications(initialNotifications);
-    setUnreadCount(initialNotifications.filter(n => !n.read).length);
+    setNotifications(mockNotifications);
+    setUnreadCount(mockNotifications.filter(n => !n.read).length);
+    setLoading(false);
 
-    // Set up realtime subscription for notifications
+    // Set up real-time subscription for notifications
     const channel = supabase
-      .channel('notifications-channel')
-      .on('broadcast', { event: 'notification' }, (payload) => {
-        console.log('Real-time notification received:', payload);
-        const newNotification: RealtimeNotification = {
-          id: Date.now().toString(),
-          title: payload.title || 'New Notification',
-          message: payload.message || 'You have a new update',
-          type: payload.type || 'system',
-          timestamp: new Date().toISOString(),
-          read: false
-        };
-
-        setNotifications(prev => [newNotification, ...prev]);
-        setUnreadCount(prev => prev + 1);
+      .channel('notifications')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications'
+      }, (payload) => {
+        console.log('Notification received:', payload);
+        
+        if (payload.eventType === 'INSERT') {
+          const newNotification = payload.new as Notification;
+          // Only allow valid notification types
+          if (['system', 'performance', 'team', 'rating'].includes(newNotification.type)) {
+            setNotifications(prev => [newNotification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            
+            toast(newNotification.title, {
+              description: newNotification.message,
+              duration: 5000,
+            });
+          }
+        }
       })
       .subscribe();
 
-    // Simulate periodic updates
-    const interval = setInterval(() => {
-      const randomNotifications = [
-        {
-          title: 'Performance Update',
-          message: 'Team productivity increased by 5%',
-          type: 'performance' as const
-        },
-        {
-          title: 'Rating Submitted',
-          message: 'New performance rating submitted for review',
-          type: 'rating' as const
-        },
-        {
-          title: 'Team Alert',
-          message: 'Weekly team meeting scheduled',
-          type: 'team' as const
-        }
-      ];
-
-      const randomNotification = randomNotifications[Math.floor(Math.random() * randomNotifications.length)];
-      const newNotification: RealtimeNotification = {
-        id: Date.now().toString(),
-        title: randomNotification.title,
-        message: randomNotification.message,
-        type: randomNotification.type,
-        timestamp: new Date().toISOString(),
-        read: false
-      };
-
-      setNotifications(prev => [newNotification, ...prev.slice(0, 9)]);
-      setUnreadCount(prev => prev + 1);
-    }, 15000); // New notification every 15 seconds
-
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(interval);
     };
-  }, [profile]);
+  }, []);
 
-  const markAsRead = (id: string) => {
+  const markAsRead = (notificationId: string) => {
     setNotifications(prev => 
       prev.map(notification => 
-        notification.id === id 
+        notification.id === notificationId 
           ? { ...notification, read: true }
           : notification
       )
@@ -121,10 +103,20 @@ export const useRealtimeNotifications = () => {
     setUnreadCount(0);
   };
 
+  const deleteNotification = (notificationId: string) => {
+    const notification = notifications.find(n => n.id === notificationId);
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    if (notification && !notification.read) {
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+  };
+
   return {
     notifications,
     unreadCount,
+    loading,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    deleteNotification
   };
 };
