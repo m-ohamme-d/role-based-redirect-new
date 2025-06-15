@@ -10,10 +10,10 @@ interface DepartmentWithStats {
 
 interface DepartmentStatsCardProps {
   departments: DepartmentWithStats[];
-  loading: boolean;
+  loading?: boolean;
 }
 
-const DepartmentStatsCard = ({ departments, loading }: DepartmentStatsCardProps) => {
+const DepartmentStatsCard = ({ departments, loading = false }: DepartmentStatsCardProps) => {
   if (loading) {
     return (
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">

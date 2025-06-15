@@ -38,10 +38,10 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <AdminStatsCards stats={stats} />
+      <AdminStatsCards stats={stats} loading={loading} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DepartmentStatsCard departments={departments} />
+        <DepartmentStatsCard departments={departments} loading={loading} />
         <SystemHealthCard />
       </div>
 

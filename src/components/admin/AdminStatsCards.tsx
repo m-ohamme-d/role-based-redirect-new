@@ -13,10 +13,10 @@ interface AdminStats {
 
 interface AdminStatsCardsProps {
   stats: AdminStats;
-  loading: boolean;
+  loading?: boolean;
 }
 
-const AdminStatsCards = ({ stats, loading }: AdminStatsCardsProps) => {
+const AdminStatsCards = ({ stats, loading = false }: AdminStatsCardsProps) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
