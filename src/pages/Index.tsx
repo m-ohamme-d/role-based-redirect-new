@@ -21,12 +21,27 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
+    // Debug output
+    console.log('[Index]: Effect called.', {
+      loading,
+      pathname: location.pathname,
+      profile,
+      dest,
+      redirected: redirected.current,
+    });
     // Only trigger redirect ONCE per mount on "/"
-    if (!loading && location.pathname === '/' && !redirected.current) {
+    // Only navigate if not loading, on "/" AND dest !== "/"
+    if (
+      !loading &&
+      location.pathname === '/' &&
+      !redirected.current &&
+      dest !== '/' &&
+      dest !== location.pathname
+    ) {
       redirected.current = true;
+      console.log('[Index]: Navigating to', dest);
       navigate(dest, { replace: true });
     }
-    // Only rerun if loading, dest, location.pathname, or navigate changes
   }, [loading, dest, navigate, location.pathname]);
 
   // If already redirected OR not on "/", render nothing
