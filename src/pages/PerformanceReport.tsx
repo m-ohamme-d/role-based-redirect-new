@@ -2,57 +2,59 @@
 import React, { useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
-import { Database } from '@/integrations/supabase/types'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
-import ExcelJS from 'exceljs'
-import { saveAs } from 'file-saver'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileDown, FileSpreadsheet, Download } from "lucide-react"
+import { FileDown, Download } from "lucide-react"
 
-type RatingRecord = Database['public']['Tables']['performance_ratings']['Row'] & {
-  team_member: {
-    name: string
-    avatar_url: string
-    designation: string
-    department: {
-      name: string
-      team_lead: {
-        name: string
-        avatar_url: string
-      }
-    }
+// Mock data for demonstration since we don't have the required tables yet
+const mockPerformanceData = [
+  {
+    id: '1',
+    employee_name: 'John Doe',
+    designation: 'Software Engineer',
+    department: 'IT',
+    team_lead: 'Jane Smith',
+    rating: 4.5,
+    period: 'Current',
+    avatar_url: '/placeholder.svg',
+    team_lead_avatar: '/placeholder.svg'
+  },
+  {
+    id: '2',
+    employee_name: 'Alice Johnson',
+    designation: 'Marketing Specialist',
+    department: 'Marketing',
+    team_lead: 'Bob Wilson',
+    rating: 4.2,
+    period: 'Current',
+    avatar_url: '/placeholder.svg',
+    team_lead_avatar: '/placeholder.svg'
+  },
+  {
+    id: '3',
+    employee_name: 'Mike Chen',
+    designation: 'HR Manager',
+    department: 'HR',
+    team_lead: 'Sarah Davis',
+    rating: 4.8,
+    period: 'Current',
+    avatar_url: '/placeholder.svg',
+    team_lead_avatar: '/placeholder.svg'
   }
-}
+]
 
 export const PerformanceReport: React.FC = () => {
   const reportRef = useRef<HTMLDivElement>(null)
 
+  // For now, we'll use mock data. Later this can be replaced with actual Supabase queries
   const { data, isLoading, error } = useQuery({
     queryKey: ['performance_ratings', 'current'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('performance_ratings')
-        .select(`
-          *,
-          team_member:team_members (
-            name,
-            avatar_url,
-            designation,
-            department:departments (
-              name,
-              team_lead:profiles!departments_team_lead_id_fkey (
-                name,
-                avatar_url
-              )
-            )
-          )
-        `)
-        .eq('rating_period', 'current')
-
-      if (error) throw error
-      return data as RatingRecord[]
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return mockPerformanceData
     }
   })
 
@@ -68,36 +70,6 @@ export const PerformanceReport: React.FC = () => {
       pdf.save('performance-report.pdf')
     } catch (error) {
       console.error('Error generating PDF:', error)
-    }
-  }
-
-  const exportToExcel = async () => {
-    if (!data) return
-    try {
-      const wb = new ExcelJS.Workbook()
-      const ws = wb.addWorksheet('Performance Report')
-      ws.columns = [
-        { header: 'Employee',    key: 'employee',   width: 25 },
-        { header: 'Designation', key: 'designation',width: 20 },
-        { header: 'Department',  key: 'department', width: 20 },
-        { header: 'Team Lead',   key: 'teamLead',   width: 25 },
-        { header: 'Rating',      key: 'rating',     width: 10 },
-        { header: 'Period',      key: 'period',     width: 15 },
-      ]
-      data.forEach(r => {
-        ws.addRow({
-          employee:    r.team_member.name,
-          designation: r.team_member.designation,
-          department:  r.team_member.department.name,
-          teamLead:    r.team_member.department.team_lead.name,
-          rating:      r.overall,
-          period:      r.rating_period,
-        })
-      })
-      const buf = await wb.xlsx.writeBuffer()
-      saveAs(new Blob([buf]), 'performance-report.xlsx')
-    } catch (error) {
-      console.error('Error generating Excel:', error)
     }
   }
 
@@ -144,13 +116,6 @@ export const PerformanceReport: React.FC = () => {
               <FileDown className="mr-2 h-4 w-4" />
               Export PDF
             </Button>
-            <Button
-              onClick={exportToExcel}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Export Excel
-            </Button>
           </div>
         </div>
 
@@ -184,34 +149,34 @@ export const PerformanceReport: React.FC = () => {
                       <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-4 border-b">
                           <img
-                            src={r.team_member.avatar_url || "/placeholder.svg"}
-                            alt={r.team_member.name}
+                            src={r.avatar_url || "/placeholder.svg"}
+                            alt={r.employee_name}
                             className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                           />
                         </td>
-                        <td className="p-4 border-b font-medium text-gray-800">{r.team_member.name}</td>
-                        <td className="p-4 border-b text-gray-600">{r.team_member.designation}</td>
-                        <td className="p-4 border-b text-gray-600">{r.team_member.department.name}</td>
+                        <td className="p-4 border-b font-medium text-gray-800">{r.employee_name}</td>
+                        <td className="p-4 border-b text-gray-600">{r.designation}</td>
+                        <td className="p-4 border-b text-gray-600">{r.department}</td>
                         <td className="p-4 border-b">
                           <div className="flex items-center">
                             <img
-                              src={r.team_member.department.team_lead.avatar_url || "/placeholder.svg"}
-                              alt={r.team_member.department.team_lead.name}
+                              src={r.team_lead_avatar || "/placeholder.svg"}
+                              alt={r.team_lead}
                               className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
                             />
-                            <span className="text-gray-700">{r.team_member.department.team_lead.name}</span>
+                            <span className="text-gray-700">{r.team_lead}</span>
                           </div>
                         </td>
                         <td className="p-4 border-b text-center">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                            r.overall >= 4 ? 'bg-green-100 text-green-800' :
-                            r.overall >= 3 ? 'bg-yellow-100 text-yellow-800' :
+                            r.rating >= 4 ? 'bg-green-100 text-green-800' :
+                            r.rating >= 3 ? 'bg-yellow-100 text-yellow-800' :
                             'bg-red-100 text-red-800'
                           }`}>
-                            {r.overall}
+                            {r.rating}
                           </span>
                         </td>
-                        <td className="p-4 border-b text-center text-gray-600 capitalize">{r.rating_period}</td>
+                        <td className="p-4 border-b text-center text-gray-600 capitalize">{r.period}</td>
                       </tr>
                     ))
                   ) : (
