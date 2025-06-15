@@ -47,8 +47,8 @@ export const useAdminData = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch departments
-      const { data: departmentData, error: deptError } = await supabase
+      // Fetch departments with type assertion
+      const { data: departmentData, error: deptError } = await (supabase as any)
         .from('departments')
         .select('id, name, team_lead_id');
 
@@ -58,13 +58,13 @@ export const useAdminData = () => {
         return;
       }
 
-      // Fetch total team members count
-      const { count: membersCount } = await supabase
+      // Fetch total team members count with type assertion
+      const { count: membersCount } = await (supabase as any)
         .from('team_members')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch locked performance ratings count
-      const { count: lockedCount } = await supabase
+      // Fetch locked performance ratings count with type assertion
+      const { count: lockedCount } = await (supabase as any)
         .from('performance_ratings')
         .select('*', { count: 'exact', head: true })
         .eq('is_locked', true);
@@ -72,8 +72,8 @@ export const useAdminData = () => {
       // Get member counts and team lead names for each department
       const departmentsWithCounts = await Promise.all(
         (departmentData || []).map(async (dept: any) => {
-          // Get member count for this department
-          const { count: memberCount } = await supabase
+          // Get member count for this department with type assertion
+          const { count: memberCount } = await (supabase as any)
             .from('team_members')
             .select('*', { count: 'exact', head: true })
             .eq('department_id', dept.id);
