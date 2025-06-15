@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,7 +8,7 @@ export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, loading } = useAuth();
-  const [didRedirect, setDidRedirect] = useState(false);
+  const didRedirectRef = useRef(false);
 
   // Compute the target route based on role
   const dest =
@@ -20,25 +21,27 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
-    // Only try redirecting ONCE, and ONLY from the "/" route!
+    // Only redirect ONCE, ONLY from "/" route, and only if allowed
     if (
       !loading &&
-      !didRedirect &&
-      location.pathname === '/'
+      location.pathname === '/' &&
+      !didRedirectRef.current
     ) {
-      setDidRedirect(true); // Next render skips effect and rendering
+      didRedirectRef.current = true;
       navigate(dest, { replace: true });
     }
-    // Only run effect when loading, path, profile, or didRedirect changes
-  }, [loading, didRedirect, location.pathname, navigate, dest, profile]);
+    // No dependency on profile or dest (which are recomputed on every render),
+    // Just run on loading or path change.
+    // eslint-disable-next-line
+  }, [loading, location.pathname, navigate]);
 
-  // If we've started redirecting, or are no longer at "/", don't render
-  if (didRedirect || location.pathname !== '/') {
+  // After navigation, or if not on root, render nothing (avoids infinite loops)
+  if (didRedirectRef.current || location.pathname !== '/') {
     return null;
   }
 
-  // Show spinner ONLY while loading at "/"
-  if (loading && location.pathname === '/' && !didRedirect) {
+  // Loading spinner when initializing at "/"
+  if (loading && location.pathname === '/' && !didRedirectRef.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -49,6 +52,6 @@ export default function Index() {
     );
   }
 
-  // Otherwise, just render nothing (should never reach here with logic above)
+  // Fallback (shouldn't occur)
   return null;
 }
