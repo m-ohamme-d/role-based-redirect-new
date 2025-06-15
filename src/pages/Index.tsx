@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,8 +33,7 @@ export default function Index() {
     if (
       !loading &&
       location.pathname === '/' &&
-      !didRedirect &&
-      dest !== location.pathname
+      !didRedirect
     ) {
       setDidRedirect(true); // Prevent future redirects on this mount
       console.log('[Index]: Navigating to', dest);
