@@ -1,16 +1,14 @@
+
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Download, Bell, Edit2, Trash2, Users, Building, Send } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDepartments } from '@/hooks/useDepartments';
-import TeamPerformanceRating from '@/components/TeamPerformanceRating';
+import { Download } from 'lucide-react';
+import UnifiedDepartmentDialog from '@/components/manager/UnifiedDepartmentDialog';
+import DepartmentManagementCard from '@/components/manager/DepartmentManagementCard';
+import TeamsTable from '@/components/manager/TeamsTable';
+import TeamDetailsDialog from '@/components/manager/TeamDetailsDialog';
+import TeamLeadDetailsDialog from '@/components/manager/TeamLeadDetailsDialog';
+import NotificationDialog from '@/components/manager/NotificationDialog';
 
 const teamsData = [
   { 
@@ -46,102 +44,15 @@ const teamsData = [
 ];
 
 const ManagerTeam = () => {
-  const { departments, addDepartment, updateDepartment, deleteDepartment } = useDepartments();
   const [teams, setTeams] = useState(teamsData);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
-
-  // --- Unified Department Creation Dialog State ---
-  const [showUnifiedDialog, setShowUnifiedDialog] = useState(false);
-  const [newDept, setNewDept] = useState({
-    name: '',
-    description: '',
-    teamLead: '',
-    leadEmail: '',
-    leadPhone: '',
-  });
-
-  // --- Other state + logic kept as in original ---
-  const [editingDepartment, setEditingDepartment] = useState<string | null>(null);
-  const [editDepartmentName, setEditDepartmentName] = useState('');
-  const [showTeamLeadDetails, setShowTeamLeadDetails] = useState(false);
   const [selectedTeamLead, setSelectedTeamLead] = useState<any>(null);
+  const [showTeamLeadDetails, setShowTeamLeadDetails] = useState(false);
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
-
-  // --- Unified Add Department Logic ---
-  const handleUnifiedAddDepartment = () => {
-    if (!newDept.name.trim() || !newDept.teamLead.trim()) {
-      toast.error('Department name and Team Lead are required');
-      return;
-    }
-
-    // Add new department to global store
-    const success = addDepartment(newDept.name.trim());
-    if (!success) {
-      toast.error('Department already exists');
-      return;
-    }
-    toast.success('Department added successfully');
-
-    // Optionally: also add a new team assigned to the department, led by teamLead
-    const team = {
-      id: Math.max(0, ...teams.map(t => t.id)) + 1,
-      name: `${newDept.name.trim()} Team`,
-      lead: newDept.teamLead.trim(),
-      leadEmail: newDept.leadEmail || `${newDept.teamLead.trim().toLowerCase().replace(' ', '.')}@company.com`,
-      leadPhone: newDept.leadPhone || '+1 (555) 000-0000',
-      members: [],
-      department: newDept.name.trim(),
-      performance: 0,
-    };
-    setTeams([...teams, team]);
-    toast.success(`Team created and team lead ${newDept.teamLead} assigned`);
-
-    setNewDept({ name: '', description: '', teamLead: '', leadEmail: '', leadPhone: '' });
-    setShowUnifiedDialog(false);
-  };
-
-  const handleStartEditDepartment = (deptName: string) => {
-    setEditingDepartment(deptName);
-    setEditDepartmentName(deptName);
-  };
-
-  const handleSaveEditDepartment = (oldName: string) => {
-    if (!editDepartmentName.trim()) {
-      toast.error('Department name cannot be empty');
-      return;
-    }
-
-    if (editDepartmentName.trim().length < 2) {
-      toast.error('Department name must be at least 2 characters long');
-      return;
-    }
-
-    if (updateDepartment(oldName, editDepartmentName.trim())) {
-      setEditingDepartment(null);
-      setEditDepartmentName('');
-      toast.success('Department updated successfully - synced with Admin dashboard');
-    } else {
-      toast.error('Department already exists or invalid name');
-    }
-  };
-
-  const handleDeleteDepartment = (deptName: string) => {
-    const teamsUsingDept = teams.filter(team => team.department === deptName);
-    if (teamsUsingDept.length > 0) {
-      toast.error(`Cannot delete department "${deptName}" - it has ${teamsUsingDept.length} team(s) assigned to it`);
-      return;
-    }
-
-    if (deleteDepartment(deptName)) {
-      toast.success('Department deleted successfully - synced with Admin dashboard');
-    } else {
-      toast.error('Failed to delete department');
-    }
-  };
 
   const handleSelectTeam = (teamId: number) => {
     if (selectedTeams.includes(teamId)) {
@@ -188,33 +99,6 @@ const ManagerTeam = () => {
     toast.success(`Exported ${selectedTeams.length} teams successfully`);
   };
 
-  const handleSendNotification = () => {
-    if (selectedTeams.length === 0) {
-      toast.error('Please select teams to notify');
-      return;
-    }
-
-    if (!notificationText.trim()) {
-      toast.error('Please enter notification text');
-      return;
-    }
-
-    const selectedTeamNames = teams
-      .filter(team => selectedTeams.includes(team.id))
-      .map(team => team.name)
-      .join(', ');
-
-    toast.success(`Notification sent to ${selectedTeams.length} team leads: ${selectedTeamNames}`);
-    
-    if (reminderDate) {
-      toast.success(`Reminder set for ${reminderDate}`);
-    }
-
-    setShowNotificationDialog(false);
-    setNotificationText('');
-    setReminderDate('');
-  };
-
   const handleTeamClick = (team: any) => {
     setSelectedTeam(team);
     setShowTeamDetails(true);
@@ -223,14 +107,6 @@ const ManagerTeam = () => {
   const handleTeamLeadClick = (teamLead: any) => {
     setSelectedTeamLead(teamLead);
     setShowTeamLeadDetails(true);
-  };
-
-  const handleEditTeam = (teamId: number) => {
-    const team = teams.find(t => t.id === teamId);
-    if (team) {
-      // Just show a simple toast for now since form dialog was removed
-      toast.success(`Edit functionality for ${team.name} - Feature coming soon`);
-    }
   };
 
   const handleRatingUpdate = (memberId: string, category: string, rating: number) => {
@@ -248,76 +124,18 @@ const ManagerTeam = () => {
     }
   };
 
+  const handleSendDirectMessage = (teamLead: any) => {
+    setNotificationText(`Hi ${teamLead.lead}, I need an update on the current projects.`);
+    setShowNotificationDialog(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
         <div className="space-x-2">
-          {/* UNIFIED Department + Team Lead creation */}
-          <Dialog open={showUnifiedDialog} onOpenChange={setShowUnifiedDialog}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Building className="h-4 w-4" />
-                Add Department
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Department & Assign Team Lead</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Department Name *</label>
-                  <Input
-                    value={newDept.name}
-                    onChange={e => setNewDept({ ...newDept, name: e.target.value })}
-                    placeholder="Enter department name"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={newDept.description}
-                    onChange={e => setNewDept({ ...newDept, description: e.target.value })}
-                    placeholder="Brief description of the department (optional)"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Team Lead Name *</label>
-                  <Input
-                    value={newDept.teamLead}
-                    onChange={e => setNewDept({ ...newDept, teamLead: e.target.value })}
-                    placeholder="Assign a team lead"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Team Lead Email (optional)</label>
-                  <Input
-                    value={newDept.leadEmail}
-                    onChange={e => setNewDept({ ...newDept, leadEmail: e.target.value })}
-                    placeholder="name@company.com"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Team Lead Phone (optional)</label>
-                  <Input
-                    value={newDept.leadPhone}
-                    onChange={e => setNewDept({ ...newDept, leadPhone: e.target.value })}
-                    placeholder="+1 (555) 000-0000"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowUnifiedDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUnifiedAddDepartment}>
-                    Add Department
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-          {/* Remove legacy Create Department / Create Team button(s) here */}
+          <UnifiedDepartmentDialog teams={teams} setTeams={setTeams} />
+          
           <Button
             variant="outline"
             className="flex items-center gap-2"
@@ -328,262 +146,43 @@ const ManagerTeam = () => {
             Export
           </Button>
 
-          <Dialog open={showNotificationDialog} onOpenChange={setShowNotificationDialog}>
-            <DialogTrigger asChild>
-              <Button
-                className="flex items-center gap-2"
-                disabled={selectedTeams.length === 0}
-              >
-                <Bell className="h-4 w-4" />
-                Notify
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              {/* ... keep existing notification dialog code ... */}
-              {/* same as before; unchanged */}
-              <DialogHeader>
-                <DialogTitle>Send Notification</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Message</label>
-                  <Textarea
-                    value={notificationText}
-                    onChange={(e) => setNotificationText(e.target.value)}
-                    placeholder="Enter notification message..."
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Reminder Date (Optional)</label>
-                  <Input
-                    type="datetime-local"
-                    value={reminderDate}
-                    onChange={(e) => setReminderDate(e.target.value)}
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowNotificationDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSendNotification}>
-                    Send Notification
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <NotificationDialog
+            showDialog={showNotificationDialog}
+            onOpenChange={setShowNotificationDialog}
+            selectedTeams={selectedTeams}
+            teams={teams}
+            notificationText={notificationText}
+            setNotificationText={setNotificationText}
+            reminderDate={reminderDate}
+            setReminderDate={setReminderDate}
+          />
         </div>
       </div>
 
-      {/* ... keep rest of the code (Department Management cards, Teams Table, Dialogs for team details/lead details etc.) exactly the same ... */}
-      {/* All legacy department creation and team creation dialogs+buttons have been removed */}
-      {/* All code for editing/deleting departments, managing teams etc. is unchanged */}
+      <DepartmentManagementCard teams={teams} />
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Building className="h-5 w-5" />
-              Department Management
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {departments.map((dept) => (
-              <div key={dept} className="flex items-center gap-2 p-2 border rounded">
-                {editingDepartment === dept ? (
-                  <div className="flex items-center gap-1 w-full">
-                    <Input 
-                      value={editDepartmentName} 
-                      onChange={(e) => setEditDepartmentName(e.target.value)}
-                      className="h-6 text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveEditDepartment(dept);
-                        if (e.key === 'Escape') setEditingDepartment(null);
-                      }}
-                      autoFocus
-                    />
-                    <Button size="sm" variant="ghost" onClick={() => handleSaveEditDepartment(dept)} className="h-6 w-6 p-0">
-                      ✓
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingDepartment(null)} className="h-6 w-6 p-0">
-                      ✕
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <span className="text-sm flex-1">{dept}</span>
-                    <Button size="sm" variant="ghost" onClick={() => handleStartEditDepartment(dept)} className="h-6 w-6 p-0">
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDeleteDepartment(dept)} className="h-6 w-6 p-0">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Changes sync automatically with Admin dashboard
-          </p>
-        </CardContent>
-      </Card>
+      <TeamsTable 
+        teams={teams}
+        selectedTeams={selectedTeams}
+        onSelectTeam={handleSelectTeam}
+        onSelectAll={handleSelectAll}
+        onTeamClick={handleTeamClick}
+        onTeamLeadClick={handleTeamLeadClick}
+      />
 
-      {/* Teams Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Teams</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedTeams.length === teams.length}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300"
-                    />
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Team Name</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Team Lead</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Department</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Members</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Performance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teams.map(team => (
-                  <tr key={team.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedTeams.includes(team.id)} 
-                        onChange={() => handleSelectTeam(team.id)}
-                        className="rounded border-gray-300"
-                      />
-                    </td>
-                    <td className="py-3 px-4">
-                      <button 
-                        onClick={() => handleTeamClick(team)}
-                        className="text-blue-600 hover:underline font-medium"
-                      >
-                        {team.name}
-                      </button>
-                    </td>
-                    <td className="py-3 px-4">
-                      <button 
-                        onClick={() => handleTeamLeadClick(team)}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {team.lead}
-                      </button>
-                    </td>
-                    <td className="py-3 px-4">{team.department}</td>
-                    <td className="py-3 px-4">{Array.isArray(team.members) ? team.members.length : 0}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2 max-w-[100px]">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${team.performance}%` }}
-                          ></div>
-                        </div>
-                        <span>{team.performance}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <TeamDetailsDialog
+        showDialog={showTeamDetails}
+        onOpenChange={setShowTeamDetails}
+        selectedTeam={selectedTeam}
+        onRatingUpdate={handleRatingUpdate}
+      />
 
-      {/* Team Details Dialog with Team Performance Rating */}
-      <Dialog open={showTeamDetails} onOpenChange={setShowTeamDetails}>
-        <DialogContent className="sm:max-w-[1000px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedTeam?.name} - Team Performance Rating</DialogTitle>
-          </DialogHeader>
-          {selectedTeam && selectedTeam.members && selectedTeam.members.length > 0 && (
-            <TeamPerformanceRating
-              members={selectedTeam.members.map((member: any) => ({
-                id: member.id.toString(),
-                name: member.name,
-                position: member.position,
-                department: selectedTeam.department,
-                ratings: member.ratings
-              }))}
-              onRatingUpdate={handleRatingUpdate}
-            />
-          )}
-          {selectedTeam && (!selectedTeam.members || selectedTeam.members.length === 0) && (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No team members assigned to this team yet.</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Team Lead Details Dialog */}
-      <Dialog open={showTeamLeadDetails} onOpenChange={setShowTeamLeadDetails}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Team Lead Details</DialogTitle>
-          </DialogHeader>
-          {selectedTeamLead && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className="text-lg">
-                    {selectedTeamLead.lead?.split(' ').map((n: string) => n[0]).join('') || 'TL'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-xl font-semibold">{selectedTeamLead.lead}</h3>
-                  <p className="text-sm text-gray-600">Team Lead - {selectedTeamLead.name}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-3 pt-2">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p>{selectedTeamLead.leadEmail || `${selectedTeamLead.lead?.toLowerCase().replace(' ', '.')}@company.com`}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Phone</label>
-                  <p>{selectedTeamLead.leadPhone || '+1 (555) 000-0000'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Department</label>
-                  <p>{selectedTeamLead.department}</p>
-                </div>
-              </div>
-              
-              <div className="pt-3">
-                <Button 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={() => {
-                    setShowTeamLeadDetails(false);
-                    setNotificationText(`Hi ${selectedTeamLead.lead}, I need an update on the current projects.`);
-                    setShowNotificationDialog(true);
-                    toast.success('Notification draft created');
-                  }}
-                >
-                  <Send className="h-4 w-4" />
-                  Send Direct Message
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <TeamLeadDetailsDialog
+        showDialog={showTeamLeadDetails}
+        onOpenChange={setShowTeamLeadDetails}
+        selectedTeamLead={selectedTeamLead}
+        onSendMessage={handleSendDirectMessage}
+      />
     </div>
   );
 };
