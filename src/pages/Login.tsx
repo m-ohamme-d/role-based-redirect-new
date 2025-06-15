@@ -18,9 +18,11 @@ const Login = () => {
   const { signIn, profile, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // If user is already authenticated, redirect to home page immediately
-    // The Index page will handle role-based routing
+    console.log('[Login] Auth state check - authLoading:', authLoading, 'profile:', !!profile);
+    
+    // If auth is loaded and user is authenticated, redirect to home
     if (!authLoading && profile) {
+      console.log('[Login] User is authenticated, redirecting to /');
       navigate('/', { replace: true });
     }
   }, [profile, authLoading, navigate]);
@@ -41,7 +43,7 @@ const Login = () => {
           toast.error(error.message || 'Login failed');
         }
       } else {
-        console.log('[Login] Login successful');
+        console.log('[Login] Login successful, will redirect via useEffect');
         toast.success('Login successful!');
         // Don't manually navigate here - let the useEffect handle it
       }
@@ -55,6 +57,7 @@ const Login = () => {
 
   // Show loading screen while auth is initializing
   if (authLoading) {
+    console.log('[Login] Showing auth loading screen');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -65,10 +68,20 @@ const Login = () => {
     );
   }
 
-  // If user is authenticated, don't render the login form
+  // If user is authenticated, show loading while redirecting
   if (profile) {
-    return null;
+    console.log('[Login] User authenticated, showing redirect loading');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
+
+  console.log('[Login] Rendering login form');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
