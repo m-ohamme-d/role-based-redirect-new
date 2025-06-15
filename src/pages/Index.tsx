@@ -20,16 +20,19 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
-    // Only perform redirect logic on the root route, after loading, and not yet redirected
-    if (loading) return;
-    if (location.pathname !== '/') return;
-    if (hasRedirected.current) return;
+    // Only perform redirect on the root route and after loading is false
+    if (
+      !loading && // Only after auth finished
+      location.pathname === '/' && // Only at root
+      !hasRedirected.current // Only if not already redirected
+    ) {
+      hasRedirected.current = true;
+      navigate(dest, { replace: true });
+    }
+    // Only rerun when relevant
+  }, [loading, location.pathname, dest, navigate]);
 
-    hasRedirected.current = true;
-    navigate(dest, { replace: true });
-  }, [loading, profile, location.pathname, navigate, dest]);
-
-  // Show spinner only while loading
+  // Show spinner only while loading (auth still in progress)
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -41,16 +44,11 @@ export default function Index() {
     );
   }
 
-  // After launching redirect, render nothing to prevent flickering/looping
-  if (hasRedirected.current) {
+  // After redirect, or if not at root, render nothing
+  if (hasRedirected.current || location.pathname !== '/') {
     return null;
   }
 
-  // If user is not on root route, render nothing (we do not handle other paths here)
-  if (location.pathname !== '/') {
-    return null;
-  }
-
-  // Nothing more to render on "/"
+  // Nothing to render on "/"
   return null;
 }
