@@ -1,15 +1,15 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Redirect logic: this page is ONLY rendered at "/"
 export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, loading } = useAuth();
-  const hasRedirected = useRef(false);
 
-  // Compute the correct destination route based on user role
+  // Compute the target route based on role
   const dest =
     profile?.role === 'admin'
       ? '/admin/dashboard'
@@ -20,19 +20,19 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
-    // Only perform redirect on the root route and after loading is false
-    if (
-      !loading && // Only after auth finished
-      location.pathname === '/' && // Only at root
-      !hasRedirected.current // Only if not already redirected
-    ) {
-      hasRedirected.current = true;
+    if (!loading && location.pathname === '/') {
+      // Navigate to destination and do nothing else
       navigate(dest, { replace: true });
     }
-    // Only rerun when relevant
-  }, [loading, location.pathname, dest, navigate]);
+    // Only run on auth, path, dest change
+  }, [loading, dest, navigate, location.pathname]);
 
-  // Show spinner only while loading (auth still in progress)
+  // If not on "/", render nothing (Index page only cares about "/")
+  if (location.pathname !== '/') {
+    return null;
+  }
+
+  // Show spinner while loading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -44,11 +44,6 @@ export default function Index() {
     );
   }
 
-  // After redirect, or if not at root, render nothing
-  if (hasRedirected.current || location.pathname !== '/') {
-    return null;
-  }
-
-  // Nothing to render on "/"
+  // After navigation, show nothing (navigation will occur immediately if not loading)
   return null;
 }
