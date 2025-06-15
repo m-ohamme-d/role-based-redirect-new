@@ -27,25 +27,9 @@ export const useProfilePictureUpload = () => {
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `${userId}/${fileName}`;
+      const filePath = `profile-pictures/${fileName}`;
 
       console.log('Uploading file:', filePath);
-
-      // First, try to create the bucket if it doesn't exist
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarsBucket = buckets?.find(bucket => bucket.name === 'avatars');
-      
-      if (!avatarsBucket) {
-        const { error: bucketError } = await supabase.storage.createBucket('avatars', {
-          public: true,
-          allowedMimeTypes: ['image/*'],
-          fileSizeLimit: 5242880 // 5MB
-        });
-        
-        if (bucketError) {
-          console.log('Bucket creation error (may already exist):', bucketError);
-        }
-      }
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
@@ -57,7 +41,7 @@ export const useProfilePictureUpload = () => {
 
       if (error) {
         console.error('Upload error:', error);
-        toast.error('Failed to upload profile picture: ' + error.message);
+        toast.error('Failed to upload profile picture');
         return null;
       }
 
@@ -85,16 +69,13 @@ export const useProfilePictureUpload = () => {
 
   const deleteProfilePicture = async (filePath: string): Promise<boolean> => {
     try {
-      // Extract the path without the bucket URL prefix
-      const pathOnly = filePath.split('/').slice(-2).join('/');
-      
       const { error } = await supabase.storage
         .from('avatars')
-        .remove([pathOnly]);
+        .remove([filePath]);
 
       if (error) {
         console.error('Delete error:', error);
-        toast.error('Failed to delete profile picture: ' + error.message);
+        toast.error('Failed to delete profile picture');
         return false;
       }
 
