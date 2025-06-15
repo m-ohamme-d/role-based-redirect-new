@@ -79,72 +79,62 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-[1600px] mx-auto px-4 md:px-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 129}</div>
-                <p className="text-sm text-gray-600">Total Users</p>
-                <p className="text-sm text-green-600 font-medium">+8 from last month</p>
-              </div>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 129}</div>
+              <p className="text-sm text-gray-600">Total Users</p>
+              <p className="text-sm text-green-600 font-medium">+8 from last month</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Shield className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">99.8%</div>
-                <p className="text-sm text-gray-600">System Security</p>
-                <p className="text-sm text-gray-600">No recent threats</p>
-              </div>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Shield className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">99.8%</div>
+              <p className="text-sm text-gray-600">System Security</p>
+              <p className="text-sm text-gray-600">No recent threats</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Database className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">{stats?.lockedRecords || 42}</div>
-                <p className="text-sm text-gray-600">Locked Records</p>
-                <p className="text-sm text-green-600 font-medium">+5 from last week</p>
-              </div>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Database className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{stats?.lockedRecords || 42}</div>
+              <p className="text-sm text-gray-600">Locked Records</p>
+              <p className="text-sm text-green-600 font-medium">+5 from last week</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Activity className="h-6 w-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-gray-900">{stats?.auditLogs || 1256}</div>
-                <p className="text-sm text-gray-600">Audit Logs</p>
-                <p className="text-sm text-green-600 font-medium">+36 today</p>
-              </div>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Activity className="h-6 w-6 text-orange-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{stats?.auditLogs || 1256}</div>
+              <p className="text-sm text-gray-600">Audit Logs</p>
+              <p className="text-sm text-green-600 font-medium">+36 today</p>
             </div>
           </CardContent>
         </Card>
@@ -154,7 +144,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="bg-white shadow-sm">
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <div>
                 <CardTitle className="text-lg font-semibold text-gray-900">User Activity</CardTitle>
                 <p className="text-sm text-gray-500 mt-1">Active users over time</p>
@@ -184,7 +174,7 @@ const AdminDashboard = () => {
 
         <Card className="bg-white shadow-sm">
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <div>
                 <CardTitle className="text-lg font-semibold text-gray-900">User Distribution</CardTitle>
                 <p className="text-sm text-gray-500 mt-1">Users by role</p>
@@ -215,6 +205,7 @@ const AdminDashboard = () => {
 
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent User Activity */}
         <Card className="bg-white shadow-sm">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold text-gray-900">Recent User Activity</CardTitle>
@@ -223,7 +214,7 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               {recentActivities.map((activity) => (
                 <div key={activity.id} className="flex items-start gap-3">
-                  <div className={`w-2 h-2 ${activity.color} rounded-full mt-2`}></div>
+                  <div className={`w-2 h-2 ${activity.color} rounded-full mt-2`} />
                   <div className="flex-1">
                     <p className="text-sm text-gray-900">
                       <span className="font-medium">{activity.user}</span> {activity.action}
@@ -241,6 +232,7 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* System Health */}
         <Card className="bg-white shadow-sm">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold text-gray-900">System Health</CardTitle>
@@ -253,37 +245,34 @@ const AdminDashboard = () => {
                   <span className="text-sm font-medium text-gray-900">99.9%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '99.9%' }}></div>
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '99.9%' }} />
                 </div>
               </div>
-
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Database Load</span>
                   <span className="text-sm font-medium text-gray-900">45%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '45%' }} />
                 </div>
               </div>
-
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Storage Usage</span>
                   <span className="text-sm font-medium text-gray-900">72%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-orange-500 h-2 rounded-full" style={{ width: '72%' }}></div>
+                  <div className="bg-orange-500 h-2 rounded-full" style={{ width: '72%' }} />
                 </div>
               </div>
-
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">API Request Rate</span>
                   <span className="text-sm font-medium text-gray-900">28%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '28%' }}></div>
+                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '28%' }} />
                 </div>
               </div>
             </div>
