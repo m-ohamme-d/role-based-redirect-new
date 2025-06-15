@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Building } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDepartments } from '@/hooks/useDepartments';
@@ -18,7 +17,6 @@ const UnifiedDepartmentDialog = ({ teams, setTeams }: UnifiedDepartmentDialogPro
   const [showDialog, setShowDialog] = useState(false);
   const [newDept, setNewDept] = useState({
     name: '',
-    description: '',
     teamLead: '',
     leadEmail: '',
     leadPhone: '',
@@ -50,7 +48,7 @@ const UnifiedDepartmentDialog = ({ teams, setTeams }: UnifiedDepartmentDialogPro
     setTeams([...teams, team]);
     toast.success(`Team created and team lead ${newDept.teamLead} assigned`);
 
-    setNewDept({ name: '', description: '', teamLead: '', leadEmail: '', leadPhone: '' });
+    setNewDept({ name: '', teamLead: '', leadEmail: '', leadPhone: '' });
     setShowDialog(false);
   };
 
@@ -73,14 +71,6 @@ const UnifiedDepartmentDialog = ({ teams, setTeams }: UnifiedDepartmentDialogPro
               value={newDept.name}
               onChange={e => setNewDept({ ...newDept, name: e.target.value })}
               placeholder="Enter department name"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Description</label>
-            <Textarea
-              value={newDept.description}
-              onChange={e => setNewDept({ ...newDept, description: e.target.value })}
-              placeholder="Brief description of the department (optional)"
             />
           </div>
           <div>
