@@ -40,8 +40,8 @@ export const useDepartments = () => {
       setLoading(true);
       setError(null);
 
-      // Use supabase.from() with proper typing
-      const { data: deptData, error: deptError } = await supabase
+      // Use type assertion to bypass current type limitations
+      const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select(`
           id,
