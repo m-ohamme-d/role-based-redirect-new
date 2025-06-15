@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,37 +20,24 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
-    // Log at mount for troubleshooting
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Index]: mount', {
-        location: location.pathname,
-        profile,
-        loading,
-        didRedirect,
-        dest,
-      });
-    }
-
-    // Only trigger redirect ONCE per mount on "/" and only if not loading and not already redirected
+    // Only try redirecting ONCE, and ONLY from the "/" route!
     if (
       !loading &&
-      location.pathname === '/' &&
-      !didRedirect
+      !didRedirect &&
+      location.pathname === '/'
     ) {
-      setDidRedirect(true); // Prevent future redirects on this mount
-      console.log('[Index]: Navigating to', dest);
+      setDidRedirect(true); // Next render skips effect and rendering
       navigate(dest, { replace: true });
     }
-    // Only run effect if loading or location/path/profile change
-    // Note: didRedirect ensures this only happens once per mount
-  }, [loading, navigate, location.pathname, profile, didRedirect, dest]);
+    // Only run effect when loading, path, profile, or didRedirect changes
+  }, [loading, didRedirect, location.pathname, navigate, dest, profile]);
 
-  // If already redirected, render nothing to avoid flicker or loop
-  if (didRedirect) {
+  // If we've started redirecting, or are no longer at "/", don't render
+  if (didRedirect || location.pathname !== '/') {
     return null;
   }
 
-  // Only show spinner while loading at "/" and not yet redirected
+  // Show spinner ONLY while loading at "/"
   if (loading && location.pathname === '/' && !didRedirect) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -63,6 +49,6 @@ export default function Index() {
     );
   }
 
-  // After navigation, render nothing (navigation will occur immediately if not loading)
+  // Otherwise, just render nothing (should never reach here with logic above)
   return null;
 }
