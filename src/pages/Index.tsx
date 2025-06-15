@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,16 +21,8 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
-    // Debug output
-    console.log('[Index]: Effect called.', {
-      loading,
-      pathname: location.pathname,
-      profile,
-      dest,
-      didRedirect,
-    });
-
     // Only trigger redirect ONCE per mount on "/" and only if not loading and not already redirected
+    // Make sure to never redirect if already in the correct place
     if (
       !loading &&
       location.pathname === '/' &&
@@ -39,7 +32,9 @@ export default function Index() {
       console.log('[Index]: Navigating to', dest);
       navigate(dest, { replace: true });
     }
-  }, [loading, dest, navigate, location.pathname, profile, didRedirect]);
+    // Only run effect if loading or location/path/profile change
+    // Note: didRedirect ensures this only happens once per mount
+  }, [loading, navigate, location.pathname, profile, didRedirect, dest]);
 
   // If already redirected OR not on "/", render nothing to avoid flicker or loop
   if (didRedirect || location.pathname !== '/') {
@@ -58,6 +53,6 @@ export default function Index() {
     );
   }
 
-  // After navigation, show nothing (navigation will occur immediately if not loading)
+  // After navigation, render nothing (navigation will occur immediately if not loading)
   return null;
 }
