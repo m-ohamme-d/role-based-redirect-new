@@ -84,9 +84,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const profileData = await fetchProfile(session.user.id);
                 setProfile(profileData);
                 console.log('[AuthProvider] PROFILE SET after onAuthStateChange', profileData);
+                setLoading(false);
               }, 0);
             } else {
               setProfile(null);
+              setLoading(false);
               console.log('[AuthProvider] Profile cleared after auth state change');
             }
           }
@@ -191,6 +193,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('[AuthProvider] Starting sign out...');
       
+      // Set loading to true to prevent blank pages
+      setLoading(true);
+      
+      // Clear states immediately
       setUser(null);
       setSession(null);
       setProfile(null);
@@ -198,10 +204,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       cleanupAuthState();
       await supabase.auth.signOut({ scope: 'global' });
 
+      // Quick redirect without additional loading time
       window.location.href = '/login';
     } catch (error) {
       console.error('[AuthProvider] Error signing out:', error);
+      setLoading(false);
       toast.error('Error signing out');
+      // Still redirect even if there's an error
+      window.location.href = '/login';
     }
   };
 
