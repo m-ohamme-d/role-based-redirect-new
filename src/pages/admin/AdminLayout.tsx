@@ -72,9 +72,7 @@ const AdminLayout = () => {
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
-      <MainLayout links={adminLinks} role="Admin" userName={profile?.name || 'Admin'}>
-        <Outlet />
-      </MainLayout>
+      <MainLayout links={adminLinks} role="Admin" userName={profile?.name || 'Admin'} />
     </ProtectedRoute>
   );
 };
