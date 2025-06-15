@@ -6,10 +6,31 @@ import DepartmentStatsCard from "@/components/admin/DepartmentStatsCard";
 import SystemHealthCard from "@/components/admin/SystemHealthCard";
 import RecentActivityCard from "@/components/admin/RecentActivityCard";
 import RealtimePerformanceWidget from "@/components/RealtimePerformanceWidget";
+import BarChart from "@/components/charts/BarChart";
+import LineChart from "@/components/charts/LineChart";
 import { useAdminData } from "@/hooks/useAdminData";
 
 const AdminDashboard = () => {
   const { stats, departments, loading, error } = useAdminData();
+
+  // Sample data for the charts
+  const barChartData = [
+    { name: 'Jan', value: 400 },
+    { name: 'Feb', value: 300 },
+    { name: 'Mar', value: 200 },
+    { name: 'Apr', value: 278 },
+    { name: 'May', value: 189 },
+    { name: 'Jun', value: 239 },
+  ];
+
+  const lineChartData = [
+    { name: 'Jan', value: 400 },
+    { name: 'Feb', value: 300 },
+    { name: 'Mar', value: 500 },
+    { name: 'Apr', value: 278 },
+    { name: 'May', value: 389 },
+    { name: 'Jun', value: 439 },
+  ];
 
   if (loading) {
     return (
@@ -43,6 +64,20 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DepartmentStatsCard departments={departments} loading={loading} />
         <SystemHealthCard />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BarChart 
+          data={barChartData}
+          title="Monthly User Growth"
+          subtitle="New user registrations per month"
+        />
+        <LineChart 
+          data={lineChartData}
+          title="System Performance"
+          subtitle="Response time metrics over time"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
