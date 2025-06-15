@@ -1,8 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { departmentStore } from '../stores/departmentStore';
-import { getMockSession, createMockTeamLead } from '@/utils/mockAuth';
 
 interface Department {
   id: string;
@@ -27,43 +27,26 @@ export const useDepartments = () => {
   }, []);
 
   useEffect(() => {
-    // For development, use mock session if no real auth
-    const initializeData = async () => {
-      let currentProfile = profile;
-      
-      if (!currentProfile) {
-        const mockProfile = getMockSession();
-        if (!mockProfile) {
-          console.log('Creating mock team lead for development...');
-          const newMockProfile = await createMockTeamLead();
-          currentProfile = newMockProfile;
-        } else {
-          currentProfile = mockProfile;
-        }
-      }
-
-      if (currentProfile?.role === 'teamlead') {
-        await fetchTeamLeadDepartments(currentProfile.id);
-      } else {
-        setLoading(false);
-      }
-    };
-
-    initializeData();
+    if (profile?.role === 'teamlead') {
+      fetchTeamLeadDepartments();
+    } else {
+      setLoading(false);
+    }
   }, [profile]);
 
-  const fetchTeamLeadDepartments = async (teamLeadId?: string) => {
+  const fetchTeamLeadDepartments = async () => {
     try {
       setLoading(true);
 
+      // Use supabase.from() with type assertion to work around missing types
       const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select(`
           id,
           name,
-          team_members(id)
+          team_members(count)
         `)
-        .eq('team_lead_id', teamLeadId);
+        .eq('team_lead_id', profile?.id);
 
       if (deptError) {
         console.error('Error fetching departments:', deptError);
@@ -74,7 +57,7 @@ export const useDepartments = () => {
       const transformedDepts: Department[] = (deptData || []).map((dept: any) => ({
         id: dept.id,
         name: dept.name,
-        memberCount: dept.team_members ? dept.team_members.length : 0
+        memberCount: Array.isArray(dept.team_members) ? dept.team_members.length : (dept.team_members?.[0]?.count || 0)
       }));
 
       setTeamLeadDepartments(transformedDepts);
@@ -104,6 +87,6 @@ export const useDepartments = () => {
     addDepartment,
     updateDepartment,
     deleteDepartment,
-    refetch: () => fetchTeamLeadDepartments(profile?.id)
+    refetch: fetchTeamLeadDepartments
   };
 };
