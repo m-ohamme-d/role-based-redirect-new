@@ -10,7 +10,7 @@ export default function Index() {
   const { profile, loading } = useAuth();
   const didRedirectRef = useRef(false);
 
-  // Compute the target route based on role
+  // Decide redirect destination based on user role
   const dest =
     profile?.role === 'admin'
       ? '/admin/dashboard'
@@ -21,26 +21,29 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
-    // Only redirect ONCE, ONLY from "/" route, and only if allowed
+    // Only redirect ONCE, ONLY from "/", ONLY if allowed
     if (
       !loading &&
       location.pathname === '/' &&
       !didRedirectRef.current
     ) {
       didRedirectRef.current = true;
+      // For debugging: log one-time redirect
+      // eslint-disable-next-line no-console
+      console.log('[Index]: Redirecting from "/" to:', dest);
+      // This triggers a navigation and a component unmount
       navigate(dest, { replace: true });
     }
-    // No dependency on profile or dest (which are recomputed on every render),
-    // Just run on loading or path change.
+    // Only tie this to changes of loading/path!
     // eslint-disable-next-line
   }, [loading, location.pathname, navigate]);
 
-  // After navigation, or if not on root, render nothing (avoids infinite loops)
+  // After navigation or if not on root, render nothing. This prevents flicker and infinite redirects.
   if (didRedirectRef.current || location.pathname !== '/') {
     return null;
   }
 
-  // Loading spinner when initializing at "/"
+  // Show loading spinner ONLY while initializing at "/"
   if (loading && location.pathname === '/' && !didRedirectRef.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -52,6 +55,6 @@ export default function Index() {
     );
   }
 
-  // Fallback (shouldn't occur)
+  // Fallback safety: render nothing
   return null;
 }
