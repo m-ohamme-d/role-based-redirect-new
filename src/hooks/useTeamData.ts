@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { getMockSession } from '@/utils/mockAuth';
 
 interface TeamMember {
   id: string;
@@ -32,7 +33,7 @@ export const useTeamData = (departmentId?: string) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (departmentId && profile) {
+    if (departmentId) {
       fetchDepartmentData();
     }
   }, [departmentId, profile]);
@@ -42,7 +43,7 @@ export const useTeamData = (departmentId?: string) => {
       setLoading(true);
       setError(null);
 
-      // Fetch department info using type assertion
+      // Fetch department info
       const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select('*')
@@ -57,20 +58,10 @@ export const useTeamData = (departmentId?: string) => {
 
       setDepartment(deptData);
 
-      // Fetch team members with their ratings using type assertion
+      // Fetch team members first
       const { data: membersData, error: membersError } = await (supabase as any)
         .from('team_members')
-        .select(`
-          *,
-          performance_ratings!inner(
-            productivity,
-            collaboration,
-            timeliness,
-            overall,
-            is_locked,
-            rating_period
-          )
-        `)
+        .select('*')
         .eq('department_id', departmentId);
 
       if (membersError) {
@@ -79,20 +70,41 @@ export const useTeamData = (departmentId?: string) => {
         return;
       }
 
+      // Then fetch their ratings separately to avoid complex joins
+      const memberIds = membersData?.map((m: any) => m.id) || [];
+      let ratingsData: any[] = [];
+      
+      if (memberIds.length > 0) {
+        const { data: ratings, error: ratingsError } = await (supabase as any)
+          .from('performance_ratings')
+          .select('*')
+          .in('member_id', memberIds);
+
+        if (ratingsError) {
+          console.error('Error fetching ratings:', ratingsError);
+        } else {
+          ratingsData = ratings || [];
+        }
+      }
+
       // Transform the data to match the expected format
-      const transformedMembers: TeamMember[] = (membersData || []).map((member: any) => ({
-        id: member.id,
-        name: member.name,
-        designation: member.designation,
-        avatar_url: member.avatar_url,
-        ratings: {
-          productivity: member.performance_ratings?.productivity || 0,
-          collaboration: member.performance_ratings?.collaboration || 0,
-          timeliness: member.performance_ratings?.timeliness || 0,
-          overall: member.performance_ratings?.overall || 0,
-        },
-        locked: member.performance_ratings?.is_locked || false
-      }));
+      const transformedMembers: TeamMember[] = (membersData || []).map((member: any) => {
+        const memberRating = ratingsData.find(r => r.member_id === member.id);
+        
+        return {
+          id: member.id,
+          name: member.name,
+          designation: member.designation,
+          avatar_url: member.avatar_url,
+          ratings: {
+            productivity: memberRating?.productivity || 0,
+            collaboration: memberRating?.collaboration || 0,
+            timeliness: memberRating?.timeliness || 0,
+            overall: memberRating?.overall || 0,
+          },
+          locked: memberRating?.is_locked || false
+        };
+      });
 
       setTeamMembers(transformedMembers);
     } catch (err) {
@@ -114,12 +126,12 @@ export const useTeamData = (departmentId?: string) => {
       
       const { error } = await (supabase as any)
         .from('performance_ratings')
-        .update({
+        .upsert({
+          member_id: memberId,
           [criterion]: rating,
           overall: overall,
           updated_at: new Date().toISOString()
-        })
-        .eq('member_id', memberId);
+        });
 
       if (error) {
         console.error('Error updating rating:', error);
@@ -144,11 +156,13 @@ export const useTeamData = (departmentId?: string) => {
 
   const lockRatings = async (memberId: string) => {
     try {
+      const currentProfile = profile || getMockSession();
+      
       const { error } = await (supabase as any)
         .from('performance_ratings')
         .update({
           is_locked: true,
-          rated_by_id: profile?.id,
+          rated_by_id: currentProfile?.id,
           updated_at: new Date().toISOString()
         })
         .eq('member_id', memberId);
