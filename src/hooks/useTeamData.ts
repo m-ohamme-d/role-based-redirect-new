@@ -48,8 +48,8 @@ export const useTeamData = (departmentId?: string) => {
       setLoading(true);
       setError(null);
 
-      // Fetch department data
-      const { data: deptData, error: deptError } = await supabase
+      // Use type assertion to bypass current type limitations
+      const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select('*')
         .eq('id', departmentId)
@@ -65,7 +65,7 @@ export const useTeamData = (departmentId?: string) => {
       setDepartment(deptData);
 
       // Fetch team members with their performance ratings
-      const { data: membersData, error: membersError } = await supabase
+      const { data: membersData, error: membersError } = await (supabase as any)
         .from('team_members')
         .select(`
           *,
@@ -118,7 +118,7 @@ export const useTeamData = (departmentId?: string) => {
       const newRatings = { ...member.ratings, [criterion]: rating };
       const overall = Math.round((newRatings.productivity + newRatings.collaboration + newRatings.timeliness) / 3);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('performance_ratings')
         .update({
           [criterion]: rating,
@@ -149,7 +149,7 @@ export const useTeamData = (departmentId?: string) => {
 
   const lockRatings = async (memberId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('performance_ratings')
         .update({
           is_locked: true,
