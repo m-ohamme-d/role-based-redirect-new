@@ -54,8 +54,8 @@ export const useAdminData = () => {
         return;
       }
 
-      // Fetch departments from the database
-      const { data: departmentsData, error: departmentsError } = await supabase
+      // Fetch departments from the database using generic typing
+      const { data: departmentsData, error: departmentsError } = await (supabase as any)
         .from('departments')
         .select('*')
         .order('name');
@@ -66,8 +66,8 @@ export const useAdminData = () => {
         return;
       }
 
-      // Fetch audit logs count
-      const { count: auditCount, error: auditError } = await supabase
+      // Fetch audit logs count using generic typing
+      const { count: auditCount, error: auditError } = await (supabase as any)
         .from('audit_logs')
         .select('*', { count: 'exact', head: true });
 
@@ -76,7 +76,7 @@ export const useAdminData = () => {
       }
 
       // Transform departments data
-      const departmentsWithStats: DepartmentWithStats[] = departmentsData?.map(dept => ({
+      const departmentsWithStats: DepartmentWithStats[] = departmentsData?.map((dept: any) => ({
         id: dept.id,
         name: dept.name,
         memberCount: dept.member_count || 0,
@@ -86,7 +86,7 @@ export const useAdminData = () => {
       const finalStats = {
         totalUsers: usersCount || 0,
         totalDepartments: departmentsData?.length || 0,
-        totalTeamMembers: departmentsData?.reduce((sum, dept) => sum + (dept.member_count || 0), 0) || 0,
+        totalTeamMembers: departmentsData?.reduce((sum: number, dept: any) => sum + (dept.member_count || 0), 0) || 0,
         lockedRecords: 23, // Mock data - would need a separate table for locked records
         auditLogs: auditCount || 0
       };

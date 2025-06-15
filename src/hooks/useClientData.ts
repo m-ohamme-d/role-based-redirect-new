@@ -58,8 +58,8 @@ export const useClientData = () => {
       setError(null);
       console.log('[useClientData] Fetching client data...');
 
-      // Fetch clients
-      const { data: clientsData, error: clientsError } = await supabase
+      // Fetch clients using generic typing
+      const { data: clientsData, error: clientsError } = await (supabase as any)
         .from('clients')
         .select('*')
         .order('name');
@@ -70,8 +70,8 @@ export const useClientData = () => {
         return;
       }
 
-      // Fetch projects
-      const { data: projectsData, error: projectsError } = await supabase
+      // Fetch projects using generic typing
+      const { data: projectsData, error: projectsError } = await (supabase as any)
         .from('projects')
         .select('*')
         .order('name');
@@ -82,8 +82,8 @@ export const useClientData = () => {
         return;
       }
 
-      // Fetch client tags
-      const { data: tagsData, error: tagsError } = await supabase
+      // Fetch client tags using generic typing
+      const { data: tagsData, error: tagsError } = await (supabase as any)
         .from('client_tags')
         .select('*');
 
@@ -91,8 +91,8 @@ export const useClientData = () => {
         console.error('[useClientData] Error fetching client tags:', tagsError);
       }
 
-      // Fetch client departments
-      const { data: deptsData, error: deptsError } = await supabase
+      // Fetch client departments using generic typing
+      const { data: deptsData, error: deptsError } = await (supabase as any)
         .from('client_departments')
         .select('*');
 
@@ -121,7 +121,7 @@ export const useClientData = () => {
 
   const addClient = async (client: Omit<Client, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('clients')
         .insert([client])
         .select()
@@ -142,7 +142,7 @@ export const useClientData = () => {
 
   const updateClient = async (id: string, updates: Partial<Client>) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('clients')
         .update(updates)
         .eq('id', id)
@@ -164,7 +164,7 @@ export const useClientData = () => {
 
   const deleteClient = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('clients')
         .delete()
         .eq('id', id);
@@ -184,7 +184,7 @@ export const useClientData = () => {
 
   const addClientTag = async (clientId: string, tag: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('client_tags')
         .insert([{ client_id: clientId, tag }])
         .select()
@@ -205,7 +205,7 @@ export const useClientData = () => {
 
   const removeClientTag = async (clientId: string, tag: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('client_tags')
         .delete()
         .eq('client_id', clientId)
