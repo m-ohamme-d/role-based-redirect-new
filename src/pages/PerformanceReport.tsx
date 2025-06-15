@@ -59,17 +59,53 @@ export const PerformanceReport: React.FC = () => {
   })
 
   const exportToPDF = async () => {
-    if (!reportRef.current) return
+    if (!reportRef.current) {
+      console.error('Report reference not found')
+      return
+    }
+
+    if (!data || data.length === 0) {
+      console.error('No data available for PDF export')
+      alert('No data available to export')
+      return
+    }
+
     try {
-      const canvas = await html2canvas(reportRef.current, { scale: 2 })
+      console.log('Starting PDF export...')
+      
+      // Wait a bit to ensure the content is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      const canvas = await html2canvas(reportRef.current, { 
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: reportRef.current.scrollWidth,
+        height: reportRef.current.scrollHeight
+      })
+      
+      console.log('Canvas created, dimensions:', canvas.width, 'x', canvas.height)
+      
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('l', 'pt', 'a4')
-      const w = pdf.internal.pageSize.getWidth()
-      const h = (canvas.height * w) / canvas.width
-      pdf.addImage(imgData, 'PNG', 0, 0, w, h)
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      
+      const imgX = (pdfWidth - imgWidth * ratio) / 2
+      const imgY = 30
+      
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio)
       pdf.save('performance-report.pdf')
+      
+      console.log('PDF export completed successfully')
     } catch (error) {
       console.error('Error generating PDF:', error)
+      alert('Error generating PDF. Please try again.')
     }
   }
 
@@ -112,6 +148,7 @@ export const PerformanceReport: React.FC = () => {
             <Button
               onClick={exportToPDF}
               className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={!data || data.length === 0}
             >
               <FileDown className="mr-2 h-4 w-4" />
               Export PDF
@@ -129,41 +166,38 @@ export const PerformanceReport: React.FC = () => {
           <CardContent>
             <div
               ref={reportRef}
-              className="overflow-x-auto"
+              className="overflow-x-auto bg-white rounded-lg"
+              style={{ minHeight: '400px' }}
             >
-              <table className="min-w-full border-collapse bg-white rounded-lg overflow-hidden">
-                <thead>
-                  <tr className="bg-gradient-to-r from-purple-100 to-blue-100">
-                    <th className="p-4 text-left font-semibold text-gray-800 border-b">Photo</th>
-                    <th className="p-4 text-left font-semibold text-gray-800 border-b">Employee</th>
-                    <th className="p-4 text-left font-semibold text-gray-800 border-b">Designation</th>
-                    <th className="p-4 text-left font-semibold text-gray-800 border-b">Department</th>
-                    <th className="p-4 text-left font-semibold text-gray-800 border-b">Team Lead</th>
-                    <th className="p-4 text-center font-semibold text-gray-800 border-b">Rating</th>
-                    <th className="p-4 text-center font-semibold text-gray-800 border-b">Period</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data && data.length > 0 ? (
-                    data.map(r => (
+              {data && data.length > 0 ? (
+                <table className="min-w-full border-collapse bg-white rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-purple-100 to-blue-100">
+                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Photo</th>
+                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Employee</th>
+                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Designation</th>
+                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Department</th>
+                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Team Lead</th>
+                      <th className="p-4 text-center font-semibold text-gray-800 border-b">Rating</th>
+                      <th className="p-4 text-center font-semibold text-gray-800 border-b">Period</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map(r => (
                       <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-4 border-b">
-                          <img
-                            src={r.avatar_url || "/placeholder.svg"}
-                            alt={r.employee_name}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                          />
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-semibold">
+                            {r.employee_name.split(' ').map(n => n[0]).join('')}
+                          </div>
                         </td>
                         <td className="p-4 border-b font-medium text-gray-800">{r.employee_name}</td>
                         <td className="p-4 border-b text-gray-600">{r.designation}</td>
                         <td className="p-4 border-b text-gray-600">{r.department}</td>
                         <td className="p-4 border-b">
                           <div className="flex items-center">
-                            <img
-                              src={r.team_lead_avatar || "/placeholder.svg"}
-                              alt={r.team_lead}
-                              className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
-                            />
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-semibold mr-3">
+                              {r.team_lead.split(' ').map(n => n[0]).join('')}
+                            </div>
                             <span className="text-gray-700">{r.team_lead}</span>
                           </div>
                         </td>
@@ -178,16 +212,15 @@ export const PerformanceReport: React.FC = () => {
                         </td>
                         <td className="p-4 border-b text-center text-gray-600 capitalize">{r.period}</td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="p-8 text-center text-gray-500">
-                        No performance data available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
+                  <p className="text-lg font-medium">No performance data available</p>
+                  <p className="text-sm mt-2">Please check back later or contact your administrator</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
