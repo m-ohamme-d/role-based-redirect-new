@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Settings, BarChart3, Users, Home, ChevronRight, ChevronLeft } from 'lucide-react';
+import { LogOut, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface SidebarProps {
   links: {
@@ -12,16 +12,11 @@ interface SidebarProps {
   }[];
   role: string;
   userName: string;
+  onLogout?: () => void;
 }
 
-const Sidebar = ({ links, role, userName }: SidebarProps) => {
-  const navigate = useNavigate();
+const Sidebar = ({ links, role, userName, onLogout }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
 
   return (
     <div className={`bg-white shadow-lg h-screen relative transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
@@ -66,7 +61,7 @@ const Sidebar = ({ links, role, userName }: SidebarProps) => {
 
         <div>
           <Button
-            onClick={handleLogout}
+            onClick={onLogout}
             variant="outline"
             className={`flex items-center gap-2 w-full ${collapsed ? 'justify-center' : ''}`}
           >

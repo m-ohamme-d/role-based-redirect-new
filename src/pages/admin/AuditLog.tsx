@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Table, 
   TableBody, 
@@ -141,27 +142,39 @@ const ActionBadge = ({ action }: { action: string }) => {
 
 const AdminAuditLog = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const { profile, loading } = useAuth();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.role !== 'admin') {
-        console.log('Access denied to audit log - user role:', parsedUser.role);
+    if (!loading) {
+      if (!profile) {
+        console.log('No profile found, redirecting to login');
         navigate('/login');
         return;
       }
-      setUser(parsedUser);
-      console.log('Admin accessing audit log:', parsedUser.name);
-    } else {
-      navigate('/login');
+      
+      if (profile.role !== 'admin') {
+        console.log('Access denied to audit log - user role:', profile.role);
+        navigate('/login');
+        return;
+      }
+      
+      console.log('Admin accessing audit log:', profile.name);
     }
-  }, [navigate]);
+  }, [profile, loading, navigate]);
 
-  if (!user) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!profile || profile.role !== 'admin') {
+    return null;
+  }
 
   const filteredLogs = mockAuditLogs
     .filter(log => {

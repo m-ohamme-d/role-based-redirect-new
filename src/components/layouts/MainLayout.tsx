@@ -30,6 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MainLayoutProps {
   links: {
@@ -43,6 +44,7 @@ interface MainLayoutProps {
 
 const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -67,9 +69,15 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
     }
   ]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: clear localStorage and redirect
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
   };
 
   const markAsRead = (id: number) => {
@@ -89,7 +97,7 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar links={links} role={role} userName={userName} />
+      <Sidebar links={links} role={role} userName={userName} onLogout={handleLogout} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top navbar */}
