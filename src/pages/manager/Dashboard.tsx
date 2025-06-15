@@ -86,8 +86,6 @@ const ManagerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
-  const [showCreateDeptDialog, setShowCreateDeptDialog] = useState(false);
-  const [newDeptName, setNewDeptName] = useState('');
 
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
@@ -111,54 +109,11 @@ const ManagerDashboard = () => {
     }
   };
 
-  const handleCreateDepartment = () => {
-    if (!newDeptName.trim()) {
-      toast.error('Department name is required');
-      return;
-    }
-    
-    toast.success(`Department "${newDeptName}" created successfully`);
-    setNewDeptName('');
-    setShowCreateDeptDialog(false);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
         <div className="flex gap-2">
-          <Dialog open={showCreateDeptDialog} onOpenChange={setShowCreateDeptDialog}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                Create Department
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle>Create New Department</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="dept-name">Department Name</Label>
-                  <Input
-                    id="dept-name"
-                    value={newDeptName}
-                    onChange={(e) => setNewDeptName(e.target.value)}
-                    placeholder="Enter department name"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowCreateDeptDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateDepartment}>
-                    Create
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
           <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
