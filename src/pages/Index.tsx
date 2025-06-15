@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -8,14 +8,18 @@ export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, loading } = useAuth();
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    // Only proceed if we're on the root path and auth is not loading
-    if (location.pathname !== '/' || loading) {
+    // Only proceed if we're on the root path, auth is not loading, and we haven't redirected yet
+    if (location.pathname !== '/' || loading || hasRedirectedRef.current) {
       return;
     }
 
     console.log('[Index] Auth loaded, profile:', profile?.role);
+    
+    // Mark as redirected to prevent multiple redirects
+    hasRedirectedRef.current = true;
     
     // Decide redirect destination based on user role
     const dest = profile?.role === 'admin'
@@ -28,7 +32,7 @@ export default function Index() {
 
     console.log('[Index]: Redirecting from "/" to:', dest);
     navigate(dest, { replace: true });
-  }, [loading, profile, location.pathname, navigate]);
+  }, [loading, profile]); // Only depend on loading and profile, NOT location.pathname or navigate
 
   // Show loading spinner while auth is initializing OR while we're redirecting
   return (
