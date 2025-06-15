@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -8,6 +8,7 @@ export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, loading } = useAuth();
+  const redirected = useRef(false);
 
   // Compute the target route based on role
   const dest =
@@ -20,15 +21,16 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
-    if (!loading && location.pathname === '/') {
-      // Navigate to destination and do nothing else
+    // Only trigger redirect ONCE per mount on "/"
+    if (!loading && location.pathname === '/' && !redirected.current) {
+      redirected.current = true;
       navigate(dest, { replace: true });
     }
-    // Only run on auth, path, dest change
+    // Only rerun if loading, dest, location.pathname, or navigate changes
   }, [loading, dest, navigate, location.pathname]);
 
-  // If not on "/", render nothing (Index page only cares about "/")
-  if (location.pathname !== '/') {
+  // If already redirected OR not on "/", render nothing
+  if (redirected.current || location.pathname !== '/') {
     return null;
   }
 
