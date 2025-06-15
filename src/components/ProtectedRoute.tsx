@@ -14,29 +14,33 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   useEffect(() => {
     if (!loading) {
+      console.log('[ProtectedRoute] Auth loaded, profile:', profile?.role);
+      
       if (!profile) {
-        navigate('/login');
+        console.log('[ProtectedRoute] No profile, redirecting to login');
+        navigate('/login', { replace: true });
         return;
       }
 
       if (allowedRoles && !allowedRoles.includes(profile.role)) {
+        console.log('[ProtectedRoute] Role not allowed, redirecting based on role:', profile.role);
         // Redirect to appropriate dashboard based on role
         switch (profile.role) {
           case 'admin':
-            navigate('/admin/dashboard');
+            navigate('/admin/dashboard', { replace: true });
             break;
           case 'manager':
-            navigate('/manager/dashboard');
+            navigate('/manager/dashboard', { replace: true });
             break;
           case 'teamlead':
-            navigate('/teamlead/dashboard');
+            navigate('/teamlead/dashboard', { replace: true });
             break;
           default:
-            navigate('/login');
+            navigate('/login', { replace: true });
         }
       }
     }
-  }, [profile, loading, allowedRoles, navigate]);
+  }, [profile, loading, allowedRoles]);
 
   if (loading) {
     return (
