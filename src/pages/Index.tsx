@@ -8,17 +8,18 @@ export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, loading } = useAuth();
-  const didRedirectRef = useRef(false);
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    // Only proceed if we're on the root path and haven't redirected yet
-    if (location.pathname !== '/' || didRedirectRef.current) {
+    // Only proceed if we haven't redirected yet and we're on the root path
+    if (hasRedirectedRef.current || location.pathname !== '/') {
       return;
     }
 
-    // Only redirect when not loading
+    // Only redirect when auth is not loading
     if (!loading) {
-      didRedirectRef.current = true;
+      // Mark as redirected IMMEDIATELY to prevent any re-runs
+      hasRedirectedRef.current = true;
       
       // Decide redirect destination based on user role
       const dest = profile?.role === 'admin'
@@ -32,10 +33,10 @@ export default function Index() {
       console.log('[Index]: Redirecting from "/" to:', dest);
       navigate(dest, { replace: true });
     }
-  }, [loading, location.pathname]); // Removed navigate from dependencies
+  }, [loading]); // Only depend on loading, not location.pathname
 
   // If we've redirected or not on root path, don't render anything
-  if (didRedirectRef.current || location.pathname !== '/') {
+  if (hasRedirectedRef.current || location.pathname !== '/') {
     return null;
   }
 
