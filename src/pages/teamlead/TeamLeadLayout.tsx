@@ -21,7 +21,7 @@ const TeamLeadLayout = () => {
 
   return (
     <ProtectedRoute allowedRoles={['teamlead']}>
-      <MainLayout links={sidebarLinks} role="teamlead" userName={profile?.name || 'Team Lead'} />
+      <MainLayout links={sidebarLinks} role="Team Lead" userName={profile?.name || 'Team Lead'} />
     </ProtectedRoute>
   );
 };
