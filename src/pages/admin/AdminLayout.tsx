@@ -4,6 +4,7 @@ import { useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import MainLayout from '@/components/layouts/MainLayout';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { Home, Users, FileText, Activity, Settings, HelpCircle, Bell, Building, User } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -71,9 +72,11 @@ const AdminLayout = () => {
   }
 
   return (
-    <ProtectedRoute allowedRoles={['admin']}>
-      <MainLayout links={adminLinks} role="Admin" userName={profile?.name || 'Admin'} />
-    </ProtectedRoute>
+    <ErrorBoundary>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <MainLayout links={adminLinks} role="Admin" userName={profile?.name || 'Admin'} />
+      </ProtectedRoute>
+    </ErrorBoundary>
   );
 };
 

@@ -15,6 +15,7 @@ export const useDepartments = () => {
   const [departments, setDepartments] = useState<string[]>(departmentStore.getDepartments());
   const [teamLeadDepartments, setTeamLeadDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = departmentStore.subscribe(() => {
@@ -37,9 +38,9 @@ export const useDepartments = () => {
   const fetchTeamLeadDepartments = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // Use supabase.from() with type assertion to work around missing types
-      const { data: deptData, error: deptError } = await (supabase as any)
+      const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select(`
           id,
@@ -50,6 +51,7 @@ export const useDepartments = () => {
 
       if (deptError) {
         console.error('Error fetching departments:', deptError);
+        setError('Failed to fetch departments');
         setLoading(false);
         return;
       }
@@ -63,6 +65,7 @@ export const useDepartments = () => {
       setTeamLeadDepartments(transformedDepts);
     } catch (err) {
       console.error('Error fetching departments:', err);
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -84,6 +87,7 @@ export const useDepartments = () => {
     departments,
     teamLeadDepartments,
     loading,
+    error,
     addDepartment,
     updateDepartment,
     deleteDepartment,

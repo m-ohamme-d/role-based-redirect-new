@@ -38,12 +38,17 @@ export const useTeamData = (departmentId?: string) => {
   }, [departmentId, profile]);
 
   const fetchDepartmentData = async () => {
+    if (!departmentId) {
+      setError('No department ID provided');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch department info using type assertion
-      const { data: deptData, error: deptError } = await (supabase as any)
+      const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select('*')
         .eq('id', departmentId)
@@ -52,13 +57,13 @@ export const useTeamData = (departmentId?: string) => {
       if (deptError) {
         console.error('Error fetching department:', deptError);
         setError('Failed to fetch department data');
+        setLoading(false);
         return;
       }
 
       setDepartment(deptData);
 
-      // Fetch team members with their ratings using type assertion
-      const { data: membersData, error: membersError } = await (supabase as any)
+      const { data: membersData, error: membersError } = await supabase
         .from('team_members')
         .select(`
           *,
@@ -76,10 +81,10 @@ export const useTeamData = (departmentId?: string) => {
       if (membersError) {
         console.error('Error fetching team members:', membersError);
         setError('Failed to fetch team members');
+        setLoading(false);
         return;
       }
 
-      // Transform the data to match the expected format
       const transformedMembers: TeamMember[] = (membersData || []).map((member: any) => ({
         id: member.id,
         name: member.name,
@@ -105,14 +110,13 @@ export const useTeamData = (departmentId?: string) => {
 
   const updateRating = async (memberId: string, criterion: string, rating: number) => {
     try {
-      // Calculate overall rating
       const member = teamMembers.find(m => m.id === memberId);
       if (!member || member.locked) return false;
 
       const newRatings = { ...member.ratings, [criterion]: rating };
       const overall = Math.round((newRatings.productivity + newRatings.collaboration + newRatings.timeliness) / 3);
       
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('performance_ratings')
         .update({
           [criterion]: rating,
@@ -127,7 +131,6 @@ export const useTeamData = (departmentId?: string) => {
         return false;
       }
 
-      // Update local state
       setTeamMembers(prev => prev.map(m => 
         m.id === memberId 
           ? { ...m, ratings: { ...newRatings, overall } }
@@ -144,7 +147,7 @@ export const useTeamData = (departmentId?: string) => {
 
   const lockRatings = async (memberId: string) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('performance_ratings')
         .update({
           is_locked: true,
@@ -159,7 +162,6 @@ export const useTeamData = (departmentId?: string) => {
         return false;
       }
 
-      // Update local state
       setTeamMembers(prev => prev.map(m => 
         m.id === memberId ? { ...m, locked: true } : m
       ));
