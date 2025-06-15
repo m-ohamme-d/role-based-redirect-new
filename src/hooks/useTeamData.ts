@@ -48,7 +48,7 @@ export const useTeamData = (departmentId?: string) => {
       setLoading(true);
       setError(null);
 
-      // Use type assertion to bypass current type limitations
+      // Use type assertion to bypass current type limitations until types are regenerated
       const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select('*')
@@ -78,7 +78,8 @@ export const useTeamData = (departmentId?: string) => {
             rating_period
           )
         `)
-        .eq('department_id', departmentId);
+        .eq('department_id', departmentId)
+        .eq('performance_ratings.rating_period', 'current');
 
       if (membersError) {
         console.error('Error fetching team members:', membersError);
@@ -125,7 +126,8 @@ export const useTeamData = (departmentId?: string) => {
           overall: overall,
           updated_at: new Date().toISOString()
         })
-        .eq('member_id', memberId);
+        .eq('member_id', memberId)
+        .eq('rating_period', 'current');
 
       if (error) {
         console.error('Error updating rating:', error);
@@ -156,7 +158,8 @@ export const useTeamData = (departmentId?: string) => {
           rated_by_id: profile?.id,
           updated_at: new Date().toISOString()
         })
-        .eq('member_id', memberId);
+        .eq('member_id', memberId)
+        .eq('rating_period', 'current');
 
       if (error) {
         console.error('Error locking ratings:', error);

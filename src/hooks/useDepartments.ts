@@ -40,7 +40,7 @@ export const useDepartments = () => {
       setLoading(true);
       setError(null);
 
-      // Use type assertion to bypass current type limitations
+      // Use type assertion to bypass current type limitations until types are regenerated
       const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select(`
