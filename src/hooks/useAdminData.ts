@@ -43,7 +43,7 @@ export const useAdminData = () => {
       setError(null);
       console.log('[useAdminData] Starting to fetch admin data...');
 
-      // Fetch total users count from profiles table (this exists)
+      // Fetch total users count from profiles table
       const { count: usersCount, error: usersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
@@ -52,51 +52,50 @@ export const useAdminData = () => {
         console.error('[useAdminData] Error fetching users count:', usersError);
         setError('Failed to fetch users data');
         return;
-      } else {
-        console.log('[useAdminData] Users count:', usersCount);
       }
 
-      // Mock data for departments until the tables are created in Supabase
-      const mockDepartments: DepartmentWithStats[] = [
-        {
-          id: '1',
-          name: 'Engineering',
-          memberCount: 15,
-          teamLeadName: 'John Smith'
-        },
-        {
-          id: '2',
-          name: 'Marketing',
-          memberCount: 8,
-          teamLeadName: 'Sarah Johnson'
-        },
-        {
-          id: '3',
-          name: 'Sales',
-          memberCount: 12,
-          teamLeadName: 'Mike Wilson'
-        },
-        {
-          id: '4',
-          name: 'HR',
-          memberCount: 5,
-          teamLeadName: 'Lisa Brown'
-        }
-      ];
+      // Fetch departments from the database
+      const { data: departmentsData, error: departmentsError } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name');
 
-      const mockStats = {
+      if (departmentsError) {
+        console.error('[useAdminData] Error fetching departments:', departmentsError);
+        setError('Failed to fetch departments data');
+        return;
+      }
+
+      // Fetch audit logs count
+      const { count: auditCount, error: auditError } = await supabase
+        .from('audit_logs')
+        .select('*', { count: 'exact', head: true });
+
+      if (auditError) {
+        console.error('[useAdminData] Error fetching audit logs count:', auditError);
+      }
+
+      // Transform departments data
+      const departmentsWithStats: DepartmentWithStats[] = departmentsData?.map(dept => ({
+        id: dept.id,
+        name: dept.name,
+        memberCount: dept.member_count || 0,
+        teamLeadName: dept.team_lead_name || 'Not assigned'
+      })) || [];
+
+      const finalStats = {
         totalUsers: usersCount || 0,
-        totalDepartments: mockDepartments.length,
-        totalTeamMembers: mockDepartments.reduce((sum, dept) => sum + dept.memberCount, 0),
-        lockedRecords: 23, // Mock data
-        auditLogs: 1256 // Mock data
+        totalDepartments: departmentsData?.length || 0,
+        totalTeamMembers: departmentsData?.reduce((sum, dept) => sum + (dept.member_count || 0), 0) || 0,
+        lockedRecords: 23, // Mock data - would need a separate table for locked records
+        auditLogs: auditCount || 0
       };
 
-      console.log('[useAdminData] Final stats:', mockStats);
-      console.log('[useAdminData] Mock departments:', mockDepartments);
+      console.log('[useAdminData] Final stats:', finalStats);
+      console.log('[useAdminData] Departments from DB:', departmentsWithStats);
 
-      setStats(mockStats);
-      setDepartments(mockDepartments);
+      setStats(finalStats);
+      setDepartments(departmentsWithStats);
     } catch (err) {
       console.error('[useAdminData] Unexpected error:', err);
       setError('An unexpected error occurred');

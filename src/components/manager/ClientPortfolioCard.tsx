@@ -6,73 +6,57 @@ import { Badge } from '@/components/ui/badge';
 import { Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-
-// Mock clients data
-const clientsData = [
-  { 
-    id: 1, 
-    name: 'TechCorp Solutions', 
-    company: 'TechCorp Inc.', 
-    status: 'working',
-    projects: [
-      { id: 1, name: 'Mobile App Development', status: 'working' },
-      { id: 2, name: 'Web Platform Redesign', status: 'working' }
-    ]
-  },
-  { 
-    id: 2, 
-    name: 'HealthCare Inc', 
-    company: 'HealthCare Systems', 
-    status: 'working',
-    projects: [
-      { id: 3, name: 'Patient Management System', status: 'working' },
-      { id: 4, name: 'Telemedicine Platform', status: 'stopped' }
-    ]
-  },
-  { 
-    id: 3, 
-    name: 'Finance Plus', 
-    company: 'Financial Services Ltd', 
-    status: 'stopped',
-    projects: [
-      { id: 5, name: 'Trading Platform', status: 'stopped' }
-    ]
-  },
-  { 
-    id: 4, 
-    name: 'Retail Masters', 
-    company: 'Retail Solutions', 
-    status: 'working',
-    projects: [
-      { id: 6, name: 'E-commerce Migration', status: 'working' }
-    ]
-  },
-];
+import { useClientData } from '@/hooks/useClientData';
 
 interface ClientPortfolioCardProps {
   onViewAllClients: () => void;
 }
 
 const ClientPortfolioCard = ({ onViewAllClients }: ClientPortfolioCardProps) => {
+  const { clients, projects, loading, getClientProjects, getClientTags } = useClientData();
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
 
   const handleClientClick = (client: any) => {
-    setSelectedClient(client);
+    const clientProjects = getClientProjects(client.id);
+    const clientTags = getClientTags(client.id);
+    
+    setSelectedClient({
+      ...client,
+      projects: clientProjects,
+      tags: clientTags
+    });
     setShowClientDialog(true);
   };
 
-  const toggleProjectStatus = (projectId: number) => {
+  const toggleProjectStatus = (projectId: string) => {
     if (selectedClient) {
       const updatedProjects = selectedClient.projects.map((project: any) => 
         project.id === projectId 
-          ? { ...project, status: project.status === 'working' ? 'stopped' : 'working' }
+          ? { ...project, status: project.status === 'active' ? 'stopped' : 'active' }
           : project
       );
       setSelectedClient({ ...selectedClient, projects: updatedProjects });
       toast.success('Project status updated');
     }
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Client Portfolio</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -92,7 +76,7 @@ const ClientPortfolioCard = ({ onViewAllClients }: ClientPortfolioCardProps) => 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clientsData.slice(0, 3).map(client => (
+            {clients.slice(0, 3).map(client => (
               <Card 
                 key={client.id} 
                 className="cursor-pointer hover:shadow-md transition-shadow"
@@ -103,16 +87,19 @@ const ClientPortfolioCard = ({ onViewAllClients }: ClientPortfolioCardProps) => 
                     <h3 className="font-semibold text-lg">{client.name}</h3>
                     <p className="text-sm text-gray-600">{client.company}</p>
                     <Badge 
-                      variant={client.status === 'working' ? 'default' : 'destructive'}
-                      className={client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
+                      variant={client.status === 'active' ? 'default' : 'destructive'}
+                      className={client.status === 'active' ? 'bg-green-500' : 'bg-red-500'}
                     >
-                      {client.status === 'working' ? 'Working' : 'Stopped'}
+                      {client.status === 'active' ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+          {clients.length === 0 && (
+            <p className="text-gray-500 text-center py-4">No clients found</p>
+          )}
         </CardContent>
       </Card>
 
@@ -125,19 +112,25 @@ const ClientPortfolioCard = ({ onViewAllClients }: ClientPortfolioCardProps) => 
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            {selectedClient?.projects.map((project: any) => (
+            {selectedClient?.projects?.map((project: any) => (
               <Card key={project.id}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="font-semibold">{project.name}</h3>
+                      {project.description && (
+                        <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                      )}
                       <div className="flex items-center gap-2 mt-2">
                         <Badge 
-                          variant={project.status === 'working' ? 'default' : 'destructive'}
-                          className={`${project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
+                          variant={project.status === 'active' ? 'default' : 'destructive'}
+                          className={`${project.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}
                         >
-                          {project.status === 'working' ? 'Working' : 'Stopped'}
+                          {project.status === 'active' ? 'Active' : project.status === 'stopped' ? 'Stopped' : 'Completed'}
                         </Badge>
+                        {project.assigned_department && (
+                          <Badge variant="outline">{project.assigned_department}</Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
@@ -146,13 +139,16 @@ const ClientPortfolioCard = ({ onViewAllClients }: ClientPortfolioCardProps) => 
                         size="sm"
                         onClick={() => toggleProjectStatus(project.id)}
                       >
-                        Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
+                        Mark as {project.status === 'active' ? 'Stopped' : 'Active'}
                       </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+            {(!selectedClient?.projects || selectedClient.projects.length === 0) && (
+              <p className="text-gray-500 text-center py-4">No projects found for this client</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
