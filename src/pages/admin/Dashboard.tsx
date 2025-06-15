@@ -4,6 +4,8 @@ import { Shield, Users, FileText, Activity } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
+import SystemHealthCard from "@/components/admin/SystemHealthCard";
+import RecentActivityCard from "@/components/admin/RecentActivityCard";
 import { Link } from "react-router-dom";
 
 // Mock data for charts
@@ -79,84 +81,8 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>Recent User Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <p className="text-sm">Robert Manager added a new team member</p>
-                <span className="text-xs text-gray-500 ml-auto">2 hours ago</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <p className="text-sm">Sarah Lead updated performance ratings</p>
-                <span className="text-xs text-gray-500 ml-auto">5 hours ago</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <p className="text-sm">New user registered: Emily Davis</p>
-                <span className="text-xs text-gray-500 ml-auto">1 day ago</span>
-              </div>
-            </div>
-            <div className="mt-4 text-center">
-              <Link to="/admin/audit-log" className="text-blue-600 hover:underline text-sm">
-                View All Activity
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>System Health</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Server Uptime</span>
-                  <span className="text-sm font-medium">99.9%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '99.9%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Database Load</span>
-                  <span className="text-sm font-medium">45%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Storage Usage</span>
-                  <span className="text-sm font-medium">72%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '72%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">API Request Rate</span>
-                  <span className="text-sm font-medium">28%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '28%' }}></div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <RecentActivityCard />
+        <SystemHealthCard />
       </div>
     </div>
   );
