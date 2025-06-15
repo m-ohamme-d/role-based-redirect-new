@@ -1,7 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Shield, Database, Activity, BarChart2, Building } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, Shield, Database, Activity } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import BarChart from "@/components/charts/BarChart";
@@ -69,6 +68,12 @@ const AdminDashboard = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Error Loading Dashboard</h2>
           <p className="text-gray-600">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -95,7 +100,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Users</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalUsers}</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.totalUsers || 0}</p>
                   <p className="text-sm text-green-600 mt-2 font-medium">+8 from last month</p>
                 </div>
                 <div className="h-14 w-14 bg-blue-500 rounded-xl flex items-center justify-center">
@@ -125,7 +130,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Locked Records</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.lockedRecords}</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.lockedRecords || 0}</p>
                   <p className="text-sm text-green-600 mt-2 font-medium">+5 from last week</p>
                 </div>
                 <div className="h-14 w-14 bg-orange-500 rounded-xl flex items-center justify-center">
@@ -140,7 +145,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Audit Logs</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.auditLogs}</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.auditLogs || 0}</p>
                   <p className="text-sm text-green-600 mt-2 font-medium">+36 today</p>
                 </div>
                 <div className="h-14 w-14 bg-purple-500 rounded-xl flex items-center justify-center">
