@@ -79,10 +79,10 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-[1600px] mx-auto px-4 md:px-8">
+    <div className="space-y-10 max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard Overview</h1>
       </div>
 
       {/* Stats Cards */}
@@ -153,7 +153,7 @@ const AdminDashboard = () => {
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="This Month" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-white">
                   <SelectItem value="thismonth">This Month</SelectItem>
                   <SelectItem value="lastmonth">Last Month</SelectItem>
                   <SelectItem value="thisyear">This Year</SelectItem>
@@ -183,7 +183,7 @@ const AdminDashboard = () => {
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="This Month" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-white">
                   <SelectItem value="thismonth">This Month</SelectItem>
                   <SelectItem value="lastmonth">Last Month</SelectItem>
                   <SelectItem value="thisyear">This Year</SelectItem>
