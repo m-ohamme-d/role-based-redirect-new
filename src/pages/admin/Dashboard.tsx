@@ -76,11 +76,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your system today.</p>
           </div>
           <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
             System Settings
@@ -89,61 +90,61 @@ const AdminDashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-white shadow-sm border-0">
+          <Card className="bg-white shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
-                  <p className="text-3xl font-bold text-gray-900">129</p>
-                  <p className="text-sm text-green-600 mt-1">+8 from last month</p>
+                  <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Users</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalUsers}</p>
+                  <p className="text-sm text-green-600 mt-2 font-medium">+8 from last month</p>
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-blue-600" />
+                <div className="h-14 w-14 bg-blue-500 rounded-xl flex items-center justify-center">
+                  <Users className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border-0">
+          <Card className="bg-white shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">System Security</p>
-                  <p className="text-3xl font-bold text-gray-900">99.8%</p>
-                  <p className="text-sm text-gray-600 mt-1">No recent threats</p>
+                  <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">System Security</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">99.8%</p>
+                  <p className="text-sm text-gray-600 mt-2 font-medium">No recent threats</p>
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-blue-600" />
+                <div className="h-14 w-14 bg-green-500 rounded-xl flex items-center justify-center">
+                  <Shield className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border-0">
+          <Card className="bg-white shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Locked Records</p>
-                  <p className="text-3xl font-bold text-gray-900">42</p>
-                  <p className="text-sm text-green-600 mt-1">+5 from last week</p>
+                  <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Locked Records</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.lockedRecords}</p>
+                  <p className="text-sm text-green-600 mt-2 font-medium">+5 from last week</p>
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Database className="h-6 w-6 text-blue-600" />
+                <div className="h-14 w-14 bg-orange-500 rounded-xl flex items-center justify-center">
+                  <Database className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border-0">
+          <Card className="bg-white shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Audit Logs</p>
-                  <p className="text-3xl font-bold text-gray-900">1,256</p>
-                  <p className="text-sm text-green-600 mt-1">+36 today</p>
+                  <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Audit Logs</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.auditLogs}</p>
+                  <p className="text-sm text-green-600 mt-2 font-medium">+36 today</p>
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Activity className="h-6 w-6 text-blue-600" />
+                <div className="h-14 w-14 bg-purple-500 rounded-xl flex items-center justify-center">
+                  <Activity className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
@@ -151,124 +152,141 @@ const AdminDashboard = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-white shadow-sm border-0">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-semibold text-gray-900">User Activity</CardTitle>
-                <p className="text-sm text-gray-600">Active users over time</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="bg-white shadow-lg border border-gray-100">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-bold text-gray-900">User Activity</CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">Active users over time</p>
+                </div>
+                <Select defaultValue="thismonth">
+                  <SelectTrigger className="w-36 bg-gray-50">
+                    <SelectValue placeholder="This Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="thismonth">This Month</SelectItem>
+                    <SelectItem value="lastmonth">Last Month</SelectItem>
+                    <SelectItem value="thisyear">This Year</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select defaultValue="thismonth">
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="This Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="thismonth">This Month</SelectItem>
-                  <SelectItem value="lastmonth">Last Month</SelectItem>
-                  <SelectItem value="thisyear">This Year</SelectItem>
-                </SelectContent>
-              </Select>
             </CardHeader>
-            <CardContent>
-              <LineChart 
-                data={userActivityData}
-                title=""
-                subtitle=""
-              />
+            <CardContent className="pt-0">
+              <div className="h-80">
+                <LineChart 
+                  data={userActivityData}
+                  title=""
+                  subtitle=""
+                />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border-0">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-semibold text-gray-900">User Distribution</CardTitle>
-                <p className="text-sm text-gray-600">Users by role</p>
+          <Card className="bg-white shadow-lg border border-gray-100">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-bold text-gray-900">User Distribution</CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">Users by role</p>
+                </div>
+                <Select defaultValue="thismonth">
+                  <SelectTrigger className="w-36 bg-gray-50">
+                    <SelectValue placeholder="This Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="thismonth">This Month</SelectItem>
+                    <SelectItem value="lastmonth">Last Month</SelectItem>
+                    <SelectItem value="thisyear">This Year</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select defaultValue="thismonth">
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="This Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="thismonth">This Month</SelectItem>
-                  <SelectItem value="lastmonth">Last Month</SelectItem>
-                  <SelectItem value="thisyear">This Year</SelectItem>
-                </SelectContent>
-              </Select>
             </CardHeader>
-            <CardContent>
-              <BarChart 
-                data={userDistributionData}
-                title=""
-                subtitle=""
-              />
+            <CardContent className="pt-0">
+              <div className="h-80">
+                <BarChart 
+                  data={userDistributionData}
+                  title=""
+                  subtitle=""
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-white shadow-sm border-0">
-            <CardHeader>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="bg-white shadow-lg border border-gray-100">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-gray-900">Recent User Activity</CardTitle>
-                <Button variant="link" className="text-blue-600 text-sm p-0">
+                <CardTitle className="text-xl font-bold text-gray-900">Recent User Activity</CardTitle>
+                <Button variant="ghost" className="text-blue-600 text-sm font-medium hover:bg-blue-50">
                   View All Activity
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <div className="space-y-4">
                 {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-3">
-                    <div className={`w-2 h-2 ${activity.color} rounded-full`}></div>
+                  <div key={activity.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className={`w-3 h-3 ${activity.color} rounded-full mt-2 flex-shrink-0`}></div>
                     <div className="flex-1">
-                      <p className="text-sm text-gray-900">
-                        <span className="font-medium">{activity.user}</span> {activity.action}
+                      <p className="text-sm text-gray-900 font-medium">
+                        <span className="font-semibold">{activity.user}</span> {activity.action}
                       </p>
+                      <span className="text-xs text-gray-500 mt-1">{activity.time}</span>
                     </div>
-                    <span className="text-xs text-gray-500">{activity.time}</span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm border-0">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">System Health</CardTitle>
+          <Card className="bg-white shadow-lg border border-gray-100">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-gray-900">System Health</CardTitle>
+              <p className="text-sm text-gray-600">Monitor your system performance</p>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Server Uptime</span>
-                  <span className="text-sm font-semibold text-gray-900">99.9%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '99.9%' }}></div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Database Load</span>
-                  <span className="text-sm font-semibold text-gray-900">45%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+            <CardContent className="pt-0">
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Server Uptime</span>
+                    <span className="text-sm font-bold text-gray-900">99.9%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="bg-green-500 h-3 rounded-full" style={{ width: '99.9%' }}></div>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Storage Usage</span>
-                  <span className="text-sm font-semibold text-gray-900">72%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '72%' }}></div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Database Load</span>
+                    <span className="text-sm font-bold text-gray-900">45%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="bg-blue-500 h-3 rounded-full" style={{ width: '45%' }}></div>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">API Request Rate</span>
-                  <span className="text-sm font-semibold text-gray-900">28%</span>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Storage Usage</span>
+                    <span className="text-sm font-bold text-gray-900">72%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="bg-yellow-500 h-3 rounded-full" style={{ width: '72%' }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '28%' }}></div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">API Request Rate</span>
+                    <span className="text-sm font-bold text-gray-900">28%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="bg-purple-500 h-3 rounded-full" style={{ width: '28%' }}></div>
+                  </div>
                 </div>
               </div>
             </CardContent>
