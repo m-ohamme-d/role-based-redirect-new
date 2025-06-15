@@ -1,4 +1,5 @@
 
+
 import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,7 +41,7 @@ export default function Index() {
 
     console.log('[Index]: Redirecting from "/" to:', dest);
     navigate(dest, { replace: true });
-  }, [loading, profile?.role, location.pathname, navigate]);
+  }, [loading, profile?.role, location.pathname]); // Removed navigate from dependencies
 
   // Show loading spinner while auth is initializing OR while we're redirecting
   return (
@@ -52,3 +53,4 @@ export default function Index() {
     </div>
   );
 }
+
