@@ -9,32 +9,27 @@ export default function Index() {
   const { profile, loading } = useAuth();
   const hasRedirected = useRef(false);
 
+  // Compute the correct destination route based on user role
+  const dest =
+    profile?.role === 'admin'
+      ? '/admin/dashboard'
+      : profile?.role === 'manager'
+      ? '/manager/dashboard'
+      : profile?.role === 'teamlead'
+      ? '/teamlead/dashboard'
+      : '/login';
+
   useEffect(() => {
-    // Only act on initial "/" route, after loading is false, and if not already redirected
+    // Only perform redirect logic on the root route, after loading, and not yet redirected
     if (loading) return;
     if (location.pathname !== '/') return;
     if (hasRedirected.current) return;
 
-    const dest =
-      profile?.role === 'admin'
-        ? '/admin/dashboard'
-        : profile?.role === 'manager'
-        ? '/manager/dashboard'
-        : profile?.role === 'teamlead'
-        ? '/teamlead/dashboard'
-        : '/login';
-
-    // Do not redirect if already at the right destination
-    if (location.pathname === dest) {
-      hasRedirected.current = true;
-      return;
-    }
-
     hasRedirected.current = true;
     navigate(dest, { replace: true });
-  }, [loading, profile, location.pathname, navigate]);
+  }, [loading, profile, location.pathname, navigate, dest]);
 
-  // Show spinner only while loading (`loading === true`)
+  // Show spinner only while loading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -51,17 +46,8 @@ export default function Index() {
     return null;
   }
 
-  // If already at destination, render nothing as well
-  const dest =
-    profile?.role === 'admin'
-      ? '/admin/dashboard'
-      : profile?.role === 'manager'
-      ? '/manager/dashboard'
-      : profile?.role === 'teamlead'
-      ? '/teamlead/dashboard'
-      : '/login';
-
-  if (location.pathname === dest && location.pathname !== '/') {
+  // If user is not on root route, render nothing (we do not handle other paths here)
+  if (location.pathname !== '/') {
     return null;
   }
 
