@@ -10,41 +10,37 @@ export default function Index() {
   const { profile, loading } = useAuth();
   const didRedirectRef = useRef(false);
 
-  // Decide redirect destination based on user role
-  const dest =
-    profile?.role === 'admin'
-      ? '/admin/dashboard'
-      : profile?.role === 'manager'
-      ? '/manager/dashboard'
-      : profile?.role === 'teamlead'
-      ? '/teamlead/dashboard'
-      : '/login';
-
   useEffect(() => {
-    // Only redirect ONCE, ONLY from "/", ONLY if allowed
-    if (
-      !loading &&
-      location.pathname === '/' &&
-      !didRedirectRef.current
-    ) {
+    // Only proceed if we're on the root path and haven't redirected yet
+    if (location.pathname !== '/' || didRedirectRef.current) {
+      return;
+    }
+
+    // Only redirect when not loading
+    if (!loading) {
       didRedirectRef.current = true;
-      // For debugging: log one-time redirect
-      // eslint-disable-next-line no-console
+      
+      // Decide redirect destination based on user role
+      const dest = profile?.role === 'admin'
+        ? '/admin/dashboard'
+        : profile?.role === 'manager'
+        ? '/manager/dashboard'
+        : profile?.role === 'teamlead'
+        ? '/teamlead/dashboard'
+        : '/login';
+
       console.log('[Index]: Redirecting from "/" to:', dest);
-      // This triggers a navigation and a component unmount
       navigate(dest, { replace: true });
     }
-    // Only tie this to changes of loading/path!
-    // eslint-disable-next-line
-  }, [loading, location.pathname, navigate]);
+  }, [loading, location.pathname]); // Removed navigate from dependencies
 
-  // After navigation or if not on root, render nothing. This prevents flicker and infinite redirects.
+  // If we've redirected or not on root path, don't render anything
   if (didRedirectRef.current || location.pathname !== '/') {
     return null;
   }
 
-  // Show loading spinner ONLY while initializing at "/"
-  if (loading && location.pathname === '/' && !didRedirectRef.current) {
+  // Show loading spinner while auth is initializing
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -55,6 +51,6 @@ export default function Index() {
     );
   }
 
-  // Fallback safety: render nothing
+  // Fallback - should not reach here
   return null;
 }
