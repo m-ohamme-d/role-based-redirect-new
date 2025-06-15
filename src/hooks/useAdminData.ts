@@ -47,8 +47,8 @@ export const useAdminData = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch departments - simplified query without foreign key hint
-      const { data: departmentData, error: deptError } = await (supabase as any)
+      // Fetch departments
+      const { data: departmentData, error: deptError } = await supabase
         .from('departments')
         .select('id, name, team_lead_id');
 
@@ -59,12 +59,12 @@ export const useAdminData = () => {
       }
 
       // Fetch total team members count
-      const { count: membersCount } = await (supabase as any)
+      const { count: membersCount } = await supabase
         .from('team_members')
         .select('*', { count: 'exact', head: true });
 
       // Fetch locked performance ratings count
-      const { count: lockedCount } = await (supabase as any)
+      const { count: lockedCount } = await supabase
         .from('performance_ratings')
         .select('*', { count: 'exact', head: true })
         .eq('is_locked', true);
@@ -73,7 +73,7 @@ export const useAdminData = () => {
       const departmentsWithCounts = await Promise.all(
         (departmentData || []).map(async (dept: any) => {
           // Get member count for this department
-          const { count: memberCount } = await (supabase as any)
+          const { count: memberCount } = await supabase
             .from('team_members')
             .select('*', { count: 'exact', head: true })
             .eq('department_id', dept.id);
