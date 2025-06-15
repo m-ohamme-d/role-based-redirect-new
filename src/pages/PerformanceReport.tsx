@@ -7,6 +7,7 @@ import jsPDF from 'jspdf'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileDown, Download } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 // Mock data for demonstration since we don't have the required tables yet
 const mockPerformanceData = [
@@ -42,6 +43,28 @@ const mockPerformanceData = [
     period: 'Current',
     avatar_url: '/placeholder.svg',
     team_lead_avatar: '/placeholder.svg'
+  },
+  {
+    id: '4',
+    employee_name: 'Emily Rodriguez',
+    designation: 'Sales Representative',
+    department: 'Sales',
+    team_lead: 'David Brown',
+    rating: 4.1,
+    period: 'Current',
+    avatar_url: '/placeholder.svg',
+    team_lead_avatar: '/placeholder.svg'
+  },
+  {
+    id: '5',
+    employee_name: 'James Wilson',
+    designation: 'Finance Analyst',
+    department: 'Finance',
+    team_lead: 'Lisa Anderson',
+    rating: 4.6,
+    period: 'Current',
+    avatar_url: '/placeholder.svg',
+    team_lead_avatar: '/placeholder.svg'
   }
 ]
 
@@ -54,6 +77,7 @@ export const PerformanceReport: React.FC = () => {
     queryFn: async () => {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('Performance data loaded:', mockPerformanceData)
       return mockPerformanceData
     }
   })
@@ -71,23 +95,27 @@ export const PerformanceReport: React.FC = () => {
     }
 
     try {
-      console.log('Starting PDF export...')
+      console.log('Starting PDF export with data:', data)
+      console.log('Report element:', reportRef.current)
       
       // Wait a bit to ensure the content is fully rendered
       await new Promise(resolve => setTimeout(resolve, 500))
       
       const canvas = await html2canvas(reportRef.current, { 
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         width: reportRef.current.scrollWidth,
-        height: reportRef.current.scrollHeight
+        height: reportRef.current.scrollHeight,
+        logging: true
       })
       
       console.log('Canvas created, dimensions:', canvas.width, 'x', canvas.height)
       
       const imgData = canvas.toDataURL('image/png')
+      console.log('Image data created, length:', imgData.length)
+      
       const pdf = new jsPDF('l', 'pt', 'a4')
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
@@ -133,6 +161,8 @@ export const PerformanceReport: React.FC = () => {
     )
   }
 
+  console.log('Rendering with data:', data)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
       <div className="p-6 space-y-6">
@@ -160,67 +190,76 @@ export const PerformanceReport: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Download className="h-5 w-5 text-purple-600" />
-              Performance Data
+              Performance Data ({data?.length || 0} employees)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div
               ref={reportRef}
-              className="overflow-x-auto bg-white rounded-lg"
+              className="bg-white rounded-lg p-4"
               style={{ minHeight: '400px' }}
             >
+              <div className="mb-4 text-center">
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Employee Performance Report</h2>
+                <p className="text-gray-600">Period: Current Quarter</p>
+              </div>
+              
               {data && data.length > 0 ? (
-                <table className="min-w-full border-collapse bg-white rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-purple-100 to-blue-100">
-                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Photo</th>
-                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Employee</th>
-                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Designation</th>
-                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Department</th>
-                      <th className="p-4 text-left font-semibold text-gray-800 border-b">Team Lead</th>
-                      <th className="p-4 text-center font-semibold text-gray-800 border-b">Rating</th>
-                      <th className="p-4 text-center font-semibold text-gray-800 border-b">Period</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-bold text-gray-800">Photo</TableHead>
+                      <TableHead className="font-bold text-gray-800">Employee</TableHead>
+                      <TableHead className="font-bold text-gray-800">Designation</TableHead>
+                      <TableHead className="font-bold text-gray-800">Department</TableHead>
+                      <TableHead className="font-bold text-gray-800">Team Lead</TableHead>
+                      <TableHead className="font-bold text-gray-800 text-center">Rating</TableHead>
+                      <TableHead className="font-bold text-gray-800 text-center">Period</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {data.map(r => (
-                      <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-4 border-b">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-semibold">
+                      <TableRow key={r.id}>
+                        <TableCell>
+                          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-sm font-semibold border-2 border-blue-200">
                             {r.employee_name.split(' ').map(n => n[0]).join('')}
                           </div>
-                        </td>
-                        <td className="p-4 border-b font-medium text-gray-800">{r.employee_name}</td>
-                        <td className="p-4 border-b text-gray-600">{r.designation}</td>
-                        <td className="p-4 border-b text-gray-600">{r.department}</td>
-                        <td className="p-4 border-b">
+                        </TableCell>
+                        <TableCell className="font-medium text-gray-800">{r.employee_name}</TableCell>
+                        <TableCell className="text-gray-600">{r.designation}</TableCell>
+                        <TableCell className="text-gray-600">{r.department}</TableCell>
+                        <TableCell>
                           <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-semibold mr-3">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-semibold mr-3 border border-gray-300">
                               {r.team_lead.split(' ').map(n => n[0]).join('')}
                             </div>
                             <span className="text-gray-700">{r.team_lead}</span>
                           </div>
-                        </td>
-                        <td className="p-4 border-b text-center">
+                        </TableCell>
+                        <TableCell className="text-center">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                            r.rating >= 4 ? 'bg-green-100 text-green-800' :
-                            r.rating >= 3 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
+                            r.rating >= 4 ? 'bg-green-100 text-green-800 border border-green-200' :
+                            r.rating >= 3 ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                            'bg-red-100 text-red-800 border border-red-200'
                           }`}>
-                            {r.rating}
+                            ⭐ {r.rating}
                           </span>
-                        </td>
-                        <td className="p-4 border-b text-center text-gray-600 capitalize">{r.period}</td>
-                      </tr>
+                        </TableCell>
+                        <TableCell className="text-center text-gray-600 capitalize font-medium">{r.period}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               ) : (
-                <div className="p-8 text-center text-gray-500 bg-white rounded-lg">
+                <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg border">
                   <p className="text-lg font-medium">No performance data available</p>
                   <p className="text-sm mt-2">Please check back later or contact your administrator</p>
                 </div>
               )}
+              
+              <div className="mt-6 pt-4 border-t border-gray-200 text-center text-sm text-gray-500">
+                Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+              </div>
             </div>
           </CardContent>
         </Card>
