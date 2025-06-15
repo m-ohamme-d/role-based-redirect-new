@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,6 +77,47 @@ const TeamLeadTeamDepartment = () => {
   const [department, setDepartment] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [timePeriod, setTimePeriod] = useState('month');
+  const [memberOrder, setMemberOrder] = useState<number[]>([]);
+
+  // Initialize member order and maintain stable sorting
+  const displayMembers = useMemo(() => {
+    if (memberOrder.length === 0) {
+      const initialOrder = teamMembers.map(member => member.id);
+      setMemberOrder(initialOrder);
+      return teamMembers;
+    }
+    
+    // Sort members based on the fixed order, new members go to the end
+    const sortedMembers = [...teamMembers].sort((a, b) => {
+      const indexA = memberOrder.indexOf(a.id);
+      const indexB = memberOrder.indexOf(b.id);
+      
+      // If both members are in the order, use that order
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      
+      // If only one member is in the order, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      
+      // If neither is in the order, sort by id for consistency
+      return a.id - b.id;
+    });
+    
+    // Update order to include any new members
+    const currentIds = teamMembers.map(m => m.id);
+    const newOrder = [
+      ...memberOrder.filter(id => currentIds.includes(id)),
+      ...currentIds.filter(id => !memberOrder.includes(id))
+    ];
+    
+    if (newOrder.length !== memberOrder.length) {
+      setMemberOrder(newOrder);
+    }
+    
+    return sortedMembers;
+  }, [teamMembers, memberOrder]);
 
   useEffect(() => {
     if (deptId && departmentsData[Number(deptId)]) {
@@ -133,7 +175,7 @@ const TeamLeadTeamDepartment = () => {
   }
 
   const averageRating = Math.round(
-    teamMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / teamMembers.length
+    displayMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / displayMembers.length
   );
 
   return (
@@ -164,7 +206,7 @@ const TeamLeadTeamDepartment = () => {
           <CardContent className="p-4">
             <h3 className="font-semibold">Team Members</h3>
             <div className="text-3xl font-bold mt-2">
-              {teamMembers.length}
+              {displayMembers.length}
             </div>
           </CardContent>
         </Card>
@@ -182,7 +224,7 @@ const TeamLeadTeamDepartment = () => {
           <CardContent className="p-4">
             <h3 className="font-semibold">Top Performer</h3>
             <div className="text-xl font-bold mt-2">
-              {teamMembers.sort((a, b) => b.ratings.overall - a.ratings.overall)[0]?.name || 'None'}
+              {displayMembers.sort((a, b) => b.ratings.overall - a.ratings.overall)[0]?.name || 'None'}
             </div>
           </CardContent>
         </Card>
@@ -197,7 +239,7 @@ const TeamLeadTeamDepartment = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {teamMembers.map(member => (
+            {displayMembers.map(member => (
               <Card key={member.id} className={member.locked ? 'bg-gray-50' : ''}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-4">
