@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -19,10 +20,21 @@ const Login = () => {
   useEffect(() => {
     console.log('[Login] Auth state check - authLoading:', authLoading, 'profile:', !!profile);
     
-    // If auth is loaded and user is authenticated, redirect to home
+    // If auth is loaded and user is authenticated, redirect to appropriate dashboard
     if (!authLoading && profile) {
-      console.log('[Login] User is authenticated, redirecting to /');
-      navigate('/', { replace: true });
+      console.log('[Login] User is authenticated with role:', profile.role);
+      
+      // Redirect directly to the appropriate dashboard based on role
+      const dest = profile.role === 'admin'
+        ? '/admin/dashboard'
+        : profile.role === 'manager'
+        ? '/manager/dashboard'
+        : profile.role === 'teamlead'
+        ? '/teamlead/dashboard'
+        : '/'; // fallback to home if role is unknown
+
+      console.log('[Login] Redirecting to:', dest);
+      navigate(dest, { replace: true });
     }
   }, [profile, authLoading]);
 
