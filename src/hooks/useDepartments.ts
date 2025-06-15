@@ -40,8 +40,8 @@ export const useDepartments = () => {
       setLoading(true);
       setError(null);
 
-      // Use type assertion to bypass current type limitations
-      const { data: deptData, error: deptError } = await (supabase as any)
+      // Fetch departments with team member counts for team leads
+      const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select(`
           id,
