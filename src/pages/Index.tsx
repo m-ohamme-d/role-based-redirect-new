@@ -21,8 +21,18 @@ export default function Index() {
       : '/login';
 
   useEffect(() => {
+    // Log at mount for troubleshooting
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Index]: mount', {
+        location: location.pathname,
+        profile,
+        loading,
+        didRedirect,
+        dest,
+      });
+    }
+
     // Only trigger redirect ONCE per mount on "/" and only if not loading and not already redirected
-    // Make sure to never redirect if already in the correct place
     if (
       !loading &&
       location.pathname === '/' &&
@@ -36,13 +46,13 @@ export default function Index() {
     // Note: didRedirect ensures this only happens once per mount
   }, [loading, navigate, location.pathname, profile, didRedirect, dest]);
 
-  // If already redirected OR not on "/", render nothing to avoid flicker or loop
-  if (didRedirect || location.pathname !== '/') {
+  // If already redirected, render nothing to avoid flicker or loop
+  if (didRedirect) {
     return null;
   }
 
-  // Show spinner while loading
-  if (loading) {
+  // Only show spinner while loading at "/" and not yet redirected
+  if (loading && location.pathname === '/' && !didRedirect) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
