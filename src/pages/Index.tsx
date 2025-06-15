@@ -10,37 +10,31 @@ export default function Index() {
   const hasRedirected = useRef(false);
 
   useEffect(() => {
-    // Only redirect from "/" route and only once after loading finishes
+    // Only act on initial "/" route, after loading is false, and if not already redirected
     if (loading) return;
-
-    // Only run on the root route
     if (location.pathname !== '/') return;
-
-    // Prevent repeat redirects
     if (hasRedirected.current) return;
 
-    const dest = profile
-      ? profile.role === 'admin'
+    const dest =
+      profile?.role === 'admin'
         ? '/admin/dashboard'
-        : profile.role === 'manager'
+        : profile?.role === 'manager'
         ? '/manager/dashboard'
-        : profile.role === 'teamlead'
+        : profile?.role === 'teamlead'
         ? '/teamlead/dashboard'
-        : '/login'
-      : '/login';
+        : '/login';
 
-    // If already at destination, do not redirect
+    // Do not redirect if already at the right destination
     if (location.pathname === dest) {
       hasRedirected.current = true;
       return;
     }
 
-    // Lock before navigation to prevent duplicate navigations
     hasRedirected.current = true;
     navigate(dest, { replace: true });
   }, [loading, profile, location.pathname, navigate]);
 
-  // While authenticating (initial load), show spinner
+  // Show spinner only while loading (`loading === true`)
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -52,10 +46,25 @@ export default function Index() {
     );
   }
 
-  // Immediately after launching redirect, render nothing (eliminates flicker)
+  // After launching redirect, render nothing to prevent flickering/looping
   if (hasRedirected.current) {
     return null;
   }
 
+  // If already at destination, render nothing as well
+  const dest =
+    profile?.role === 'admin'
+      ? '/admin/dashboard'
+      : profile?.role === 'manager'
+      ? '/manager/dashboard'
+      : profile?.role === 'teamlead'
+      ? '/teamlead/dashboard'
+      : '/login';
+
+  if (location.pathname === dest && location.pathname !== '/') {
+    return null;
+  }
+
+  // Nothing more to render on "/"
   return null;
 }
