@@ -1,11 +1,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Shield, Database, Activity, BarChart2, Building } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import DepartmentStatsCard from "@/components/admin/DepartmentStatsCard";
 import SystemHealthCard from "@/components/admin/SystemHealthCard";
 import RecentActivityCard from "@/components/admin/RecentActivityCard";
 import RealtimePerformanceWidget from "@/components/RealtimePerformanceWidget";
+import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import ReportingDashboard from "@/components/admin/ReportingDashboard";
 import BarChart from "@/components/charts/BarChart";
 import LineChart from "@/components/charts/LineChart";
 import { useAdminData } from "@/hooks/useAdminData";
@@ -59,60 +62,98 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <AdminStatsCards stats={stats} loading={loading} />
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="reports">Analytics & Reports</TabsTrigger>
+          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DepartmentStatsCard departments={departments} loading={loading} />
-        <SystemHealthCard />
-      </div>
+        <TabsContent value="overview" className="space-y-6">
+          <AdminStatsCards stats={stats} loading={loading} />
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BarChart 
-          data={barChartData}
-          title="Monthly User Growth"
-          subtitle="New user registrations per month"
-        />
-        <LineChart 
-          data={lineChartData}
-          title="System Performance"
-          subtitle="Response time metrics over time"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RealtimePerformanceWidget />
-        <RecentActivityCard />
-      </div>
-
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-orange-600" />
-            System Metrics
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.totalUsers}</div>
-              <p className="text-sm text-gray-600">Active Users</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.totalDepartments}</div>
-              <p className="text-sm text-gray-600">Departments</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{stats.totalTeamMembers}</div>
-              <p className="text-sm text-gray-600">Team Members</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.auditLogs}</div>
-              <p className="text-sm text-gray-600">Audit Logs</p>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <DepartmentStatsCard departments={departments} loading={loading} />
+            <SystemHealthCard />
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <BarChart 
+              data={barChartData}
+              title="Monthly User Growth"
+              subtitle="New user registrations per month"
+            />
+            <LineChart 
+              data={lineChartData}
+              title="System Performance"
+              subtitle="Response time metrics over time"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RealtimePerformanceWidget />
+            <RecentActivityCard />
+          </div>
+
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-orange-600" />
+                System Metrics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{stats.totalUsers}</div>
+                  <p className="text-sm text-gray-600">Active Users</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{stats.totalDepartments}</div>
+                  <p className="text-sm text-gray-600">Departments</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{stats.totalTeamMembers}</div>
+                  <p className="text-sm text-gray-600">Team Members</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{stats.auditLogs}</div>
+                  <p className="text-sm text-gray-600">Audit Logs</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <ReportingDashboard />
+        </TabsContent>
+
+        <TabsContent value="audit" className="space-y-6">
+          <AuditLogViewer />
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RealtimePerformanceWidget />
+            <SystemHealthCard />
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <BarChart 
+              data={barChartData}
+              title="System Load"
+              subtitle="Resource utilization over time"
+            />
+            <LineChart 
+              data={lineChartData}
+              title="Response Times"
+              subtitle="API response time metrics"
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

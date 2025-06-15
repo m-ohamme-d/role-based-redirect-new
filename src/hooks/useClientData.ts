@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -119,6 +118,23 @@ export const useClientData = () => {
     }
   };
 
+  const logAction = async (action: string, tableName: string, recordId: string, newValues?: any, oldValues?: any) => {
+    try {
+      await (supabase as any)
+        .from('audit_logs')
+        .insert([{
+          user_id: profile?.id,
+          action: action,
+          table_name: tableName,
+          record_id: recordId,
+          new_values: newValues,
+          old_values: oldValues
+        }]);
+    } catch (err) {
+      console.error('Failed to log action:', err);
+    }
+  };
+
   const addClient = async (client: Omit<Client, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await (supabase as any)
@@ -133,6 +149,7 @@ export const useClientData = () => {
       }
 
       setClients(prev => [...prev, data]);
+      await logAction('client_create', 'clients', data.id, data);
       return true;
     } catch (err) {
       console.error('[useClientData] Unexpected error adding client:', err);
@@ -142,6 +159,9 @@ export const useClientData = () => {
 
   const updateClient = async (id: string, updates: Partial<Client>) => {
     try {
+      // Get old data first
+      const oldClient = clients.find(c => c.id === id);
+      
       const { data, error } = await (supabase as any)
         .from('clients')
         .update(updates)
@@ -155,6 +175,7 @@ export const useClientData = () => {
       }
 
       setClients(prev => prev.map(c => c.id === id ? data : c));
+      await logAction('client_update', 'clients', id, data, oldClient);
       return true;
     } catch (err) {
       console.error('[useClientData] Unexpected error updating client:', err);
@@ -164,6 +185,9 @@ export const useClientData = () => {
 
   const deleteClient = async (id: string) => {
     try {
+      // Get old data first
+      const oldClient = clients.find(c => c.id === id);
+      
       const { error } = await (supabase as any)
         .from('clients')
         .delete()
@@ -175,6 +199,7 @@ export const useClientData = () => {
       }
 
       setClients(prev => prev.filter(c => c.id !== id));
+      await logAction('client_delete', 'clients', id, null, oldClient);
       return true;
     } catch (err) {
       console.error('[useClientData] Unexpected error deleting client:', err);
@@ -196,6 +221,7 @@ export const useClientData = () => {
       }
 
       setClientTags(prev => [...prev, data]);
+      await logAction('client_tag_create', 'client_tags', data.id, data);
       return true;
     } catch (err) {
       console.error('[useClientData] Unexpected error adding client tag:', err);
@@ -205,6 +231,9 @@ export const useClientData = () => {
 
   const removeClientTag = async (clientId: string, tag: string) => {
     try {
+      // Get old data first
+      const oldTag = clientTags.find(t => t.client_id === clientId && t.tag === tag);
+      
       const { error } = await (supabase as any)
         .from('client_tags')
         .delete()
@@ -217,6 +246,7 @@ export const useClientData = () => {
       }
 
       setClientTags(prev => prev.filter(t => !(t.client_id === clientId && t.tag === tag)));
+      await logAction('client_tag_delete', 'client_tags', oldTag?.id || '', null, oldTag);
       return true;
     } catch (err) {
       console.error('[useClientData] Unexpected error removing client tag:', err);
