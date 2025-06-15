@@ -47,15 +47,14 @@ export const useAdminData = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch departments with team lead info and member counts
-      const { data: departmentData, error: deptError } = await supabase
+      // Fetch departments with team lead info - using type assertion for new tables
+      const { data: departmentData, error: deptError } = await (supabase as any)
         .from('departments')
         .select(`
           id,
           name,
           team_lead_id,
-          profiles:team_lead_id(name),
-          team_members(count)
+          profiles!departments_team_lead_id_fkey(name)
         `);
 
       if (deptError) {
@@ -65,23 +64,32 @@ export const useAdminData = () => {
       }
 
       // Fetch total team members count
-      const { count: membersCount } = await supabase
+      const { count: membersCount } = await (supabase as any)
         .from('team_members')
         .select('*', { count: 'exact', head: true });
 
       // Fetch locked performance ratings count
-      const { count: lockedCount } = await supabase
+      const { count: lockedCount } = await (supabase as any)
         .from('performance_ratings')
         .select('*', { count: 'exact', head: true })
         .eq('is_locked', true);
 
-      // Transform department data
-      const transformedDepartments: DepartmentWithStats[] = (departmentData || []).map((dept: any) => ({
-        id: dept.id,
-        name: dept.name,
-        memberCount: Array.isArray(dept.team_members) ? dept.team_members.length : (dept.team_members?.[0]?.count || 0),
-        teamLeadName: dept.profiles?.name || 'Unassigned'
-      }));
+      // Get member counts for each department
+      const departmentsWithCounts = await Promise.all(
+        (departmentData || []).map(async (dept: any) => {
+          const { count: memberCount } = await (supabase as any)
+            .from('team_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('department_id', dept.id);
+
+          return {
+            id: dept.id,
+            name: dept.name,
+            memberCount: memberCount || 0,
+            teamLeadName: dept.profiles?.name || 'Unassigned'
+          };
+        })
+      );
 
       setStats({
         totalUsers: usersCount || 0,
@@ -91,7 +99,7 @@ export const useAdminData = () => {
         auditLogs: 1256 // This would come from an audit log table if implemented
       });
 
-      setDepartments(transformedDepartments);
+      setDepartments(departmentsWithCounts);
     } catch (err) {
       console.error('Error fetching admin data:', err);
       setError('An unexpected error occurred');
