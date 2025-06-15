@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,10 +8,11 @@ import { LogOut, Users, BarChart3, Settings, Calendar, Eye, Plus } from 'lucide-
 import { useState, useEffect } from 'react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const { profile, signOut } = useAuth();
   const { departments } = useDepartments();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newDepartment, setNewDepartment] = useState({
@@ -21,18 +21,8 @@ const ManagerDashboard = () => {
     teamLead: ''
   });
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
+  const handleLogout = async () => {
+    await signOut();
   };
 
   const handleViewAllClients = () => {
@@ -60,7 +50,15 @@ const ManagerDashboard = () => {
     setShowCreateDialog(false);
   };
 
-  if (!user) return null;
+  const handleSettingsNavigation = () => {
+    navigate('/manager/settings');
+  };
+
+  const handleProfileNavigation = () => {
+    navigate('/manager/profile');
+  };
+
+  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
@@ -68,7 +66,7 @@ const ManagerDashboard = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-            <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
+            <p className="text-gray-600 mt-2">Welcome back, {profile.name}!</p>
             <p className="text-sm text-gray-500">Managing {departments.length} departments</p>
           </div>
           <div className="flex gap-2">
@@ -207,7 +205,7 @@ const ManagerDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm cursor-pointer hover:shadow-xl transition-shadow" onClick={handleSettingsNavigation}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-orange-600" />
