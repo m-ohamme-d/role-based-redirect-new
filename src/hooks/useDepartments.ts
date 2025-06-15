@@ -38,7 +38,8 @@ export const useDepartments = () => {
     try {
       setLoading(true);
 
-      const { data: deptData, error: deptError } = await supabase
+      // Use supabase.from() with type assertion to work around missing types
+      const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select(`
           id,
@@ -53,10 +54,10 @@ export const useDepartments = () => {
         return;
       }
 
-      const transformedDepts: Department[] = deptData.map(dept => ({
+      const transformedDepts: Department[] = (deptData || []).map((dept: any) => ({
         id: dept.id,
         name: dept.name,
-        memberCount: dept.team_members?.[0]?.count || 0
+        memberCount: Array.isArray(dept.team_members) ? dept.team_members.length : (dept.team_members?.[0]?.count || 0)
       }));
 
       setTeamLeadDepartments(transformedDepts);

@@ -42,8 +42,8 @@ export const useTeamData = (departmentId?: string) => {
       setLoading(true);
       setError(null);
 
-      // Fetch department info
-      const { data: deptData, error: deptError } = await supabase
+      // Fetch department info using type assertion
+      const { data: deptData, error: deptError } = await (supabase as any)
         .from('departments')
         .select('*')
         .eq('id', departmentId)
@@ -57,8 +57,8 @@ export const useTeamData = (departmentId?: string) => {
 
       setDepartment(deptData);
 
-      // Fetch team members with their ratings
-      const { data: membersData, error: membersError } = await supabase
+      // Fetch team members with their ratings using type assertion
+      const { data: membersData, error: membersError } = await (supabase as any)
         .from('team_members')
         .select(`
           *,
@@ -80,18 +80,18 @@ export const useTeamData = (departmentId?: string) => {
       }
 
       // Transform the data to match the expected format
-      const transformedMembers: TeamMember[] = membersData.map(member => ({
+      const transformedMembers: TeamMember[] = (membersData || []).map((member: any) => ({
         id: member.id,
         name: member.name,
         designation: member.designation,
         avatar_url: member.avatar_url,
         ratings: {
-          productivity: member.performance_ratings.productivity,
-          collaboration: member.performance_ratings.collaboration,
-          timeliness: member.performance_ratings.timeliness,
-          overall: member.performance_ratings.overall,
+          productivity: member.performance_ratings?.productivity || 0,
+          collaboration: member.performance_ratings?.collaboration || 0,
+          timeliness: member.performance_ratings?.timeliness || 0,
+          overall: member.performance_ratings?.overall || 0,
         },
-        locked: member.performance_ratings.is_locked
+        locked: member.performance_ratings?.is_locked || false
       }));
 
       setTeamMembers(transformedMembers);
@@ -112,7 +112,7 @@ export const useTeamData = (departmentId?: string) => {
       const newRatings = { ...member.ratings, [criterion]: rating };
       const overall = Math.round((newRatings.productivity + newRatings.collaboration + newRatings.timeliness) / 3);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('performance_ratings')
         .update({
           [criterion]: rating,
@@ -144,7 +144,7 @@ export const useTeamData = (departmentId?: string) => {
 
   const lockRatings = async (memberId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('performance_ratings')
         .update({
           is_locked: true,
