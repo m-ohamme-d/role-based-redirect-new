@@ -48,6 +48,7 @@ export const useTeamData = (departmentId?: string) => {
       setLoading(true);
       setError(null);
 
+      // Fetch department data
       const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select('*')
@@ -63,6 +64,7 @@ export const useTeamData = (departmentId?: string) => {
 
       setDepartment(deptData);
 
+      // Fetch team members with their performance ratings
       const { data: membersData, error: membersError } = await supabase
         .from('team_members')
         .select(`
