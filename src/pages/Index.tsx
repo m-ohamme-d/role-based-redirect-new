@@ -8,12 +8,17 @@ export default function Index() {
   const location = useLocation();
   const { profile, loading } = useAuth();
 
-  // UseRef (not useState!) so it persists even if the component remounts
   const hasRedirected = useRef(false);
 
   useEffect(() => {
+    // Debugging - log what state we're in
+    console.log(
+      '[Index] effect',
+      { location: location.pathname, loading, profile, hasRedirected: hasRedirected.current }
+    );
     if (loading || hasRedirected.current) return;
 
+    // Calculate destination path
     const dest = profile
       ? profile.role === 'admin'
         ? '/admin/dashboard'
@@ -24,11 +29,17 @@ export default function Index() {
         : '/login'
       : '/login';
 
-    // Only trigger navigation if not already at the correct path
-    if (location.pathname !== dest) {
-      hasRedirected.current = true;
-      navigate(dest, { replace: true });
+    // If already at the intended path, do not redirect
+    if (location.pathname === dest) {
+      return;
     }
+
+    // Mark as redirected BEFORE navigating
+    hasRedirected.current = true;
+    console.log(`[Index] Redirecting to ${dest} from ${location.pathname}`);
+    navigate(dest, { replace: true });
+
+    // After issue is fixed, you can remove these logs.
   }, [loading, profile, location.pathname, navigate]);
 
   if (loading) {
@@ -42,10 +53,10 @@ export default function Index() {
     );
   }
 
-  // If we triggered a redirect, render nothing
+  // If we triggered a redirect, render nothing to prevent render loop
   if (hasRedirected.current) return null;
 
-  // Fallback spinner
+  // If still on / after loading + no profile, show a fallback spinner for robustness
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="text-center">
