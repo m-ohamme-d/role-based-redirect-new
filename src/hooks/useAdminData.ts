@@ -54,10 +54,13 @@ export const useAdminData = () => {
         console.log('[useAdminData] Users count:', usersCount);
       }
 
-      // Fetch departments with type assertion
-      const { data: departmentData, error: deptError } = await (supabase as any)
-        .from('departments')
-        .select('id, name, team_lead_id');
+      // Use rpc or direct SQL for tables not in types
+      const { data: departmentData, error: deptError } = await supabase.rpc('sql', {
+        query: 'SELECT id, name, team_lead_id FROM departments'
+      }).catch(async () => {
+        // Fallback: try direct query with any casting
+        return await (supabase as any).from('departments').select('id, name, team_lead_id');
+      });
 
       if (deptError) {
         console.error('[useAdminData] Error fetching departments:', deptError);
@@ -67,10 +70,14 @@ export const useAdminData = () => {
         console.log('[useAdminData] Departments data:', departmentData);
       }
 
-      // Fetch total team members count with type assertion
-      const { count: membersCount, error: membersError } = await (supabase as any)
-        .from('team_members')
-        .select('*', { count: 'exact', head: true });
+      // Fetch team members count
+      const { count: membersCount, error: membersError } = await supabase.rpc('sql', {
+        query: 'SELECT COUNT(*) FROM team_members'
+      }).then(result => ({ count: result.data?.[0]?.count || 0, error: result.error }))
+      .catch(async () => {
+        // Fallback: try direct query with any casting
+        return await (supabase as any).from('team_members').select('*', { count: 'exact', head: true });
+      });
 
       if (membersError) {
         console.error('[useAdminData] Error fetching team members count:', membersError);
@@ -78,11 +85,14 @@ export const useAdminData = () => {
         console.log('[useAdminData] Team members count:', membersCount);
       }
 
-      // Fetch locked performance ratings count with type assertion
-      const { count: lockedCount, error: lockedError } = await (supabase as any)
-        .from('performance_ratings')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_locked', true);
+      // Fetch locked performance ratings count
+      const { count: lockedCount, error: lockedError } = await supabase.rpc('sql', {
+        query: 'SELECT COUNT(*) FROM performance_ratings WHERE is_locked = true'
+      }).then(result => ({ count: result.data?.[0]?.count || 0, error: result.error }))
+      .catch(async () => {
+        // Fallback: try direct query with any casting
+        return await (supabase as any).from('performance_ratings').select('*', { count: 'exact', head: true }).eq('is_locked', true);
+      });
 
       if (lockedError) {
         console.error('[useAdminData] Error fetching locked ratings count:', lockedError);
@@ -93,11 +103,14 @@ export const useAdminData = () => {
       // Get member counts and team lead names for each department
       const departmentsWithCounts = await Promise.all(
         (departmentData || []).map(async (dept: any) => {
-          // Get member count for this department with type assertion
-          const { count: memberCount, error: memberCountError } = await (supabase as any)
-            .from('team_members')
-            .select('*', { count: 'exact', head: true })
-            .eq('department_id', dept.id);
+          // Get member count for this department
+          const { count: memberCount, error: memberCountError } = await supabase.rpc('sql', {
+            query: `SELECT COUNT(*) FROM team_members WHERE department_id = '${dept.id}'`
+          }).then(result => ({ count: result.data?.[0]?.count || 0, error: result.error }))
+          .catch(async () => {
+            // Fallback: try direct query with any casting
+            return await (supabase as any).from('team_members').select('*', { count: 'exact', head: true }).eq('department_id', dept.id);
+          });
 
           if (memberCountError) {
             console.error(`[useAdminData] Error fetching member count for department ${dept.name}:`, memberCountError);
