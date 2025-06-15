@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,19 +15,15 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, profile, loading: authLoading, user } = useAuth();
+  const { signIn, profile, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    console.log('[Login] EFFECT start. authLoading:', authLoading, 'profile:', profile, 'user:', user);
-
-    // Only redirect if we're not loading and we have a profile
+    // If user is already authenticated, redirect to home page immediately
+    // The Index page will handle role-based routing
     if (!authLoading && profile) {
-      console.log('[Login] EFFECT: Profile found, redirecting to /');
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 100);
+      navigate('/', { replace: true });
     }
-  }, [profile, authLoading, navigate, user]);
+  }, [profile, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +43,7 @@ const Login = () => {
       } else {
         console.log('[Login] Login successful');
         toast.success('Login successful!');
+        // Don't manually navigate here - let the useEffect handle it
       }
     } catch (error: any) {
       console.error('[Login] Login exception:', error);
@@ -57,18 +55,20 @@ const Login = () => {
 
   // Show loading screen while auth is initializing
   if (authLoading) {
-    console.log('[Login] RENDER: Showing loading screen - authLoading:', authLoading);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading... (authLoading: {String(authLoading)})</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  console.log('[Login] RENDER: Not loading. profile:', profile, 'authLoading:', authLoading);
+  // If user is authenticated, don't render the login form
+  if (profile) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
