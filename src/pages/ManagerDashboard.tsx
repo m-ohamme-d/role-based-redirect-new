@@ -65,61 +65,11 @@ const ManagerDashboard = () => {
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Manager dashboard</h1>
             <p className="text-gray-600 mt-2">Welcome back, {profile.name}!</p>
             <p className="text-sm text-gray-500">Managing {departments.length} departments</p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4" />
-                  Create Department
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Department</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="dept-name">Department Name *</Label>
-                    <Input
-                      id="dept-name"
-                      value={newDepartment.name}
-                      onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})}
-                      placeholder="e.g., Marketing, Sales, IT"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dept-description">Description</Label>
-                    <Input
-                      id="dept-description"
-                      value={newDepartment.description}
-                      onChange={(e) => setNewDepartment({...newDepartment, description: e.target.value})}
-                      placeholder="Brief description of department responsibilities"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="team-lead">Assign Team Lead</Label>
-                    <Input
-                      id="team-lead"
-                      value={newDepartment.teamLead}
-                      onChange={(e) => setNewDepartment({...newDepartment, teamLead: e.target.value})}
-                      placeholder="Team lead name (optional)"
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateDepartment} className="bg-blue-600 hover:bg-blue-700">
-                      Create Department
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
             <Button
               onClick={handleLogout}
               variant="outline"
@@ -130,6 +80,58 @@ const ManagerDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Create Department Dialog - moved outside header */}
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 mb-6">
+              <Plus className="h-4 w-4" />
+              Create Department
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Department</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="dept-name">Department Name *</Label>
+                <Input
+                  id="dept-name"
+                  value={newDepartment.name}
+                  onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})}
+                  placeholder="e.g., Marketing, Sales, IT"
+                />
+              </div>
+              <div>
+                <Label htmlFor="dept-description">Description</Label>
+                <Input
+                  id="dept-description"
+                  value={newDepartment.description}
+                  onChange={(e) => setNewDepartment({...newDepartment, description: e.target.value})}
+                  placeholder="Brief description of department responsibilities"
+                />
+              </div>
+              <div>
+                <Label htmlFor="team-lead">Assign Team Lead</Label>
+                <Input
+                  id="team-lead"
+                  value={newDepartment.teamLead}
+                  onChange={(e) => setNewDepartment({...newDepartment, teamLead: e.target.value})}
+                  placeholder="Team lead name (optional)"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateDepartment} className="bg-blue-600 hover:bg-blue-700">
+                  Create Department
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
