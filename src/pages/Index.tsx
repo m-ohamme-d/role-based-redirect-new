@@ -30,19 +30,18 @@ export default function Index() {
       redirected: redirected.current,
     });
     // Only trigger redirect ONCE per mount on "/"
-    // Only navigate if not loading, on "/" AND dest !== "/"
+    // Only navigate if not loading, on "/" AND dest !== location.pathname
     if (
       !loading &&
       location.pathname === '/' &&
       !redirected.current &&
-      dest !== '/' &&
       dest !== location.pathname
     ) {
       redirected.current = true;
       console.log('[Index]: Navigating to', dest);
       navigate(dest, { replace: true });
     }
-  }, [loading, dest, navigate, location.pathname]);
+  }, [loading, dest, navigate, location.pathname, profile]);
 
   // If already redirected OR not on "/", render nothing
   if (redirected.current || location.pathname !== '/') {
