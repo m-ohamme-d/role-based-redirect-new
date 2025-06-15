@@ -1,5 +1,4 @@
-
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -77,47 +76,33 @@ const TeamLeadTeamDepartment = () => {
   const [department, setDepartment] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [timePeriod, setTimePeriod] = useState('month');
-  const [memberOrder, setMemberOrder] = useState<number[]>([]);
+  const memberOrderRef = useRef<number[]>([]);
 
-  // Initialize member order and maintain stable sorting
+  // Initialize and maintain stable member order
   const displayMembers = useMemo(() => {
-    if (memberOrder.length === 0) {
-      const initialOrder = teamMembers.map(member => member.id);
-      setMemberOrder(initialOrder);
+    // Initialize order on first load or when team members change significantly
+    if (memberOrderRef.current.length === 0 || teamMembers.length !== memberOrderRef.current.length) {
+      memberOrderRef.current = teamMembers.map(member => member.id);
       return teamMembers;
     }
     
-    // Sort members based on the fixed order, new members go to the end
+    // Sort members based on the stable order
     const sortedMembers = [...teamMembers].sort((a, b) => {
-      const indexA = memberOrder.indexOf(a.id);
-      const indexB = memberOrder.indexOf(b.id);
+      const indexA = memberOrderRef.current.indexOf(a.id);
+      const indexB = memberOrderRef.current.indexOf(b.id);
       
-      // If both members are in the order, use that order
       if (indexA !== -1 && indexB !== -1) {
         return indexA - indexB;
       }
       
-      // If only one member is in the order, prioritize it
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
       
-      // If neither is in the order, sort by id for consistency
       return a.id - b.id;
     });
     
-    // Update order to include any new members
-    const currentIds = teamMembers.map(m => m.id);
-    const newOrder = [
-      ...memberOrder.filter(id => currentIds.includes(id)),
-      ...currentIds.filter(id => !memberOrder.includes(id))
-    ];
-    
-    if (newOrder.length !== memberOrder.length) {
-      setMemberOrder(newOrder);
-    }
-    
     return sortedMembers;
-  }, [teamMembers, memberOrder]);
+  }, [teamMembers]);
 
   useEffect(() => {
     if (deptId && departmentsData[Number(deptId)]) {
