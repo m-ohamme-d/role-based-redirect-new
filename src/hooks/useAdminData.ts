@@ -47,8 +47,8 @@ export const useAdminData = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch departments with team lead info
-      const { data: departmentData, error: deptError } = await supabase
+      // Fetch departments with team lead info - using type assertion for new tables
+      const { data: departmentData, error: deptError } = await (supabase as any)
         .from('departments')
         .select(`
           id,
@@ -64,12 +64,12 @@ export const useAdminData = () => {
       }
 
       // Fetch total team members count
-      const { count: membersCount } = await supabase
+      const { count: membersCount } = await (supabase as any)
         .from('team_members')
         .select('*', { count: 'exact', head: true });
 
       // Fetch locked performance ratings count
-      const { count: lockedCount } = await supabase
+      const { count: lockedCount } = await (supabase as any)
         .from('performance_ratings')
         .select('*', { count: 'exact', head: true })
         .eq('is_locked', true);
@@ -77,7 +77,7 @@ export const useAdminData = () => {
       // Get member counts for each department
       const departmentsWithCounts = await Promise.all(
         (departmentData || []).map(async (dept: any) => {
-          const { count: memberCount } = await supabase
+          const { count: memberCount } = await (supabase as any)
             .from('team_members')
             .select('*', { count: 'exact', head: true })
             .eq('department_id', dept.id);
