@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,32 +8,14 @@ export default function Index() {
   const location = useLocation();
   const initialPath = useRef(location.pathname);
   const { profile, loading } = useAuth();
-
-  // Only redirect for exactly the mount page
   const hasRedirected = useRef(false);
 
   useEffect(() => {
-    console.log(
-      '[Index] effect',
-      {
-        location: location.pathname,
-        loading,
-        profile,
-        hasRedirected: hasRedirected.current,
-        initialPath: initialPath.current,
-      }
-    );
-
-    // Don't do anything while still loading
+    // Only trigger redirect once, on initial path after loading is done
     if (loading) return;
-
-    // Only process redirect if on the original mount path ("/")
     if (location.pathname !== initialPath.current) return;
-
-    // Only redirect once
     if (hasRedirected.current) return;
 
-    // Where should we go?
     const dest = profile
       ? profile.role === 'admin'
         ? '/admin/dashboard'
@@ -43,21 +26,17 @@ export default function Index() {
         : '/login'
       : '/login';
 
-    // Already there? No redirect
     if (location.pathname === dest) {
-      hasRedirected.current = true; // Prevent future triggers
-      console.log('[Index] Already at destination, skipping redirect.');
+      hasRedirected.current = true;
       return;
     }
 
-    hasRedirected.current = true; // Prevent future triggers
-    console.log(`[Index] Redirecting to ${dest} from ${location.pathname}`);
+    hasRedirected.current = true;
     navigate(dest, { replace: true });
-
   }, [loading, profile, location.pathname, navigate]);
 
-  // Show spinner only on "/" route (mount page), otherwise return nothing (avoid loop)
-  if (loading || (location.pathname === "/" && !hasRedirected.current)) {
+  // 1. While authenticating, show spinner
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">
@@ -68,6 +47,11 @@ export default function Index() {
     );
   }
 
-  // Otherwise, render nothing after redirect or on alternate path
+  // 2. While just after loading (even for 1 render!), if we're redirecting, render nothing (no flicker)
+  if (!loading && hasRedirected.current) {
+    return null;
+  }
+
+  // 3. If on "/", profile loading done, and no redirect, show nothing (should never happen long!)
   return null;
 }
