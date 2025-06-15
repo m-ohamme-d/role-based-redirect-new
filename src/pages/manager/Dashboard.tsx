@@ -1,13 +1,10 @@
 
-import { useState } from 'react';
-import { Users, User, BarChart3 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, User, BarChart3, Building } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
-import { useNavigate } from "react-router-dom";
-import ClientPortfolioCard from "@/components/manager/ClientPortfolioCard";
-import DepartmentOverviewCard from "@/components/manager/DepartmentOverviewCard";
-import PerformanceAlertDialog from "@/components/manager/PerformanceAlertDialog";
+import { Link } from "react-router-dom";
 
 // Mock data for charts
 const employeeOverviewData = [
@@ -29,9 +26,7 @@ const employeeProgressData = [
 ];
 
 const ManagerDashboard = () => {
-  const navigate = useNavigate();
-  const [showAlertsDialog, setShowAlertsDialog] = useState(false);
-  
+  // Mock data for departments
   const departments = [
     { id: 1, name: 'IT', employeeCount: 35, growth: '+5%', trend: 'up' as const },
     { id: 2, name: 'HR', employeeCount: 12, growth: '-2%', trend: 'down' as const },
@@ -40,27 +35,21 @@ const ManagerDashboard = () => {
     { id: 5, name: 'Finance', employeeCount: 14, growth: '0%', trend: 'neutral' as const },
   ];
 
-  const handleViewAllClients = () => {
-    navigate('/manager/clients');
-    console.log('Navigating to full client portfolio');
-  };
+  const totalEmployees = departments.reduce((sum, dept) => sum + dept.employeeCount, 0);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-        <div className="flex gap-2">
-          <PerformanceAlertDialog 
-            open={showAlertsDialog} 
-            onOpenChange={setShowAlertsDialog} 
-          />
-        </div>
+        <Link to="/manager/settings" className="text-blue-600 hover:underline text-sm font-medium">
+          Manager Settings
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total Employees"
-          value="107"
+          value={totalEmployees.toString()}
           icon={<Users size={24} />}
           change="+5.3% from last month"
           trend="up"
@@ -75,7 +64,7 @@ const ManagerDashboard = () => {
         <StatCard 
           title="Departments"
           value={departments.length.toString()}
-          icon={<Users size={24} />}
+          icon={<Building size={24} />}
         />
         <StatCard 
           title="Average Performance"
@@ -99,8 +88,59 @@ const ManagerDashboard = () => {
         />
       </div>
 
-      <ClientPortfolioCard onViewAllClients={handleViewAllClients} />
-      <DepartmentOverviewCard departments={departments} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Department Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {departments.map((dept) => (
+                <div key={dept.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium">{dept.name}</h3>
+                    <p className="text-sm text-gray-600">{dept.employeeCount} employees</p>
+                  </div>
+                  <div className={`text-sm font-medium ${
+                    dept.trend === 'up' ? 'text-green-600' : 
+                    dept.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                  }`}>
+                    {dept.growth}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <p className="text-sm">New team member onboarded in IT</p>
+                <span className="text-xs text-gray-500 ml-auto">2h ago</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <p className="text-sm">Performance review completed for Sales</p>
+                <span className="text-xs text-gray-500 ml-auto">5h ago</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <p className="text-sm">Monthly reports due tomorrow</p>
+                <span className="text-xs text-gray-500 ml-auto">1d ago</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
