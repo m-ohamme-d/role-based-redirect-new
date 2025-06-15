@@ -47,15 +47,10 @@ export const useAdminData = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch departments with team lead info - using type assertion for new tables
+      // Fetch departments - simplified query without foreign key hint
       const { data: departmentData, error: deptError } = await (supabase as any)
         .from('departments')
-        .select(`
-          id,
-          name,
-          team_lead_id,
-          profiles!departments_team_lead_id_fkey(name)
-        `);
+        .select('id, name, team_lead_id');
 
       if (deptError) {
         console.error('Error fetching departments:', deptError);
@@ -74,19 +69,34 @@ export const useAdminData = () => {
         .select('*', { count: 'exact', head: true })
         .eq('is_locked', true);
 
-      // Get member counts for each department
+      // Get member counts and team lead names for each department
       const departmentsWithCounts = await Promise.all(
         (departmentData || []).map(async (dept: any) => {
+          // Get member count for this department
           const { count: memberCount } = await (supabase as any)
             .from('team_members')
             .select('*', { count: 'exact', head: true })
             .eq('department_id', dept.id);
 
+          // Get team lead name if there is one
+          let teamLeadName = 'Unassigned';
+          if (dept.team_lead_id) {
+            const { data: teamLead } = await supabase
+              .from('profiles')
+              .select('name')
+              .eq('id', dept.team_lead_id)
+              .single();
+            
+            if (teamLead) {
+              teamLeadName = teamLead.name || 'Unknown';
+            }
+          }
+
           return {
             id: dept.id,
             name: dept.name,
             memberCount: memberCount || 0,
-            teamLeadName: dept.profiles?.name || 'Unassigned'
+            teamLeadName
           };
         })
       );
