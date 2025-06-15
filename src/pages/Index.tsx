@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -8,7 +8,7 @@ export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, loading } = useAuth();
-  const redirected = useRef(false);
+  const [didRedirect, setDidRedirect] = useState(false);
 
   // Compute the target route based on role
   const dest =
@@ -27,24 +27,24 @@ export default function Index() {
       pathname: location.pathname,
       profile,
       dest,
-      redirected: redirected.current,
+      didRedirect,
     });
-    // Only trigger redirect ONCE per mount on "/"
-    // Only navigate if not loading, on "/" AND dest !== location.pathname
+
+    // Only trigger redirect ONCE per mount on "/" and only if not loading and not already redirected
     if (
       !loading &&
       location.pathname === '/' &&
-      !redirected.current &&
+      !didRedirect &&
       dest !== location.pathname
     ) {
-      redirected.current = true;
+      setDidRedirect(true); // Prevent future redirects on this mount
       console.log('[Index]: Navigating to', dest);
       navigate(dest, { replace: true });
     }
-  }, [loading, dest, navigate, location.pathname, profile]);
+  }, [loading, dest, navigate, location.pathname, profile, didRedirect]);
 
-  // If already redirected OR not on "/", render nothing
-  if (redirected.current || location.pathname !== '/') {
+  // If already redirected OR not on "/", render nothing to avoid flicker or loop
+  if (didRedirect || location.pathname !== '/') {
     return null;
   }
 
