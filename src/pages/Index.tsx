@@ -9,17 +9,25 @@ export default function Index() {
   const location = useLocation();
   const { profile, loading } = useAuth();
   const hasRedirectedRef = useRef(false);
+  const profileRoleRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Only proceed if we're on the root path, auth is not loading, and we haven't redirected yet
-    if (location.pathname !== '/' || loading || hasRedirectedRef.current) {
+    // Only proceed if we're on the root path and auth is not loading
+    if (location.pathname !== '/' || loading) {
       return;
     }
 
-    console.log('[Index] Auth loaded, profile:', profile?.role);
+    // Check if profile role has actually changed to prevent unnecessary redirects
+    const currentRole = profile?.role || null;
+    if (hasRedirectedRef.current && profileRoleRef.current === currentRole) {
+      return;
+    }
+
+    console.log('[Index] Auth loaded, profile:', currentRole);
     
-    // Mark as redirected to prevent multiple redirects
+    // Mark as redirected and store the current role
     hasRedirectedRef.current = true;
+    profileRoleRef.current = currentRole;
     
     // Decide redirect destination based on user role
     const dest = profile?.role === 'admin'
@@ -32,7 +40,7 @@ export default function Index() {
 
     console.log('[Index]: Redirecting from "/" to:', dest);
     navigate(dest, { replace: true });
-  }, [loading, profile]); // Only depend on loading and profile, NOT location.pathname or navigate
+  }, [loading, profile?.role, location.pathname, navigate]);
 
   // Show loading spinner while auth is initializing OR while we're redirecting
   return (
