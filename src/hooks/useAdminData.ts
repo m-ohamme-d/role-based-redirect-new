@@ -41,11 +41,18 @@ export const useAdminData = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('[useAdminData] Starting to fetch admin data...');
 
       // Fetch total users count
-      const { count: usersCount } = await supabase
+      const { count: usersCount, error: usersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
+
+      if (usersError) {
+        console.error('[useAdminData] Error fetching users count:', usersError);
+      } else {
+        console.log('[useAdminData] Users count:', usersCount);
+      }
 
       // Fetch departments with type assertion
       const { data: departmentData, error: deptError } = await (supabase as any)
@@ -53,41 +60,61 @@ export const useAdminData = () => {
         .select('id, name, team_lead_id');
 
       if (deptError) {
-        console.error('Error fetching departments:', deptError);
+        console.error('[useAdminData] Error fetching departments:', deptError);
         setError('Failed to fetch departments');
         return;
+      } else {
+        console.log('[useAdminData] Departments data:', departmentData);
       }
 
       // Fetch total team members count with type assertion
-      const { count: membersCount } = await (supabase as any)
+      const { count: membersCount, error: membersError } = await (supabase as any)
         .from('team_members')
         .select('*', { count: 'exact', head: true });
 
+      if (membersError) {
+        console.error('[useAdminData] Error fetching team members count:', membersError);
+      } else {
+        console.log('[useAdminData] Team members count:', membersCount);
+      }
+
       // Fetch locked performance ratings count with type assertion
-      const { count: lockedCount } = await (supabase as any)
+      const { count: lockedCount, error: lockedError } = await (supabase as any)
         .from('performance_ratings')
         .select('*', { count: 'exact', head: true })
         .eq('is_locked', true);
+
+      if (lockedError) {
+        console.error('[useAdminData] Error fetching locked ratings count:', lockedError);
+      } else {
+        console.log('[useAdminData] Locked ratings count:', lockedCount);
+      }
 
       // Get member counts and team lead names for each department
       const departmentsWithCounts = await Promise.all(
         (departmentData || []).map(async (dept: any) => {
           // Get member count for this department with type assertion
-          const { count: memberCount } = await (supabase as any)
+          const { count: memberCount, error: memberCountError } = await (supabase as any)
             .from('team_members')
             .select('*', { count: 'exact', head: true })
             .eq('department_id', dept.id);
 
+          if (memberCountError) {
+            console.error(`[useAdminData] Error fetching member count for department ${dept.name}:`, memberCountError);
+          }
+
           // Get team lead name if there is one
           let teamLeadName = 'Unassigned';
           if (dept.team_lead_id) {
-            const { data: teamLead } = await supabase
+            const { data: teamLead, error: teamLeadError } = await supabase
               .from('profiles')
               .select('name')
               .eq('id', dept.team_lead_id)
               .single();
             
-            if (teamLead) {
+            if (teamLeadError) {
+              console.error(`[useAdminData] Error fetching team lead for department ${dept.name}:`, teamLeadError);
+            } else if (teamLead) {
               teamLeadName = teamLead.name || 'Unknown';
             }
           }
@@ -101,17 +128,21 @@ export const useAdminData = () => {
         })
       );
 
-      setStats({
+      const finalStats = {
         totalUsers: usersCount || 0,
         totalDepartments: departmentData?.length || 0,
         totalTeamMembers: membersCount || 0,
         lockedRecords: lockedCount || 0,
         auditLogs: 1256 // This would come from an audit log table if implemented
-      });
+      };
 
+      console.log('[useAdminData] Final stats:', finalStats);
+      console.log('[useAdminData] Departments with counts:', departmentsWithCounts);
+
+      setStats(finalStats);
       setDepartments(departmentsWithCounts);
     } catch (err) {
-      console.error('Error fetching admin data:', err);
+      console.error('[useAdminData] Unexpected error:', err);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
