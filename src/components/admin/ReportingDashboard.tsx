@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, FileText, Download, TrendingUp, Users, FolderOpen, Building } from 'lucide-react';
+import { BarChart3, FileText, Download, TrendingUp, Users, FolderOpen, Building } from 'lucide-react';
 import { useReportingData } from '@/hooks/useReportingData';
 import BarChart from '@/components/charts/BarChart';
 import { toast } from 'sonner';
@@ -154,7 +154,7 @@ ${chart.data.map((item: any) => `  ${item.name || item.department}: ${item.value
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <BarChart className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 Clients by Department
               </CardTitle>
               <Button
@@ -184,7 +184,7 @@ ${chart.data.map((item: any) => `  ${item.name || item.department}: ${item.value
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <BarChart className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 Projects by Department
               </CardTitle>
               <Button
@@ -214,7 +214,7 @@ ${chart.data.map((item: any) => `  ${item.name || item.department}: ${item.value
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <BarChart className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 Department Sizes
               </CardTitle>
               <Button
@@ -244,7 +244,7 @@ ${chart.data.map((item: any) => `  ${item.name || item.department}: ${item.value
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <BarChart className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 Top System Actions
               </CardTitle>
               <Button
