@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import PerformanceReport from "./pages/PerformanceReport";
 
 // Common Pages
 import Notifications from "./pages/common/Notifications";
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/reports/performance" element={<PerformanceReport />} />
             
             {/* Manager Routes */}
             <Route path="/manager" element={<ManagerLayout />}>
@@ -80,6 +82,7 @@ const App = () => (
               {/* Common Pages */}
               <Route path="notifications" element={<Notifications />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="reports/performance" element={<PerformanceReport />} />
               <Route path="support" element={<Support />} />
             </Route>
             
@@ -95,6 +98,7 @@ const App = () => (
               {/* Common Pages */}
               <Route path="notifications" element={<Notifications />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="reports/performance" element={<PerformanceReport />} />
               <Route path="support" element={<Support />} />
             </Route>
             
@@ -111,6 +115,7 @@ const App = () => (
               {/* Common Pages */}
               <Route path="notifications" element={<Notifications />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="reports/performance" element={<PerformanceReport />} />
               <Route path="support" element={<Support />} />
             </Route>
             
