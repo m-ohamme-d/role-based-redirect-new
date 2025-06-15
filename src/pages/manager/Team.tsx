@@ -2,17 +2,16 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Download, Bell, Plus, Edit2, Trash2, Upload, Star, Building, Users, Settings, Send } from 'lucide-react';
+import { Download, Bell, Edit2, Trash2, Users, Building, Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDepartments } from '@/hooks/useDepartments';
 import TeamPerformanceRating from '@/components/TeamPerformanceRating';
 
-// Enhanced teams data with members and team leads
 const teamsData = [
   { 
     id: 1, 
@@ -52,80 +51,59 @@ const ManagerTeam = () => {
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
-  
-  // Simplified form states - ONLY for department creation
-  const [showCreateDepartmentDialog, setShowCreateDepartmentDialog] = useState(false);
-  const [newDepartmentName, setNewDepartmentName] = useState('');
-  const [newDepartmentDescription, setNewDepartmentDescription] = useState('');
-  
-  // Team creation form
-  const [showCreateTeamDialog, setShowCreateTeamDialog] = useState(false);
-  const [newTeam, setNewTeam] = useState({
+
+  // --- Unified Department Creation Dialog State ---
+  const [showUnifiedDialog, setShowUnifiedDialog] = useState(false);
+  const [newDept, setNewDept] = useState({
     name: '',
+    description: '',
     teamLead: '',
-    department: '',
-    description: ''
+    leadEmail: '',
+    leadPhone: '',
   });
-  
-  // Department management states
+
+  // --- Other state + logic kept as in original ---
   const [editingDepartment, setEditingDepartment] = useState<string | null>(null);
   const [editDepartmentName, setEditDepartmentName] = useState('');
-  
-  // Team lead details dialog
   const [showTeamLeadDetails, setShowTeamLeadDetails] = useState(false);
   const [selectedTeamLead, setSelectedTeamLead] = useState<any>(null);
-  
-  // Notification dialog states
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
 
-  // Department creation
-  const handleCreateDepartment = () => {
-    if (!newDepartmentName.trim()) {
-      toast.error('Department name is required');
+  // --- Unified Add Department Logic ---
+  const handleUnifiedAddDepartment = () => {
+    if (!newDept.name.trim() || !newDept.teamLead.trim()) {
+      toast.error('Department name and Team Lead are required');
       return;
     }
 
-    if (addDepartment(newDepartmentName.trim())) {
-      toast.success(`Department "${newDepartmentName}" created successfully`);
-      console.log('Department created:', { name: newDepartmentName, description: newDepartmentDescription });
-    } else {
+    // Add new department to global store
+    const success = addDepartment(newDept.name.trim());
+    if (!success) {
       toast.error('Department already exists');
-    }
-
-    setNewDepartmentName('');
-    setNewDepartmentDescription('');
-    setShowCreateDepartmentDialog(false);
-  };
-
-  // Team creation
-  const handleCreateTeam = () => {
-    if (!newTeam.name.trim() || !newTeam.department || !newTeam.teamLead.trim()) {
-      toast.error('Please fill in all required fields');
       return;
     }
+    toast.success('Department added successfully');
 
+    // Optionally: also add a new team assigned to the department, led by teamLead
     const team = {
-      id: Math.max(...teams.map(t => t.id)) + 1,
-      name: newTeam.name.trim(),
-      lead: newTeam.teamLead.trim(),
-      leadEmail: `${newTeam.teamLead.toLowerCase().replace(' ', '.')}@company.com`,
-      leadPhone: '+1 (555) 000-0000',
+      id: Math.max(0, ...teams.map(t => t.id)) + 1,
+      name: `${newDept.name.trim()} Team`,
+      lead: newDept.teamLead.trim(),
+      leadEmail: newDept.leadEmail || `${newDept.teamLead.trim().toLowerCase().replace(' ', '.')}@company.com`,
+      leadPhone: newDept.leadPhone || '+1 (555) 000-0000',
       members: [],
-      department: newTeam.department,
-      performance: 0
+      department: newDept.name.trim(),
+      performance: 0,
     };
     setTeams([...teams, team]);
-    
-    toast.success(`Team "${newTeam.name}" created and notification sent to ${newTeam.teamLead}`);
-    console.log('Team created:', team);
+    toast.success(`Team created and team lead ${newDept.teamLead} assigned`);
 
-    setNewTeam({ name: '', teamLead: '', department: '', description: '' });
-    setShowCreateTeamDialog(false);
+    setNewDept({ name: '', description: '', teamLead: '', leadEmail: '', leadPhone: '' });
+    setShowUnifiedDialog(false);
   };
 
-  // Department management functions
   const handleStartEditDepartment = (deptName: string) => {
     setEditingDepartment(deptName);
     setEditDepartmentName(deptName);
@@ -174,10 +152,10 @@ const ManagerTeam = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedTeams.length === teamsData.length) {
+    if (selectedTeams.length === teams.length) {
       setSelectedTeams([]);
     } else {
-      setSelectedTeams(teamsData.map(team => team.id));
+      setSelectedTeams(teams.map(team => team.id));
     }
   };
 
@@ -187,7 +165,7 @@ const ManagerTeam = () => {
       return;
     }
 
-    const selectedTeamData = teamsData.filter(team => selectedTeams.includes(team.id));
+    const selectedTeamData = teams.filter(team => selectedTeams.includes(team.id));
     
     const headers = ['Team Name', 'Team Lead', 'Department', 'Members', 'Performance'];
     const csvContent = [
@@ -221,7 +199,7 @@ const ManagerTeam = () => {
       return;
     }
 
-    const selectedTeamNames = teamsData
+    const selectedTeamNames = teams
       .filter(team => selectedTeams.includes(team.id))
       .map(team => team.name)
       .join(', ');
@@ -275,110 +253,71 @@ const ManagerTeam = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
         <div className="space-x-2">
-          <Dialog open={showCreateDepartmentDialog} onOpenChange={setShowCreateDepartmentDialog}>
+          {/* UNIFIED Department + Team Lead creation */}
+          <Dialog open={showUnifiedDialog} onOpenChange={setShowUnifiedDialog}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
-                Create Department
+                Add Department
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Department</DialogTitle>
+                <DialogTitle>Add Department & Assign Team Lead</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Department Name *</label>
                   <Input
-                    value={newDepartmentName}
-                    onChange={(e) => setNewDepartmentName(e.target.value)}
+                    value={newDept.name}
+                    onChange={e => setNewDept({ ...newDept, name: e.target.value })}
                     placeholder="Enter department name"
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Description</label>
                   <Textarea
-                    value={newDepartmentDescription}
-                    onChange={(e) => setNewDepartmentDescription(e.target.value)}
-                    placeholder="Brief description of the department"
+                    value={newDept.description}
+                    onChange={e => setNewDept({ ...newDept, description: e.target.value })}
+                    placeholder="Brief description of the department (optional)"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Team Lead Name *</label>
+                  <Input
+                    value={newDept.teamLead}
+                    onChange={e => setNewDept({ ...newDept, teamLead: e.target.value })}
+                    placeholder="Assign a team lead"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Team Lead Email (optional)</label>
+                  <Input
+                    value={newDept.leadEmail}
+                    onChange={e => setNewDept({ ...newDept, leadEmail: e.target.value })}
+                    placeholder="name@company.com"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Team Lead Phone (optional)</label>
+                  <Input
+                    value={newDept.leadPhone}
+                    onChange={e => setNewDept({ ...newDept, leadPhone: e.target.value })}
+                    placeholder="+1 (555) 000-0000"
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowCreateDepartmentDialog(false)}>
+                  <Button variant="outline" onClick={() => setShowUnifiedDialog(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateDepartment}>
-                    Create Department
+                  <Button onClick={handleUnifiedAddDepartment}>
+                    Add Department
                   </Button>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
-
-          <Dialog open={showCreateTeamDialog} onOpenChange={setShowCreateTeamDialog}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Create Team
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Team</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Team Name *</label>
-                  <Input
-                    value={newTeam.name}
-                    onChange={(e) => setNewTeam({...newTeam, name: e.target.value})}
-                    placeholder="Enter team name"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Department *</label>
-                  <Select 
-                    value={newTeam.department} 
-                    onValueChange={(val) => setNewTeam({...newTeam, department: val})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map(dept => (
-                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Team Lead *</label>
-                  <Input
-                    value={newTeam.teamLead}
-                    onChange={(e) => setNewTeam({...newTeam, teamLead: e.target.value})}
-                    placeholder="Team lead's name"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={newTeam.description}
-                    onChange={(e) => setNewTeam({...newTeam, description: e.target.value})}
-                    placeholder="Brief description of the team"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowCreateTeamDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateTeam}>
-                    Create Team
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-          
+          {/* Remove legacy Create Department / Create Team button(s) here */}
           <Button
             variant="outline"
             className="flex items-center gap-2"
@@ -388,7 +327,7 @@ const ManagerTeam = () => {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          
+
           <Dialog open={showNotificationDialog} onOpenChange={setShowNotificationDialog}>
             <DialogTrigger asChild>
               <Button
@@ -400,6 +339,8 @@ const ManagerTeam = () => {
               </Button>
             </DialogTrigger>
             <DialogContent>
+              {/* ... keep existing notification dialog code ... */}
+              {/* same as before; unchanged */}
               <DialogHeader>
                 <DialogTitle>Send Notification</DialogTitle>
               </DialogHeader>
@@ -434,7 +375,10 @@ const ManagerTeam = () => {
         </div>
       </div>
 
-      {/* Department Management Section */}
+      {/* ... keep rest of the code (Department Management cards, Teams Table, Dialogs for team details/lead details etc.) exactly the same ... */}
+      {/* All legacy department creation and team creation dialogs+buttons have been removed */}
+      {/* All code for editing/deleting departments, managing teams etc. is unchanged */}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
