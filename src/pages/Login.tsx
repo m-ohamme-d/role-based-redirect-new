@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,7 @@ const Login = () => {
       console.log('[Login] User is authenticated, redirecting to /');
       navigate('/', { replace: true });
     }
-  }, [profile, authLoading, navigate]);
+  }, [profile, authLoading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
