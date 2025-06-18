@@ -1,12 +1,13 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -14,45 +15,84 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn, profile, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    console.log('[Login] Auth state check - authLoading:', authLoading, 'profile:', !!profile);
+    
+    // If auth is loaded and user is authenticated, redirect to appropriate dashboard
+    if (!authLoading && profile) {
+      console.log('[Login] User is authenticated with role:', profile.role);
+      
+      // Redirect directly to the appropriate dashboard based on role
+      const dest = profile.role === 'admin'
+        ? '/admin/dashboard'
+        : profile.role === 'manager'
+        ? '/manager/dashboard'
+        : profile.role === 'teamlead'
+        ? '/teamlead/dashboard'
+        : '/'; // fallback to home if role is unknown
+
+      console.log('[Login] Redirecting to:', dest);
+      navigate(dest, { replace: true });
+    }
+  }, [profile, authLoading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Mock authentication logic - replace with actual JWT/Auth tokens
-    setTimeout(() => {
-      if (email && password) {
-        // Role detection based on email domain/prefix
-        let role = 'teamlead'; // default role
-        let dashboardRoute = '/teamlead/dashboard';
-        
-        if (email.includes('admin') || email.endsWith('@admin.com')) {
-          role = 'admin';
-          dashboardRoute = '/admin/dashboard';
-        } else if (email.includes('manager') || email.endsWith('@manager.com')) {
-          role = 'manager';
-          dashboardRoute = '/manager/dashboard';
+    try {
+      console.log('[Login] Attempting login...');
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        console.error('[Login] Login error:', error);
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password');
+        } else {
+          toast.error(error.message || 'Login failed');
         }
-        
-        const userData = { 
-          email, 
-          role, 
-          name: email.split('@')[0],
-          // JWT token would be stored here in real implementation
-          token: `mock-jwt-token-${Date.now()}`
-        };
-
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('authToken', userData.token);
-        
-        toast.success('Login successful!');
-        navigate(dashboardRoute);
       } else {
-        toast.error('Please enter valid credentials');
+        console.log('[Login] Login successful, will redirect via useEffect');
+        toast.success('Login successful!');
+        // Don't manually navigate here - let the useEffect handle it
       }
+    } catch (error: any) {
+      console.error('[Login] Login exception:', error);
+      toast.error('An unexpected error occurred');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
+
+  // Show loading screen while auth is initializing
+  if (authLoading) {
+    console.log('[Login] Showing auth loading screen');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is authenticated, show loading while redirecting
+  if (profile) {
+    console.log('[Login] User authenticated, showing redirect loading');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('[Login] Rendering login form');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
@@ -119,14 +159,14 @@ const Login = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-xs text-center text-gray-500">
-            <p className="mb-2">Demo accounts:</p>
-            <div className="space-y-1">
-              <p><strong>Admin:</strong> admin@demo.com</p>
-              <p><strong>Manager:</strong> manager@demo.com</p>
-              <p><strong>Team Lead:</strong> teamlead@demo.com</p>
-            </div>
-            <p className="mt-2">Password: any password</p>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link
+              to="/register"
+              className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
+            >
+              Sign up here
+            </Link>
           </div>
         </CardContent>
       </Card>

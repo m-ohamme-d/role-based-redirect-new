@@ -1,28 +1,14 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import MainLayout from '@/components/layouts/MainLayout';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { Home, Users, FileText, Activity, Settings, HelpCircle, Bell, Building, User } from 'lucide-react';
 
 const AdminLayout = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.role !== 'admin') {
-        navigate('/login');
-        return;
-      }
-      setUser(parsedUser);
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  if (!user) return null;
+  const { profile, loading } = useAuth();
 
   const adminLinks = [
     {
@@ -77,8 +63,20 @@ const AdminLayout = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <MainLayout links={adminLinks} role="Admin" userName={user.name} />
+    <ErrorBoundary>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <MainLayout links={adminLinks} role="Admin" userName={profile?.name || 'Admin'} />
+      </ProtectedRoute>
+    </ErrorBoundary>
   );
 };
 
