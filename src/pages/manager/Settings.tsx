@@ -1,21 +1,22 @@
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SettingsLayout from '@/components/layouts/SettingsLayout';
 
 const ManagerSettings = () => {
-  const { profile, loading } = useAuth();
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
 
-  if (!profile) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="space-y-6">

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -39,42 +37,33 @@ const Register = () => {
       return;
     }
 
-    try {
-      // Clean up any existing auth state
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        // Continue even if this fails
-      }
-
-      const { data, error } = await supabase.auth.signUp({
+    // Mock registration logic
+    setTimeout(() => {
+      const userData = {
+        name: formData.name,
         email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            role: formData.role,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
+        role: formData.role
+      };
       
-      if (error) {
-        if (error.message.includes('already registered')) {
-          toast.error('An account with this email already exists');
-        } else {
-          toast.error(error.message || 'Registration failed');
-        }
-      } else {
-        toast.success('Account created successfully! Please check your email to verify your account.');
-        navigate('/login');
+      localStorage.setItem('user', JSON.stringify(userData));
+      toast.success('Account created successfully!');
+      
+      // Redirect based on role
+      switch (formData.role) {
+        case 'admin':
+          navigate('/admin-dashboard');
+          break;
+        case 'manager':
+          navigate('/manager-dashboard');
+          break;
+        case 'teamlead':
+          navigate('/teamlead/dashboard');
+          break;
+        default:
+          navigate('/teamlead/dashboard');
       }
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      toast.error('An unexpected error occurred during registration');
-    } finally {
       setLoading(false);
-    }
+    }, 1000);
   };
 
   return (

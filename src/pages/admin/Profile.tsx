@@ -1,21 +1,19 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { User, Mail, Phone, Building, Calendar, Save } from 'lucide-react';
-import ProfilePictureUpload from '@/components/ProfilePictureUpload';
 
 const AdminProfile = () => {
   const navigate = useNavigate();
-  const { profile, loading } = useAuth();
+  const [user, setUser] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -25,51 +23,35 @@ const AdminProfile = () => {
   });
 
   useEffect(() => {
-    if (!loading) {
-      if (!profile) {
-        console.log('No profile found, redirecting to login');
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.role !== 'admin') {
         navigate('/login');
         return;
       }
-      
-      if (profile.role !== 'admin') {
-        console.log('Access denied to admin profile - user role:', profile.role);
-        navigate('/login');
-        return;
-      }
-      
+      setUser(parsedUser);
       setProfileData({
-        name: profile.name || '',
-        email: profile.email || '',
-        phone: '+1 (555) 123-4567',
+        name: parsedUser.name || '',
+        email: parsedUser.email || '',
+        phone: parsedUser.phone || '+1 (555) 123-4567',
         department: 'Administration',
-        joinDate: '2024-01-01'
+        joinDate: parsedUser.joinDate || '2024-01-01'
       });
-      
-      console.log('Admin accessing profile:', profile.name);
+    } else {
+      navigate('/login');
     }
-  }, [profile, loading, navigate]);
+  }, [navigate]);
 
   const handleSave = () => {
+    const updatedUser = { ...user, ...profileData };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
     setIsEditing(false);
     toast.success('Profile updated successfully');
   };
 
-  const handleImageUpdate = (newImageUrl: string | null) => {
-    setProfileImageUrl(newImageUrl);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (!profile || profile.role !== 'admin') {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="space-y-6">
@@ -89,13 +71,12 @@ const AdminProfile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-4">
-            <ProfilePictureUpload
-              userId={profile.id}
-              currentImageUrl={profileImageUrl}
-              userName={profile.name || 'Admin'}
-              onImageUpdate={handleImageUpdate}
-              disabled={!isEditing}
-            />
+            <Avatar className="h-32 w-32">
+              <AvatarImage src={user.avatar} />
+              <AvatarFallback className="text-2xl">
+                {user.name?.split(' ').map((n: string) => n[0]).join('') || 'A'}
+              </AvatarFallback>
+            </Avatar>
             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
               Administrator
             </Badge>
