@@ -1,8 +1,9 @@
 
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Settings, BarChart3, Users, Home, ChevronRight, ChevronLeft } from 'lucide-react';
+import { LogOut, ChevronRight, ChevronLeft } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   links: {
@@ -12,15 +13,23 @@ interface SidebarProps {
   }[];
   role: string;
   userName: string;
+  onLogout?: () => void;
 }
 
-const Sidebar = ({ links, role, userName }: SidebarProps) => {
-  const navigate = useNavigate();
+const Sidebar = ({ links, role, userName, onLogout }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      if (onLogout) {
+        onLogout();
+      } else {
+        await signOut();
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
 
   return (

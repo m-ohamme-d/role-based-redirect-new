@@ -30,6 +30,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/contexts/AuthContext';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface MainLayoutProps {
   links: {
@@ -43,53 +45,42 @@ interface MainLayoutProps {
 
 const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'Report Due',
-      message: 'Monthly report is due today',
-      time: '1 hour ago',
-      read: false
-    },
-    {
-      id: 2,
-      title: 'New Task Assigned',
-      message: 'You have been assigned a new task',
-      time: '3 hours ago',
-      read: false
-    },
-    {
-      id: 3,
-      title: 'Meeting Reminder',
-      message: 'Team meeting in 30 minutes',
-      time: '1 day ago',
-      read: true
+  const { signOut } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useRealtimeNotifications();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: clear localStorage and redirect
+      localStorage.removeItem('user');
+      navigate('/login');
     }
-  ]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
   };
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(notification => 
-      notification.id === id 
-        ? { ...notification, read: true } 
-        : notification
-    ));
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Get stored avatar from localStorage
   const userData = localStorage.getItem('user');
   const user = userData ? JSON.parse(userData) : null;
   const storedAvatar = localStorage.getItem('userAvatar');
 
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now.getTime() - time.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar links={links} role={role} userName={userName} />
+      <Sidebar links={links} role={role} userName={userName} onLogout={handleLogout} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top navbar */}
@@ -105,14 +96,14 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
             </div>
             
             <div className="flex items-center gap-4">
-              {/* Notifications */}
+              {/* Real-time Notifications */}
               <Drawer>
                 <DrawerTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
                       <Badge 
-                        className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 bg-red-500"
+                        className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 bg-red-500 animate-pulse"
                       >
                         {unreadCount}
                       </Badge>
@@ -122,8 +113,23 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
                 <DrawerContent className="max-h-[80vh]">
                   <DrawerHeader className="border-b">
                     <div className="flex items-center justify-between">
-                      <DrawerTitle>Notifications</DrawerTitle>
+                      <DrawerTitle className="flex items-center gap-2">
+                        Notifications
+                        <Badge variant="outline" className="bg-green-100 text-green-700">
+                          Live
+                        </Badge>
+                      </DrawerTitle>
                       <div className="flex gap-2">
+                        {unreadCount > 0 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={markAllAsRead}
+                            className="text-xs"
+                          >
+                            Mark all read
+                          </Button>
+                        )}
                         <Link to="/notifications" className="text-sm text-blue-600 hover:underline">
                           View all
                         </Link>
@@ -138,26 +144,45 @@ const MainLayout = ({ links, role, userName }: MainLayoutProps) => {
                   <div className="p-4 overflow-auto">
                     {notifications.length > 0 ? (
                       <ul className="space-y-3">
-                        {notifications.map((notification) => (
+                        {notifications.slice(0, 10).map((notification) => (
                           <li 
                             key={notification.id}
-                            className={`p-3 rounded-lg border ${notification.read ? 'bg-white' : 'bg-blue-50'}`}
+                            className={`p-3 rounded-lg border transition-colors ${
+                              notification.read ? 'bg-white' : 'bg-blue-50 border-blue-200'
+                            }`}
                           >
-                            <div className="flex justify-between">
-                              <h3 className="font-medium">{notification.title}</h3>
-                              <span className="text-xs text-gray-500">{notification.time}</span>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-medium text-sm">{notification.title}</h3>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      notification.type === 'performance' ? 'bg-green-100 text-green-700' :
+                                      notification.type === 'rating' ? 'bg-blue-100 text-blue-700' :
+                                      notification.type === 'team' ? 'bg-purple-100 text-purple-700' :
+                                      'bg-gray-100 text-gray-700'
+                                    }`}
+                                  >
+                                    {notification.type}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                                <span className="text-xs text-gray-500">
+                                  {formatTimeAgo(notification.timestamp)}
+                                </span>
+                              </div>
+                              {!notification.read && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-xs ml-2"
+                                  onClick={() => markAsRead(notification.id)}
+                                >
+                                  Mark read
+                                </Button>
+                              )}
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                            {!notification.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-xs mt-2"
-                                onClick={() => markAsRead(notification.id)}
-                              >
-                                Mark as read
-                              </Button>
-                            )}
                           </li>
                         ))}
                       </ul>
