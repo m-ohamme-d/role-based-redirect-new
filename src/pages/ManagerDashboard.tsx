@@ -1,17 +1,38 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Users, BarChart3, Settings, Calendar, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { LogOut, Users, BarChart3, Settings, Calendar, Eye, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useDepartments } from '@/hooks/useDepartments';
-import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const [user, setUser] = useState<any>(null);
   const { departments } = useDepartments();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newDepartment, setNewDepartment] = useState({
+    name: '',
+    description: '',
+    teamLead: ''
+  });
 
-  const handleLogout = async () => {
-    await signOut();
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
   const handleViewAllClients = () => {
@@ -19,15 +40,27 @@ const ManagerDashboard = () => {
     navigate('/manager/clients');
   };
 
-  const handleSettingsNavigation = () => {
-    navigate('/manager/settings');
+  const handleCreateDepartment = () => {
+    if (!newDepartment.name.trim()) {
+      toast.error('Department name is required');
+      return;
+    }
+
+    console.log('Creating new department:', newDepartment);
+    
+    // Simulate creating department
+    toast.success(`Department "${newDepartment.name}" created successfully`);
+    
+    // Reset form
+    setNewDepartment({
+      name: '',
+      description: '',
+      teamLead: ''
+    });
+    setShowCreateDialog(false);
   };
 
-  const handleProfileNavigation = () => {
-    navigate('/manager/profile');
-  };
-
-  if (!profile) return null;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
@@ -35,10 +68,60 @@ const ManagerDashboard = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-            <p className="text-gray-600 mt-2">Welcome back, {profile.name}!</p>
+            <p className="text-gray-600 mt-2">Welcome back, {user.name}!</p>
             <p className="text-sm text-gray-500">Managing {departments.length} departments</p>
           </div>
           <div className="flex gap-2">
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4" />
+                  Create Department
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Department</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="dept-name">Department Name *</Label>
+                    <Input
+                      id="dept-name"
+                      value={newDepartment.name}
+                      onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})}
+                      placeholder="e.g., Marketing, Sales, IT"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dept-description">Description</Label>
+                    <Input
+                      id="dept-description"
+                      value={newDepartment.description}
+                      onChange={(e) => setNewDepartment({...newDepartment, description: e.target.value})}
+                      placeholder="Brief description of department responsibilities"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="team-lead">Assign Team Lead</Label>
+                    <Input
+                      id="team-lead"
+                      value={newDepartment.teamLead}
+                      onChange={(e) => setNewDepartment({...newDepartment, teamLead: e.target.value})}
+                      placeholder="Team lead name (optional)"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateDepartment} className="bg-blue-600 hover:bg-blue-700">
+                      Create Department
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button
               onClick={handleLogout}
               variant="outline"
@@ -124,7 +207,7 @@ const ManagerDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm cursor-pointer hover:shadow-xl transition-shadow" onClick={handleSettingsNavigation}>
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-orange-600" />
