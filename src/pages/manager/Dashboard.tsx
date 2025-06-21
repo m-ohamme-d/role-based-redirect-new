@@ -1,194 +1,337 @@
-
+// src/pages/manager/Dashboard.tsx
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, User, BarChart3, Building } from "lucide-react";
+import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const employeeOverviewData = [
-  { name: 'Jan', value: 65 },
-  { name: 'Feb', value: 59 },
-  { name: 'Mar', value: 80 },
-  { name: 'Apr', value: 81 },
-  { name: 'May', value: 56 },
-  { name: 'Jun', value: 55 },
-  { name: 'Jul', value: 40 },
-];
-
-const employeeProgressData = [
-  { name: 'IT', value: 85 },
-  { name: 'HR', value: 65 },
-  { name: 'Sales', value: 76 },
-  { name: 'Marketing', value: 90 },
-  { name: 'Finance', value: 70 },
-];
+import { useManagerData } from "@/hooks/useManagerData";
+import type { ManagerStats } from "@/hooks/useManagerData";
 
 const ManagerDashboard = () => {
-  const departments = [
-    { id: 1, name: 'IT', employeeCount: 35, growth: '+5%', trend: 'up' as const },
-    { id: 2, name: 'HR', employeeCount: 12, growth: '-2%', trend: 'down' as const },
-    { id: 3, name: 'Sales', employeeCount: 28, growth: '+10%', trend: 'up' as const },
-    { id: 4, name: 'Marketing', employeeCount: 18, growth: '+3%', trend: 'up' as const },
-    { id: 5, name: 'Finance', employeeCount: 14, growth: '0%', trend: 'neutral' as const },
-  ];
+  const navigate = useNavigate();
+  const { stats, loading, error } = useManagerData();
 
-  const totalEmployees = departments.reduce((sum, dept) => sum + dept.employeeCount, 0);
+  // Local UI state for dialogs
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [showClientDialog, setShowClientDialog] = useState(false);
+  const [showAlertsDialog, setShowAlertsDialog] = useState(false);
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+    </div>;
+  }
+  if (error) {
+    return <div className="text-center p-8">
+      <h2 className="text-2xl font-bold">Error loading dashboard</h2>
+      <p className="mt-2">{error}</p>
+      <Button className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+    </div>;
+  }
+
+  // Destructure your real data here.
+  const {
+    totalEmployees,
+    newEmployees,
+    departmentCount,
+    averagePerformance,
+    employeeOverviewData,
+    employeeProgressData,
+    clientsData,
+    departments,
+    employeeGrowthText,
+    employeeTrend,
+    newEmployeeGrowthText,
+    newEmployeeTrend,
+    performanceChangeText,
+    performanceTrend
+  } = stats as ManagerStats;
+
+  const handleClientClick = (client: any) => {
+    setSelectedClient(client);
+    setShowClientDialog(true);
+  };
+  const handleViewAllClients = () => {
+    navigate('/manager/clients');
+  };
+  const toggleProjectStatus = (projectId: number) => {
+    if (selectedClient) {
+      const updated = selectedClient.projects.map((p: any) =>
+        p.id === projectId
+          ? { ...p, status: p.status === 'working' ? 'stopped' : 'working' }
+          : p
+      );
+      setSelectedClient({ ...selectedClient, projects: updated });
+      toast.success('Project status updated');
+    }
+  };
+
+  // Add robust exportToStyledPDF for manager dashboard
+  const exportToStyledPDF = (data, filename = 'manager_dashboard_report') => {
+    if (!data || data.length === 0) {
+      toast.error('No data to export!');
+      return;
+    }
+    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'l' });
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const logo = new window.Image();
+    logo.src = '/your-logo.svg';
+    logo.crossOrigin = 'anonymous';
+    let startY = margin;
+    logo.onload = () => {
+      const logoW = 80;
+      const logoH = (logo.height / logo.width) * logoW;
+      doc.addImage(logo, 'PNG', margin, margin, logoW, logoH);
+      startY += logoH + 20;
+      drawTableAndSave();
+    };
+    logo.onerror = () => {
+      drawTableAndSave();
+    };
+    setTimeout(() => {
+      if (!logo.complete) return;
+      drawTableAndSave();
+    }, 500);
+    function drawTableAndSave() {
+      doc.setFontSize(18);
+      doc.setTextColor('#333');
+      doc.text(
+        'Manager Dashboard Report',
+        pageWidth / 2,
+        startY,
+        { align: 'center' }
+      );
+      doc.setFontSize(10);
+      doc.setTextColor('#555');
+      doc.text(
+        `Generated: ${new Date().toLocaleString()}`,
+        pageWidth - margin,
+        startY,
+        { align: 'right' }
+      );
+      // Example: use employeeOverviewData or similar for the table
+      const head = [Object.keys((data && data[0]) || {})];
+      const body = data.map(r => head[0].map(k => String(r[k] ?? '')));
+      autoTable(doc, {
+        head,
+        body,
+        startY: startY + 20,
+        theme: 'striped',
+        headStyles: { fillColor: [41,128,185], textColor: 255, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 10, textColor: 50 },
+        styles: { cellPadding: 6, halign: 'left', valign: 'middle' },
+        margin: { left: margin, right: margin },
+        didDrawPage: (dataArg) => {
+          const pageCount = doc.getNumberOfPages();
+          doc.setFontSize(9);
+          doc.setTextColor('#999');
+          doc.text(
+            `Page ${dataArg.pageNumber} of ${pageCount}`,
+            pageWidth / 2,
+            pageHeight - 10,
+            { align: 'center' }
+          );
+        },
+      });
+      doc.save(`${filename}.pdf`);
+      toast.success('PDF report generated and downloaded successfully');
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-              Manager Dashboard
-            </h1>
-            <p className="text-gray-600 mt-2">Comprehensive team management and insights</p>
-          </div>
-          <Link 
-            to="/manager/settings" 
-            className="text-blue-600 hover:text-blue-500 text-sm font-medium bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm transition-colors"
-          >
-            Manager Settings
-          </Link>
-        </div>
+    <div className="space-y-6">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-blue-100">
-            <CardContent className="p-4">
-              <StatCard 
-                title="Total Employees"
-                value={totalEmployees.toString()}
-                icon={<Users size={24} className="text-blue-600" />}
-                change="+5.3% from last month"
-                trend="up"
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-green-50 to-green-100">
-            <CardContent className="p-4">
-              <StatCard 
-                title="New Employees"
-                value="12"
-                icon={<User size={24} className="text-green-600" />}
-                change="+2 from last week"
-                trend="up"
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-purple-100">
-            <CardContent className="p-4">
-              <StatCard 
-                title="Departments"
-                value={departments.length.toString()}
-                icon={<Building size={24} className="text-purple-600" />}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-orange-50 to-orange-100">
-            <CardContent className="p-4">
-              <StatCard 
-                title="Average Performance"
-                value="78%"
-                icon={<BarChart3 size={24} className="text-orange-600" />}
-                change="+2.5% from last quarter"
-                trend="up"
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-800">
-                <BarChart3 className="h-5 w-5 text-green-600" />
-                Employee Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LineChart 
-                data={employeeOverviewData} 
-                title="" 
-                subtitle="Employee count over time"
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-800">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                Department Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BarChart 
-                data={employeeProgressData} 
-                title="" 
-                subtitle="Average performance by department"
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-800">
-                <Building className="h-5 w-5 text-purple-600" />
-                Department Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {departments.map((dept) => (
-                  <div key={dept.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                    <div>
-                      <h3 className="font-semibold text-gray-800">{dept.name}</h3>
-                      <p className="text-sm text-gray-600">{dept.employeeCount} employees</p>
-                    </div>
-                    <div className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                      dept.trend === 'up' ? 'text-green-700 bg-green-100' : 
-                      dept.trend === 'down' ? 'text-red-700 bg-red-100' : 'text-gray-700 bg-gray-100'
-                    }`}>
-                      {dept.growth}
-                    </div>
-                  </div>
-                ))}
+      {/* Header + Alerts */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
+        <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Send Alert
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Send Performance Alert</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Send performance report reminders to all Team Leads
+              </p>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowAlertsDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  toast.success('Performance report alert sent to all Team Leads');
+                  setShowAlertsDialog(false);
+                }}>
+                  Send Alert
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-gray-800">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <p className="text-sm font-medium text-green-800">New team member onboarded in IT</p>
-                  <span className="text-xs text-green-600 ml-auto">2h ago</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <p className="text-sm font-medium text-blue-800">Performance review completed for Sales</p>
-                  <span className="text-xs text-blue-600 ml-auto">5h ago</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <p className="text-sm font-medium text-yellow-800">Monthly reports due tomorrow</p>
-                  <span className="text-xs text-yellow-600 ml-auto">1d ago</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Employees"
+          value={totalEmployees.toString()}
+          icon={<Users size={24} />}
+          change={`${employeeGrowthText}`}
+          trend={employeeTrend}
+        />
+        <StatCard
+          title="New Employees"
+          value={newEmployees.toString()}
+          icon={<User size={24} />}
+          change={`${newEmployeeGrowthText}`}
+          trend={newEmployeeTrend}
+        />
+        <StatCard
+          title="Departments"
+          value={departmentCount.toString()}
+          icon={<Users size={24} />}
+        />
+        <StatCard
+          title="Avg. Performance"
+          value={`${averagePerformance}%`}
+          icon={<BarChart3 size={24} />}
+          change={`${performanceChangeText}`}
+          trend={performanceTrend}
+        />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LineChart
+          data={employeeOverviewData}
+          title="Employee Overview"
+          subtitle="Employee count over time"
+        />
+        <BarChart
+          data={employeeProgressData}
+          title="Department Performance"
+          subtitle="Avg. performance by department"
+        />
+      </div>
+
+      {/* Client Portfolio */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Client Portfolio</CardTitle>
+            <Button
+              onClick={handleViewAllClients}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              View All Clients
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {clientsData.map(client => (
+              <Card
+                key={client.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleClientClick(client)}
+              >
+                <CardContent className="p-4 space-y-2">
+                  <h3 className="font-semibold text-lg">{client.name}</h3>
+                  <p className="text-sm text-gray-600">{client.company}</p>
+                  <Badge
+                    variant={client.status === 'working' ? 'default' : 'destructive'}
+                    className={client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
+                  >
+                    {client.status === 'working' ? 'Working' : 'Stopped'}
+                  </Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Department Overview */}
+      <Card>
+        <CardHeader><CardTitle>Department Overview</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {departments.map(dept => (
+              <Card
+                key={dept.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-4">
+                  <Link to={`/manager/department/${dept.id}`}>
+                    <h3 className="font-semibold">{dept.name}</h3>
+                    <p className="text-sm text-gray-500">
+                      {dept.employeeCount} employees
+                    </p>
+                  </Link>
+                  <div className={`flex items-center mt-2 text-sm font-medium ${
+                    dept.trend === 'up' ? 'text-green-500' :
+                    dept.trend === 'down' ? 'text-red-500' :
+                    'text-gray-500'
+                  }`}>
+                    {dept.growth}
+                    {dept.trend === 'up' && <ArrowUp size={16} className="ml-1" />}
+                    {dept.trend === 'down' && <ArrowDown size={16} className="ml-1" />}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Client Projects Dialog */}
+      <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{selectedClient?.name} - Projects</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[400px] overflow-y-auto">
+            {selectedClient?.projects.map((project: any) => (
+              <Card key={project.id}>
+                <CardContent className="p-4 flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{project.name}</h3>
+                    <Badge
+                      variant={project.status === 'working' ? 'default' : 'destructive'}
+                      className={project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
+                    >
+                      {project.status === 'working' ? 'Working' : 'Stopped'}
+                    </Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toggleProjectStatus(project.id)}
+                  >
+                    Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
