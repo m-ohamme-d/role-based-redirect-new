@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -25,7 +25,8 @@ import {
 } from '@/components/ui/table';
 import { FileText, Download, Calendar, CheckCircle, Bell, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import { generatePDFContent, generateExcelContent, downloadFile } from '@/utils/reportGenerator';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Reports = () => {
   const [reportType, setReportType] = useState('performance');
@@ -134,6 +135,78 @@ const Reports = () => {
     return teamLeads[department as keyof typeof teamLeads] || null;
   };
 
+  const exportToStyledPDF = (reportData, reportType = 'performance', departmentName = '') => {
+    if (!reportData || reportData.length === 0) {
+      toast.error('No data to export!');
+      return;
+    }
+    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'l' });
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const logo = new window.Image();
+    logo.src = '/your-logo.svg';
+    logo.crossOrigin = 'anonymous';
+    let startY = margin;
+    logo.onload = () => {
+      const logoW = 80;
+      const logoH = (logo.height / logo.width) * logoW;
+      doc.addImage(logo, 'PNG', margin, margin, logoW, logoH);
+      startY += logoH + 20;
+      drawTableAndSave();
+    };
+    logo.onerror = () => {
+      drawTableAndSave();
+    };
+    setTimeout(() => {
+      if (!logo.complete) return;
+      drawTableAndSave();
+    }, 500);
+    function drawTableAndSave() {
+      doc.setFontSize(18);
+      doc.setTextColor('#333');
+      doc.text(
+        `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${departmentName ? ` - ${departmentName}` : ''}`,
+        pageWidth / 2,
+        startY,
+        { align: 'center' }
+      );
+      doc.setFontSize(10);
+      doc.setTextColor('#555');
+      doc.text(
+        `Generated: ${new Date().toLocaleString()}`,
+        pageWidth - margin,
+        startY,
+        { align: 'right' }
+      );
+      const head = [Object.keys(reportData[0] || {})];
+      const body = reportData.map(r => head[0].map(k => String(r[k] ?? '')));
+      autoTable(doc, {
+        head,
+        body,
+        startY: startY + 20,
+        theme: 'striped',
+        headStyles: { fillColor: [41,128,185], textColor: 255, fontStyle: 'bold' },
+        bodyStyles: { fontSize: 10, textColor: 50 },
+        styles: { cellPadding: 6, halign: 'left', valign: 'middle' },
+        margin: { left: margin, right: margin },
+        didDrawPage: (dataArg) => {
+          const pageCount = doc.getNumberOfPages();
+          doc.setFontSize(9);
+          doc.setTextColor('#999');
+          doc.text(
+            `Page ${dataArg.pageNumber} of ${pageCount}`,
+            pageWidth / 2,
+            pageHeight - 10,
+            { align: 'center' }
+          );
+        },
+      });
+      doc.save(`${reportType}_report${departmentName ? `_${departmentName}` : ''}.pdf`);
+      toast.success('PDF report generated and downloaded successfully');
+    }
+  };
+
   const handleGenerateReport = () => {
     setGenerating(true);
     
@@ -150,53 +223,28 @@ const Reports = () => {
         dateRange: dateRange.charAt(0).toUpperCase() + dateRange.slice(1)
       };
 
-      const now = new Date();
-      let content = '';
-      let filename = '';
-      let mimeType = '';
+      exportToStyledPDF(reportData, reportType, departmentName);
 
-      if (format === 'pdf') {
-        content = generatePDFContent(reportData);
-        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
-        mimeType = 'application/pdf';
-      } else if (format === 'xlsx') {
-        content = generateExcelContent(reportData);
-        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
-        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      } else {
-        content = generateExcelContent(reportData);
-        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
-        mimeType = 'text/csv';
-      }
-
-      const success = downloadFile(content, filename, mimeType);
+      const newReport = {
+        id: Date.now().toString(),
+        name: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${departmentName ? ` - ${departmentName}` : ''}`,
+        type: reportType,
+        format: format.toUpperCase(),
+        dateGenerated: new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        status: 'Ready',
+        isFavorite: false,
+        department: departmentName
+      };
       
-      if (success) {
-        const newReport = {
-          id: Date.now().toString(),
-          name: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${departmentName ? ` - ${departmentName}` : ''}`,
-          type: reportType,
-          format: format.toUpperCase(),
-          dateGenerated: new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }),
-          status: 'Ready',
-          isFavorite: false,
-          department: departmentName
-        };
-        
-        setGeneratedReports(prev => [newReport, ...prev]);
-        
-        toast.success('Report generated and downloaded successfully', {
-          description: `Your ${reportType} report${departmentName ? ` for ${departmentName} department` : ''} has been downloaded.`
-        });
-      } else {
-        toast.error('Failed to generate report', {
-          description: 'There was an error generating the report. Please try again.'
-        });
-      }
+      setGeneratedReports(prev => [newReport, ...prev]);
+      
+      toast.success('Report generated and downloaded successfully', {
+        description: `Your ${reportType} report${departmentName ? ` for ${departmentName} department` : ''} has been downloaded.`
+      });
       
       setGenerating(false);
     }, 1500);
@@ -260,36 +308,7 @@ const Reports = () => {
       dateRange: dateRange
     };
 
-    const now = new Date();
-    let content = '';
-    let filename = '';
-    let mimeType = '';
-
-    if (reportFormat === 'PDF') {
-      content = generatePDFContent(reportData);
-      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
-      mimeType = 'application/pdf';
-    } else if (reportFormat === 'XLSX') {
-      content = generateExcelContent(reportData);
-      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
-      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    } else {
-      content = generateExcelContent(reportData);
-      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
-      mimeType = 'text/csv';
-    }
-
-    const success = downloadFile(content, filename, mimeType);
-    
-    if (success) {
-      toast.success('Download completed', {
-        description: `${reportName} has been downloaded successfully.`
-      });
-    } else {
-      toast.error('Download failed', {
-        description: 'There was an error downloading the report. Please try again.'
-      });
-    }
+    exportToStyledPDF(reportData, reportFormat, departmentName);
   };
 
   return (
