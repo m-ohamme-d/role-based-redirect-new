@@ -23,7 +23,7 @@ const ManagerLayout = () => {
 
   return (
     <ProtectedRoute allowedRoles={['manager']}>
-      <MainLayout links={sidebarLinks} role="Manager" userName={profile?.name || 'Manager'} />
+      <MainLayout links={sidebarLinks} role="manager" userName={profile?.name || 'Manager'} />
     </ProtectedRoute>
   );
 };

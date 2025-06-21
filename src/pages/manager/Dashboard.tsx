@@ -86,6 +86,8 @@ const ManagerDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
+  const [showCreateDeptDialog, setShowCreateDeptDialog] = useState(false);
+  const [newDeptName, setNewDeptName] = useState('');
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">
@@ -211,39 +213,86 @@ const ManagerDashboard = () => {
     }
   };
 
+  const handleCreateDepartment = () => {
+    if (!newDeptName.trim()) {
+      toast.error('Department name is required');
+      return;
+    }
+    
+    toast.success(`Department "${newDeptName}" created successfully`);
+    setNewDeptName('');
+    setShowCreateDeptDialog(false);
+  };
+
   return (
     <div className="space-y-6">
 
       {/* Header + Alerts */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-        <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Send Alert
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Send Performance Alert</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Send performance report reminders to all Team Leads
-              </p>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowAlertsDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => {
-                  toast.success('Performance report alert sent to all Team Leads');
-                  setShowAlertsDialog(false);
-                }}>
-                  Send Alert
-                </Button>
+        <div className="flex gap-2">
+          <Dialog open={showCreateDeptDialog} onOpenChange={setShowCreateDeptDialog}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                Create Department
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Create New Department</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="dept-name">Department Name</Label>
+                  <Input
+                    id="dept-name"
+                    value={newDeptName}
+                    onChange={(e) => setNewDeptName(e.target.value)}
+                    placeholder="Enter department name"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowCreateDeptDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateDepartment}>
+                    Create
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                Send Alert
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Send Performance Alert</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Send performance report reminders to all Team Leads
+                </p>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowAlertsDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => {
+                    toast.success('Performance report alert sent to all Team Leads');
+                    setShowAlertsDialog(false);
+                  }}>
+                    Send Alert
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stat Cards */}

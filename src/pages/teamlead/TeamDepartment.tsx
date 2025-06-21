@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -85,21 +85,16 @@ const TeamLeadTeamDepartment = () => {
       memberOrderRef.current = teamMembers.map(member => member.id);
       return teamMembers;
     }
-    
     const sortedMembers = [...teamMembers].sort((a, b) => {
       const indexA = memberOrderRef.current.indexOf(a.id);
       const indexB = memberOrderRef.current.indexOf(b.id);
-      
       if (indexA !== -1 && indexB !== -1) {
         return indexA - indexB;
       }
-      
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
-      
       return a.id - b.id;
     });
-    
     return sortedMembers;
   }, [teamMembers]);
 
@@ -159,7 +154,7 @@ const TeamLeadTeamDepartment = () => {
   }
 
   const averageRating = Math.round(
-    displayMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / displayMembers.length
+    teamMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / teamMembers.length
   );
 
   return (
@@ -223,7 +218,7 @@ const TeamLeadTeamDepartment = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {displayMembers.map(member => (
+            {teamMembers.map(member => (
               <Card key={member.id} className={member.locked ? 'bg-gray-50' : ''}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-4">
