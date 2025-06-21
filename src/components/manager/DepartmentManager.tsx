@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,35 +28,32 @@ const DepartmentManager = () => {
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
-  // Unified create department fields
-  const [newDept, setNewDept] = useState({
+  const [newDepartment, setNewDepartment] = useState({
     name: '',
     description: '',
-    teamLead: '',
-    leadEmail: '',
-    leadPhone: '',
+    teamLeads: [] as string[]
   });
 
   const handleAddDepartment = () => {
-    if (!newDept.name.trim() || !newDept.teamLead.trim()) {
-      toast.error('Department name and Team Lead are required');
+    if (!newDepartment.name.trim()) {
+      toast.error('Department name is required');
       return;
     }
 
     const department: Department = {
       id: Math.max(...departments.map(d => d.id)) + 1,
-      name: newDept.name.trim(),
+      name: newDepartment.name.trim(),
       employeeCount: 0,
-      teamLeads: [newDept.teamLead.trim()],
-      description: newDept.description.trim(),
+      teamLeads: newDepartment.teamLeads,
+      description: newDepartment.description.trim()
     };
 
     const updatedDepartments = [...departments, department];
     setDepartments(updatedDepartments);
-
-    setNewDept({ name: '', description: '', teamLead: '', leadEmail: '', leadPhone: '' });
+    
+    setNewDepartment({ name: '', description: '', teamLeads: [] });
     setShowAddDialog(false);
-
+    
     console.log('Department added:', department);
     console.log('Updated departments:', updatedDepartments);
     toast.success('Department added successfully');
@@ -90,20 +88,21 @@ const DepartmentManager = () => {
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
-              <span>+ Add Department</span>
+              <Plus className="h-4 w-4" />
+              Add Department
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>New Department & Team Lead</DialogTitle>
+              <DialogTitle>Add New Department</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="dept-name">Department Name *</Label>
                 <Input
                   id="dept-name"
-                  value={newDept.name}
-                  onChange={e => setNewDept({ ...newDept, name: e.target.value })}
+                  value={newDepartment.name}
+                  onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})}
                   placeholder="Enter department name"
                 />
               </div>
@@ -111,36 +110,9 @@ const DepartmentManager = () => {
                 <Label htmlFor="dept-description">Description</Label>
                 <Input
                   id="dept-description"
-                  value={newDept.description}
-                  onChange={e => setNewDept({ ...newDept, description: e.target.value })}
-                  placeholder="Enter department description (optional)"
-                />
-              </div>
-              <div>
-                <Label htmlFor="team-lead">Team Lead Name *</Label>
-                <Input
-                  id="team-lead"
-                  value={newDept.teamLead}
-                  onChange={e => setNewDept({ ...newDept, teamLead: e.target.value })}
-                  placeholder="Assign a team lead"
-                />
-              </div>
-              <div>
-                <Label htmlFor="team-lead-email">Team Lead Email (optional)</Label>
-                <Input
-                  id="team-lead-email"
-                  value={newDept.leadEmail}
-                  onChange={e => setNewDept({ ...newDept, leadEmail: e.target.value })}
-                  placeholder="teamlead@company.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="team-lead-phone">Team Lead Phone (optional)</Label>
-                <Input
-                  id="team-lead-phone"
-                  value={newDept.leadPhone}
-                  onChange={e => setNewDept({ ...newDept, leadPhone: e.target.value })}
-                  placeholder="+1 (555) 000-0000"
+                  value={newDepartment.description}
+                  onChange={(e) => setNewDepartment({...newDepartment, description: e.target.value})}
+                  placeholder="Enter department description"
                 />
               </div>
               <div className="flex justify-end space-x-2">

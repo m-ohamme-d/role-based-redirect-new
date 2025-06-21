@@ -29,47 +29,14 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
   onRatingUpdate 
 }) => {
   const [lockedMembers, setLockedMembers] = useState<Set<string>>(new Set());
-  const [memberOrder, setMemberOrder] = useState<string[]>([]);
 
-  // Initialize member order on first render and maintain it
+  // FIXED: Always maintain original order with stable sort
   const displayMembers = useMemo(() => {
-    if (memberOrder.length === 0) {
-      const initialOrder = members.map(member => member.id);
-      setMemberOrder(initialOrder);
-      return members;
-    }
-    
-    // Sort members based on the fixed order, new members go to the end
-    const sortedMembers = [...members].sort((a, b) => {
-      const indexA = memberOrder.indexOf(a.id);
-      const indexB = memberOrder.indexOf(b.id);
-      
-      // If both members are in the order, use that order
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      }
-      
-      // If only one member is in the order, prioritize it
-      if (indexA !== -1) return -1;
-      if (indexB !== -1) return 1;
-      
-      // If neither is in the order, sort by id for consistency
+    return [...members].sort((a, b) => {
+      // Use string comparison for stable sorting
       return a.id.localeCompare(b.id);
     });
-    
-    // Update order to include any new members
-    const currentIds = members.map(m => m.id);
-    const newOrder = [
-      ...memberOrder.filter(id => currentIds.includes(id)),
-      ...currentIds.filter(id => !memberOrder.includes(id))
-    ];
-    
-    if (newOrder.length !== memberOrder.length) {
-      setMemberOrder(newOrder);
-    }
-    
-    return sortedMembers;
-  }, [members, memberOrder]);
+  }, [members]);
 
   const handleStarClick = (memberId: string, category: string, starIndex: number, event: React.MouseEvent) => {
     event.preventDefault();
