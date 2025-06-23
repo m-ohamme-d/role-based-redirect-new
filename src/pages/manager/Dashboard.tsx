@@ -9,13 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
-import { useManagerData } from "@/hooks/useManagerData";
-import type { ManagerStats } from "@/hooks/useManagerData";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Mock data for charts
 const employeeOverviewData = [
@@ -80,45 +77,19 @@ const clientsData = [
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
-  const { stats, loading, error } = useManagerData();
+  const [departments] = useState([
+    { id: 1, name: 'IT', employeeCount: 35, growth: '+5%', trend: 'up' as const },
+    { id: 2, name: 'HR', employeeCount: 12, growth: '-2%', trend: 'down' as const },
+    { id: 3, name: 'Sales', employeeCount: 28, growth: '+10%', trend: 'up' as const },
+    { id: 4, name: 'Marketing', employeeCount: 18, growth: '+3%', trend: 'up' as const },
+    { id: 5, name: 'Finance', employeeCount: 14, growth: '0%', trend: 'neutral' as const },
+  ]);
 
-  // Local UI state for dialogs
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [showAlertsDialog, setShowAlertsDialog] = useState(false);
   const [showCreateDeptDialog, setShowCreateDeptDialog] = useState(false);
   const [newDeptName, setNewDeptName] = useState('');
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-    </div>;
-  }
-  if (error) {
-    return <div className="text-center p-8">
-      <h2 className="text-2xl font-bold">Error loading dashboard</h2>
-      <p className="mt-2">{error}</p>
-      <Button className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
-    </div>;
-  }
-
-  // Destructure your real data here.
-  const {
-    totalEmployees,
-    newEmployees,
-    departmentCount,
-    averagePerformance,
-    employeeOverviewData,
-    employeeProgressData,
-    clientsData,
-    departments,
-    employeeGrowthText,
-    employeeTrend,
-    newEmployeeGrowthText,
-    newEmployeeTrend,
-    performanceChangeText,
-    performanceTrend
-  } = stats as ManagerStats;
 
   const handleClientClick = (client: any) => {
     setSelectedClient(client);
@@ -126,90 +97,18 @@ const ManagerDashboard = () => {
   };
   const handleViewAllClients = () => {
     navigate('/manager/clients');
-  };
-  const toggleProjectStatus = (projectId: number) => {
-    if (selectedClient) {
-      const updated = selectedClient.projects.map((p: any) =>
-        p.id === projectId
-          ? { ...p, status: p.status === 'working' ? 'stopped' : 'working' }
-          : p
-      );
-      setSelectedClient({ ...selectedClient, projects: updated });
-      toast.success('Project status updated');
-    }
+    console.log('Navigating to full client portfolio');
   };
 
-  // Add robust exportToStyledPDF for manager dashboard
-  const exportToStyledPDF = (data, filename = 'manager_dashboard_report') => {
-    if (!data || data.length === 0) {
-      toast.error('No data to export!');
-      return;
-    }
-    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'l' });
-    const margin = 40;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const logo = new window.Image();
-    logo.src = '/your-logo.svg';
-    logo.crossOrigin = 'anonymous';
-    let startY = margin;
-    logo.onload = () => {
-      const logoW = 80;
-      const logoH = (logo.height / logo.width) * logoW;
-      doc.addImage(logo, 'PNG', margin, margin, logoW, logoH);
-      startY += logoH + 20;
-      drawTableAndSave();
-    };
-    logo.onerror = () => {
-      drawTableAndSave();
-    };
-    setTimeout(() => {
-      if (!logo.complete) return;
-      drawTableAndSave();
-    }, 500);
-    function drawTableAndSave() {
-      doc.setFontSize(18);
-      doc.setTextColor('#333');
-      doc.text(
-        'Manager Dashboard Report',
-        pageWidth / 2,
-        startY,
-        { align: 'center' }
+  const toggleProjectStatus = (projectId: number) => {
+    if (selectedClient) {
+      const updatedProjects = selectedClient.projects.map((project: any) => 
+        project.id === projectId 
+          ? { ...project, status: project.status === 'working' ? 'stopped' : 'working' }
+          : project
       );
-      doc.setFontSize(10);
-      doc.setTextColor('#555');
-      doc.text(
-        `Generated: ${new Date().toLocaleString()}`,
-        pageWidth - margin,
-        startY,
-        { align: 'right' }
-      );
-      // Example: use employeeOverviewData or similar for the table
-      const head = [Object.keys((data && data[0]) || {})];
-      const body = data.map(r => head[0].map(k => String(r[k] ?? '')));
-      autoTable(doc, {
-        head,
-        body,
-        startY: startY + 20,
-        theme: 'striped',
-        headStyles: { fillColor: [41,128,185], textColor: 255, fontStyle: 'bold' },
-        bodyStyles: { fontSize: 10, textColor: 50 },
-        styles: { cellPadding: 6, halign: 'left', valign: 'middle' },
-        margin: { left: margin, right: margin },
-        didDrawPage: (dataArg) => {
-          const pageCount = doc.getNumberOfPages();
-          doc.setFontSize(9);
-          doc.setTextColor('#999');
-          doc.text(
-            `Page ${dataArg.pageNumber} of ${pageCount}`,
-            pageWidth / 2,
-            pageHeight - 10,
-            { align: 'center' }
-          );
-        },
-      });
-      doc.save(`${filename}.pdf`);
-      toast.success('PDF report generated and downloaded successfully');
+      setSelectedClient({ ...selectedClient, projects: updatedProjects });
+      toast.success('Project status updated');
     }
   };
 
@@ -299,29 +198,29 @@ const ManagerDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Employees"
-          value={totalEmployees.toString()}
+          value="107"
           icon={<Users size={24} />}
-          change={`${employeeGrowthText}`}
-          trend={employeeTrend}
+          change="+5.3% from last month"
+          trend="up"
         />
         <StatCard
           title="New Employees"
-          value={newEmployees.toString()}
+          value="12"
           icon={<User size={24} />}
-          change={`${newEmployeeGrowthText}`}
-          trend={newEmployeeTrend}
+          change="+2 from last week"
+          trend="up"
         />
         <StatCard
           title="Departments"
-          value={departmentCount.toString()}
+          value={departments.length.toString()}
           icon={<Users size={24} />}
         />
         <StatCard
-          title="Avg. Performance"
-          value={`${averagePerformance}%`}
+          title="Average Performance"
+          value="78%"
           icon={<BarChart3 size={24} />}
-          change={`${performanceChangeText}`}
-          trend={performanceTrend}
+          change="+2.5% from last quarter"
+          trend="up"
         />
       </div>
 
@@ -335,7 +234,7 @@ const ManagerDashboard = () => {
         <BarChart
           data={employeeProgressData}
           title="Department Performance"
-          subtitle="Avg. performance by department"
+          subtitle="Average performance by department"
         />
       </div>
 
@@ -344,7 +243,7 @@ const ManagerDashboard = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Client Portfolio</CardTitle>
-            <Button
+            <Button 
               onClick={handleViewAllClients}
               variant="outline"
               className="flex items-center gap-2"
@@ -356,21 +255,35 @@ const ManagerDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clientsData.map(client => (
-              <Card
-                key={client.id}
+            {clientsData.slice(0, 3).map(client => (
+              <Card 
+                key={client.id} 
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => handleClientClick(client)}
               >
-                <CardContent className="p-4 space-y-2">
-                  <h3 className="font-semibold text-lg">{client.name}</h3>
-                  <p className="text-sm text-gray-600">{client.company}</p>
-                  <Badge
-                    variant={client.status === 'working' ? 'default' : 'destructive'}
-                    className={client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
-                  >
-                    {client.status === 'working' ? 'Working' : 'Stopped'}
-                  </Badge>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{client.name}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge 
+                          variant={client.status === 'working' ? 'default' : 'destructive'}
+                          className={`${client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
+                        >
+                          {client.status === 'working' ? 'Working' : 'Stopped'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toggleProjectStatus(client.id)}
+                      >
+                        Mark as {client.status === 'working' ? 'Stopped' : 'Working'}
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -378,27 +291,25 @@ const ManagerDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Department Overview */}
+      {/* Department Map - Read Only */}
       <Card>
-        <CardHeader><CardTitle>Department Overview</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Department Overview</CardTitle>
+        </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {departments.map(dept => (
-              <Card
-                key={dept.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-              >
+              <Card key={dept.id} className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <Link to={`/manager/department/${dept.id}`}>
-                    <h3 className="font-semibold">{dept.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {dept.employeeCount} employees
-                    </p>
+                    <div>
+                      <h3 className="font-semibold">{dept.name}</h3>
+                      <p className="text-sm text-gray-500">{dept.employeeCount} employees</p>
+                    </div>
                   </Link>
-                  <div className={`flex items-center mt-2 text-sm font-medium ${
-                    dept.trend === 'up' ? 'text-green-500' :
-                    dept.trend === 'down' ? 'text-red-500' :
-                    'text-gray-500'
+                  <div className={`text-sm font-medium flex items-center mt-2 ${
+                    dept.trend === 'up' ? 'text-green-500' : 
+                    dept.trend === 'down' ? 'text-red-500' : 'text-gray-500'
                   }`}>
                     {dept.growth}
                     {dept.trend === 'up' && <ArrowUp size={16} className="ml-1" />}
@@ -411,32 +322,40 @@ const ManagerDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Client Projects Dialog */}
+      {/* Client Projects Dialog - SIMPLIFIED */}
       <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>{selectedClient?.name} - Projects</DialogTitle>
+            <DialogTitle>
+              {selectedClient?.name} - Projects
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 max-h-[400px] overflow-y-auto">
             {selectedClient?.projects.map((project: any) => (
               <Card key={project.id}>
-                <CardContent className="p-4 flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{project.name}</h3>
-                    <Badge
-                      variant={project.status === 'working' ? 'default' : 'destructive'}
-                      className={project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
-                    >
-                      {project.status === 'working' ? 'Working' : 'Stopped'}
-                    </Badge>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{project.name}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge 
+                          variant={project.status === 'working' ? 'default' : 'destructive'}
+                          className={`${project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
+                        >
+                          {project.status === 'working' ? 'Working' : 'Stopped'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toggleProjectStatus(project.id)}
+                      >
+                        Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => toggleProjectStatus(project.id)}
-                  >
-                    Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
-                  </Button>
                 </CardContent>
               </Card>
             ))}

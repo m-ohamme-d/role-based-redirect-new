@@ -118,15 +118,7 @@ const AdminDashboard = () => {
 						<CardTitle>Total Users</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="flex items-center gap-4">
-							<Users size={24} />
-							<div>
-								<div className="text-2xl font-bold text-gray-900">
-									{/* {totalUsers} */}
-								</div>
-								<p className="text-sm text-gray-600">+8 from last month</p>
-							</div>
-						</div>
+						<div className="text-3xl font-bold">{users.length}</div>
 					</CardContent>
 				</Card>
 				<Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">

@@ -1,4 +1,4 @@
-// src/pages/team-lead/Dashboard.tsx
+// src/pages/teamlead/Dashboard.tsx
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, BarChart3, Plus, Edit2, Trash2, User, Eye, Upload, Camera } from "lucide-react";
@@ -8,13 +8,7 @@ import StatCard from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -509,6 +503,7 @@ const TeamLeadDashboard = () => {
                 rows={4}
               />
             </div>
+
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setShowEditDialog(false)}>
                 Cancel
