@@ -6,16 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { User, Mail, Phone, Building, Calendar, Save } from 'lucide-react';
-import ProfilePictureUpload from '@/components/ProfilePictureUpload';
 
 const AdminProfile = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -41,9 +40,9 @@ const AdminProfile = () => {
       setProfileData({
         name: profile.name || '',
         email: profile.email || '',
-        phone: '+1 (555) 123-4567',
+        phone: '+1 (555) 123-4567', // Default phone
         department: 'Administration',
-        joinDate: '2024-01-01'
+        joinDate: '2024-01-01' // Default join date
       });
       
       console.log('Admin accessing profile:', profile.name);
@@ -51,12 +50,10 @@ const AdminProfile = () => {
   }, [profile, loading, navigate]);
 
   const handleSave = () => {
+    // Note: In a real app, you'd update the profile in Supabase here
+    // For now, we'll just show a success message
     setIsEditing(false);
     toast.success('Profile updated successfully');
-  };
-
-  const handleImageUpdate = (newImageUrl: string | null) => {
-    setProfileImageUrl(newImageUrl);
   };
 
   if (loading) {
@@ -89,13 +86,12 @@ const AdminProfile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-4">
-            <ProfilePictureUpload
-              userId={profile.id}
-              currentImageUrl={profileImageUrl}
-              userName={profile.name || 'Admin'}
-              onImageUpdate={handleImageUpdate}
-              disabled={!isEditing}
-            />
+            <Avatar className="h-32 w-32">
+              <AvatarImage src="" />
+              <AvatarFallback className="text-2xl">
+                {profile.name?.split(' ').map((n: string) => n[0]).join('') || 'A'}
+              </AvatarFallback>
+            </Avatar>
             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
               Administrator
             </Badge>

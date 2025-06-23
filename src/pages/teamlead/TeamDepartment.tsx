@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,32 @@ const TeamLeadTeamDepartment = () => {
   const [department, setDepartment] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [timePeriod, setTimePeriod] = useState('month');
+  const memberOrderRef = useRef<number[]>([]);
+
+  // Initialize and maintain stable member order
+  const displayMembers = useMemo(() => {
+    // Initialize order on first load or when team members change significantly
+    if (memberOrderRef.current.length === 0 || teamMembers.length !== memberOrderRef.current.length) {
+      memberOrderRef.current = teamMembers.map(member => member.id);
+      return teamMembers;
+    }
+    
+    const sortedMembers = [...teamMembers].sort((a, b) => {
+      const indexA = memberOrderRef.current.indexOf(a.id);
+      const indexB = memberOrderRef.current.indexOf(b.id);
+      
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      
+      return a.id - b.id;
+    });
+    
+    return sortedMembers;
+  }, [teamMembers]);
 
   useEffect(() => {
     if (deptId && departmentsData[Number(deptId)]) {
@@ -133,7 +159,7 @@ const TeamLeadTeamDepartment = () => {
   }
 
   const averageRating = Math.round(
-    teamMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / teamMembers.length
+    displayMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / displayMembers.length
   );
 
   return (
@@ -197,7 +223,7 @@ const TeamLeadTeamDepartment = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {teamMembers.map(member => (
+            {displayMembers.map(member => (
               <Card key={member.id} className={member.locked ? 'bg-gray-50' : ''}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-4">

@@ -1,4 +1,3 @@
-// src/pages/manager/Dashboard.tsx
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell } from "lucide-react";
@@ -15,6 +14,69 @@ import autoTable from 'jspdf-autotable';
 
 import { useManagerData } from "@/hooks/useManagerData";
 import type { ManagerStats } from "@/hooks/useManagerData";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+// Mock data for charts
+const employeeOverviewData = [
+  { name: 'Jan', value: 65 },
+  { name: 'Feb', value: 59 },
+  { name: 'Mar', value: 80 },
+  { name: 'Apr', value: 81 },
+  { name: 'May', value: 56 },
+  { name: 'Jun', value: 55 },
+  { name: 'Jul', value: 40 },
+];
+
+const employeeProgressData = [
+  { name: 'IT', value: 85 },
+  { name: 'HR', value: 65 },
+  { name: 'Sales', value: 76 },
+  { name: 'Marketing', value: 90 },
+  { name: 'Finance', value: 70 },
+];
+
+// Mock clients data with enhanced structure
+const clientsData = [
+  { 
+    id: 1, 
+    name: 'TechCorp Solutions', 
+    company: 'TechCorp Inc.', 
+    status: 'working',
+    projects: [
+      { id: 1, name: 'Mobile App Development', status: 'working' },
+      { id: 2, name: 'Web Platform Redesign', status: 'working' }
+    ]
+  },
+  { 
+    id: 2, 
+    name: 'HealthCare Inc', 
+    company: 'HealthCare Systems', 
+    status: 'working',
+    projects: [
+      { id: 3, name: 'Patient Management System', status: 'working' },
+      { id: 4, name: 'Telemedicine Platform', status: 'stopped' }
+    ]
+  },
+  { 
+    id: 3, 
+    name: 'Finance Plus', 
+    company: 'Financial Services Ltd', 
+    status: 'stopped',
+    projects: [
+      { id: 5, name: 'Trading Platform', status: 'stopped' }
+    ]
+  },
+  { 
+    id: 4, 
+    name: 'Retail Masters', 
+    company: 'Retail Solutions', 
+    status: 'working',
+    projects: [
+      { id: 6, name: 'E-commerce Migration', status: 'working' }
+    ]
+  },
+];
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();

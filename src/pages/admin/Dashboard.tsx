@@ -66,7 +66,7 @@ const mockSystemHealth = [
 ];
 
 const AdminDashboard = () => {
-	const { stats, loading, error } = useAdminData();
+	const { departments, users, loading, error } = useAdminData();
 
 	if (loading) {
 		return (
@@ -98,8 +98,6 @@ const AdminDashboard = () => {
 		);
 	}
 
-	const { totalUsers = 0, lockedRecords = 0, auditLogs = 0 } = stats || {};
-
 	return (
 		<div className="space-y-6">
 			{/* Header */}
@@ -124,7 +122,7 @@ const AdminDashboard = () => {
 							<Users size={24} />
 							<div>
 								<div className="text-2xl font-bold text-gray-900">
-									{totalUsers}
+									{/* {totalUsers} */}
 								</div>
 								<p className="text-sm text-gray-600">+8 from last month</p>
 							</div>
@@ -154,7 +152,7 @@ const AdminDashboard = () => {
 							<FileText size={24} />
 							<div>
 								<div className="text-2xl font-bold text-gray-900">
-									{lockedRecords}
+									{/* {lockedRecords} */}
 								</div>
 								<p className="text-sm text-gray-600">+5 from last week</p>
 							</div>
@@ -170,7 +168,7 @@ const AdminDashboard = () => {
 							<Activity size={24} />
 							<div>
 								<div className="text-2xl font-bold text-gray-900">
-									{auditLogs}
+									{/* {auditLogs} */}
 								</div>
 								<p className="text-sm text-gray-600">+36 today</p>
 							</div>
@@ -340,6 +338,6 @@ const exportToStyledPDF = (data, filename = 'admin_dashboard_report') => {
     doc.save(`${filename}.pdf`);
     toast.success('PDF report generated and downloaded successfully');
   }
-};
+}
 
 export default AdminDashboard;

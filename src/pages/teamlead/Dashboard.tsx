@@ -106,6 +106,7 @@ const TeamLeadDashboard = () => {
   });
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
 
+  // Filter to show only IT department for IT team lead
   const currentUserDepartment = 'IT';
   const filteredMembers = teamMembers
     .filter(member => member.department === currentUserDepartment)
@@ -567,7 +568,7 @@ const TeamLeadDashboard = () => {
       </Dialog>
 
       {/* Rating Criteria Dialog */}
-      <Dialog open={showCriteria} onOpenChange={() => setShowCriteria(false)}>
+      <Dialog open={showCriteria} onOpenChange={setShowCriteria}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rating Criteria</DialogTitle>
