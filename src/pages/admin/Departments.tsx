@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -248,7 +247,7 @@ const AdminDepartments = () => {
             <div className="flex items-center space-x-2">
               <Building className="h-8 w-8 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">{departments.length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(departments) ? departments.length : 0}</p>
                 <p className="text-sm text-gray-600">Total Departments</p>
               </div>
             </div>
@@ -273,7 +272,7 @@ const AdminDepartments = () => {
               <Briefcase className="h-8 w-8 text-purple-600" />
               <div>
                 <p className="text-2xl font-bold">
-                  {Object.values(departmentDetails).reduce((sum, dept) => sum + (dept?.clients?.length || 0), 0)}
+                  {Object.values(departmentDetails).reduce((sum, dept) => sum + (dept?.clients ? dept.clients.length : 0), 0)}
                 </p>
                 <p className="text-sm text-gray-600">Linked Clients</p>
               </div>
@@ -347,7 +346,7 @@ const AdminDepartments = () => {
                   <p className="text-sm text-gray-600">Employees: <span className="font-medium">{details.employeeCount}</span></p>
                 </div>
                 
-                {details.clients.length > 0 && (
+                {Array.isArray(details.clients) && details.clients.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-2">Linked Clients:</p>
                     <div className="flex flex-wrap gap-1">

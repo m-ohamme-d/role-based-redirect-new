@@ -326,7 +326,7 @@ const AdminUsers = () => {
             <div className="flex items-center space-x-2">
               <Users className="h-8 w-8 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">{users.length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(users) ? users.length : 0}</p>
                 <p className="text-sm text-gray-600">Total Users</p>
               </div>
             </div>
@@ -337,7 +337,7 @@ const AdminUsers = () => {
             <div className="flex items-center space-x-2">
               <Shield className="h-8 w-8 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{users.filter(u => u.status === 'active').length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(users) ? users.filter(u => u.status === 'active').length : 0}</p>
                 <p className="text-sm text-gray-600">Active Users</p>
               </div>
             </div>
@@ -346,7 +346,7 @@ const AdminUsers = () => {
         <Card>
           <CardContent className="p-4">
             <div>
-              <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
+              <p className="text-2xl font-bold">{Array.isArray(users) ? users.filter(u => u.role === 'admin').length : 0}</p>
               <p className="text-sm text-gray-600">Admins</p>
             </div>
           </CardContent>
@@ -354,7 +354,7 @@ const AdminUsers = () => {
         <Card>
           <CardContent className="p-4">
             <div>
-              <p className="text-2xl font-bold">{users.filter(u => u.role === 'manager').length}</p>
+              <p className="text-2xl font-bold">{Array.isArray(users) ? users.filter(u => u.role === 'manager').length : 0}</p>
               <p className="text-sm text-gray-600">Managers</p>
             </div>
           </CardContent>

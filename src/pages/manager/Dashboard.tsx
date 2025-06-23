@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Mock data for charts
 const employeeOverviewData = [
@@ -93,7 +95,6 @@ const ManagerDashboard = () => {
     setSelectedClient(client);
     setShowClientDialog(true);
   };
-
   const handleViewAllClients = () => {
     navigate('/manager/clients');
     console.log('Navigating to full client portfolio');
@@ -124,6 +125,8 @@ const ManagerDashboard = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* Header + Alerts */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
         <div className="flex gap-2">
@@ -191,27 +194,28 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
+      {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
+        <StatCard
           title="Total Employees"
           value="107"
           icon={<Users size={24} />}
           change="+5.3% from last month"
           trend="up"
         />
-        <StatCard 
+        <StatCard
           title="New Employees"
           value="12"
           icon={<User size={24} />}
           change="+2 from last week"
           trend="up"
         />
-        <StatCard 
+        <StatCard
           title="Departments"
           value={departments.length.toString()}
           icon={<Users size={24} />}
         />
-        <StatCard 
+        <StatCard
           title="Average Performance"
           value="78%"
           icon={<BarChart3 size={24} />}
@@ -220,20 +224,21 @@ const ManagerDashboard = () => {
         />
       </div>
 
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LineChart 
-          data={employeeOverviewData} 
-          title="Employee Overview" 
+        <LineChart
+          data={employeeOverviewData}
+          title="Employee Overview"
           subtitle="Employee count over time"
         />
-        <BarChart 
-          data={employeeProgressData} 
-          title="Department Performance" 
+        <BarChart
+          data={employeeProgressData}
+          title="Department Performance"
           subtitle="Average performance by department"
         />
       </div>
 
-      {/* Clients Section - SIMPLIFIED WITHOUT DEPARTMENT ASSIGNMENT */}
+      {/* Client Portfolio */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -257,15 +262,27 @@ const ManagerDashboard = () => {
                 onClick={() => handleClientClick(client)}
               >
                 <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">{client.name}</h3>
-                    <p className="text-sm text-gray-600">{client.company}</p>
-                    <Badge 
-                      variant={client.status === 'working' ? 'default' : 'destructive'}
-                      className={client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
-                    >
-                      {client.status === 'working' ? 'Working' : 'Stopped'}
-                    </Badge>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{client.name}</h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge 
+                          variant={client.status === 'working' ? 'default' : 'destructive'}
+                          className={`${client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
+                        >
+                          {client.status === 'working' ? 'Working' : 'Stopped'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toggleProjectStatus(client.id)}
+                      >
+                        Mark as {client.status === 'working' ? 'Stopped' : 'Working'}
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
