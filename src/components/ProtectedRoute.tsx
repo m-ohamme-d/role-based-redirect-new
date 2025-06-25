@@ -9,22 +9,36 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { profile, loading } = useAuth();
+  const { profile, loading, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading) {
       console.log('[ProtectedRoute] Auth loaded, profile:', profile?.role);
       
-      if (!profile) {
-        console.log('[ProtectedRoute] No profile, redirecting to login');
+      // If no user at all, redirect to login
+      if (!user) {
+        console.log('[ProtectedRoute] No user, redirecting to login');
         navigate('/login', { replace: true });
         return;
       }
 
+      // If user exists but no profile, there might be a profile loading issue
+      if (!profile) {
+        console.log('[ProtectedRoute] User exists but no profile');
+        // Give it a moment for profile to load, then redirect if still no profile
+        const timer = setTimeout(() => {
+          if (!profile) {
+            console.log('[ProtectedRoute] Profile still not loaded, redirecting to login');
+            navigate('/login', { replace: true });
+          }
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+
+      // Check role permissions
       if (allowedRoles && !allowedRoles.includes(profile.role)) {
         console.log('[ProtectedRoute] Role not allowed, redirecting based on role:', profile.role);
-        // Redirect to appropriate dashboard based on role
         switch (profile.role) {
           case 'admin':
             navigate('/admin/dashboard', { replace: true });
@@ -40,7 +54,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         }
       }
     }
-  }, [profile, loading, allowedRoles, navigate]);
+  }, [profile, loading, user, allowedRoles, navigate]);
 
   // Show loading with a minimum time to prevent flashing
   if (loading) {
@@ -54,7 +68,8 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     );
   }
 
-  if (!profile || (allowedRoles && !allowedRoles.includes(profile.role))) {
+  // If no user or profile mismatch, show redirecting state
+  if (!user || !profile || (allowedRoles && !allowedRoles.includes(profile.role))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-center">

@@ -1,25 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { LogOut, Users, BarChart3, Settings, Calendar, Eye, Plus } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { LogOut, Users, BarChart3, Settings, Calendar, Eye } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
-import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { departments } = useDepartments();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newDepartment, setNewDepartment] = useState({
-    name: '',
-    description: '',
-    teamLead: ''
-  });
 
   const handleLogout = async () => {
     await signOut();
@@ -28,26 +17,6 @@ const ManagerDashboard = () => {
   const handleViewAllClients = () => {
     console.log('Navigating to client portfolio with departments:', departments);
     navigate('/manager/clients');
-  };
-
-  const handleCreateDepartment = () => {
-    if (!newDepartment.name.trim()) {
-      toast.error('Department name is required');
-      return;
-    }
-
-    console.log('Creating new department:', newDepartment);
-    
-    // Simulate creating department
-    toast.success(`Department "${newDepartment.name}" created successfully`);
-    
-    // Reset form
-    setNewDepartment({
-      name: '',
-      description: '',
-      teamLead: ''
-    });
-    setShowCreateDialog(false);
   };
 
   const handleSettingsNavigation = () => {
@@ -70,56 +39,6 @@ const ManagerDashboard = () => {
             <p className="text-sm text-gray-500">Managing {departments.length} departments</p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4" />
-                  Create Department
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Department</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="dept-name">Department Name *</Label>
-                    <Input
-                      id="dept-name"
-                      value={newDepartment.name}
-                      onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})}
-                      placeholder="e.g., Marketing, Sales, IT"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dept-description">Description</Label>
-                    <Input
-                      id="dept-description"
-                      value={newDepartment.description}
-                      onChange={(e) => setNewDepartment({...newDepartment, description: e.target.value})}
-                      placeholder="Brief description of department responsibilities"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="team-lead">Assign Team Lead</Label>
-                    <Input
-                      id="team-lead"
-                      value={newDepartment.teamLead}
-                      onChange={(e) => setNewDepartment({...newDepartment, teamLead: e.target.value})}
-                      placeholder="Team lead name (optional)"
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateDepartment} className="bg-blue-600 hover:bg-blue-700">
-                      Create Department
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
             <Button
               onClick={handleLogout}
               variant="outline"

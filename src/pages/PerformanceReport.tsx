@@ -1,13 +1,13 @@
+
 import React, { useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileDown, Download } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 // Mock data for demonstration
 const mockPerformanceData = [
@@ -79,112 +79,33 @@ export const PerformanceReport: React.FC = () => {
     }
   })
 
-  // Resilient exportToStyledPDF with logo fallback and robust table export
-  const exportToStyledPDF = () => {
-    if (!data || data.length === 0) {
-      toast.error('No data to export!')
+  const exportToPDF = async () => {
+    if (!reportRef.current) {
+      alert('Report area not rendered yet.')
       return
     }
 
-    // 1) Initialize the PDF
-    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'l' })
-    const margin = 40
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const pageHeight = doc.internal.pageSize.getHeight()
+    // Ensure it's visible / painted
+    reportRef.current.scrollIntoView()
+    await new Promise(r => setTimeout(r, 100)) // let layout settle
 
-    // 2) Draw logo if and when it loads
-    const logo = new window.Image()
-    logo.src = '/your-logo.svg' // ← update if needed
-    logo.crossOrigin = 'anonymous'
-
-    // Coordinates to start drawing the rest
-    let startY = margin
-
-    logo.onload = () => {
-      const logoW = 80
-      const logoH = (logo.height / logo.width) * logoW
-      doc.addImage(logo, 'PNG', margin, margin, logoW, logoH)
-      startY += logoH + 20
-      drawTableAndSave()
-    }
-
-    // 3) If the logo fails (or never arrives), fallback immediately
-    logo.onerror = () => {
-      console.warn('Logo failed to load, skipping it.')
-      drawTableAndSave()
-    }
-
-    // 4) In case the image is cached and onload never fires, also kick off after a short timeout
-    setTimeout(() => {
-      if (!logo.complete) return
-      // If image loaded but onload didn’t fire, ensure we draw
-      drawTableAndSave()
-    }, 500)
-
-    // 5) Core table + footer drawer
-    function drawTableAndSave() {
-      // Header text
-      doc.setFontSize(18)
-      doc.setTextColor('#333')
-      doc.text(
-        'Employee Performance Report',
-        pageWidth / 2,
-        startY,
-        { align: 'center' }
-      )
-
-      // Timestamp
-      doc.setFontSize(10)
-      doc.setTextColor('#555')
-      doc.text(
-        `Generated: ${new Date().toLocaleString()}`,
-        pageWidth - margin,
-        startY,
-        { align: 'right' }
-      )
-
-      // Build head/body
-      const head = [['Employee','Designation','Department','Team Lead','Rating','Period']]
-      const body = data.map(r => [
-        r.employee_name,
-        r.designation,
-        r.department,
-        r.team_lead,
-        r.rating.toFixed(1),
-        r.period
-      ])
-
-      // Draw the table
-      autoTable(doc, {
-        head,
-        body,
-        startY: startY + 20,
-        theme: 'striped',
-        headStyles: { fillColor: [41,128,185], textColor: 255, fontStyle: 'bold' },
-        bodyStyles: { fontSize: 10, textColor: 50 },
-        styles: { cellPadding: 6, halign: 'left', valign: 'middle' },
-        columnStyles: {
-          4: { cellWidth: 50, halign: 'center' },
-          5: { cellWidth: 60, halign: 'center' }
-        },
-        margin: { left: margin, right: margin },
-        didDrawPage: (dataArg) => {
-          // Footer
-          const pageCount = doc.getNumberOfPages()
-          doc.setFontSize(9)
-          doc.setTextColor('#999')
-          doc.text(
-            `Page ${dataArg.pageNumber} of ${pageCount}`,
-            pageWidth / 2,
-            pageHeight - 10,
-            { align: 'center' }
-          )
-        },
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
       })
 
-      // Finally, save the PDF
-      doc.save('performance-report.pdf')
-      toast.success('PDF report generated and downloaded successfully')
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('l', 'pt', 'a4')
+      const pdfW = pdf.internal.pageSize.getWidth()
+      const pdfH = (canvas.height * pdfW) / canvas.width
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH)
+      pdf.save('performance-report.pdf')
+    } catch (err) {
+      console.error('PDF export failed:', err)
+      alert('Could not generate PDF. See console for details.')
     }
   }
 
@@ -223,7 +144,7 @@ export const PerformanceReport: React.FC = () => {
             <p className="text-gray-600 mt-2">Current performance ratings and analytics</p>
           </div>
           <Button
-            onClick={exportToStyledPDF}
+            onClick={exportToPDF}
             className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
             disabled={!data || data.length === 0}
           >
