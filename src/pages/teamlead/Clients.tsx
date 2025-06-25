@@ -9,119 +9,175 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Edit2, Building, Tag, Shield } from "lucide-react";
+import { Plus, Edit2, Upload, Building, Tag, User, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { useClientData } from '@/hooks/useClientData';
 
-interface NewClient {
+interface Client {
+  id: number;
   name: string;
-  company: string;
-  status: 'active' | 'inactive';
-  contact_email?: string;
-  contact_phone?: string;
+  status: 'Active' | 'Inactive';
+  departments: string[];
+  tags: string[];
+  image?: File | null;
+  projects: string[];
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
 }
 
 const TeamLeadClients = () => {
-  const { 
-    clients, 
-    loading, 
-    addClient, 
-    updateClient, 
-    addClientTag, 
-    removeClientTag, 
-    getClientTags, 
-    getClientProjects 
-  } = useClientData();
+  // Only show clients assigned to IT department (Team Lead's department)
+  const [clients, setClients] = useState<Client[]>([
+    {
+      id: 1,
+      name: 'TechCorp Solutions',
+      status: 'Active',
+      departments: ['IT'],
+      tags: ['High Priority', 'Long-term'],
+      projects: ['Web Development', 'Mobile App'],
+      contactPerson: 'John Smith',
+      email: 'john@techcorp.com',
+      phone: '+1-555-0123',
+      address: '123 Tech Street, Silicon Valley',
+      image: null
+    },
+    {
+      id: 2,
+      name: 'HealthCare Systems',
+      status: 'Active',
+      departments: ['IT'],
+      tags: ['Healthcare', 'Critical'],
+      projects: ['Database Migration', 'Security Audit'],
+      contactPerson: 'Dr. Sarah Wilson',
+      email: 'sarah@healthcare.com',
+      phone: '+1-555-0456',
+      address: '456 Medical Center, Health District',
+      image: null
+    },
+    {
+      id: 3,
+      name: 'DataTech Solutions',
+      status: 'Inactive',
+      departments: ['IT'],
+      tags: ['Data Analytics'],
+      projects: ['Analytics Platform'],
+      contactPerson: 'Mike Johnson',
+      email: 'mike@datatech.com',
+      phone: '+1-555-0789',
+      address: '789 Data Street, Tech Park',
+      image: null
+    }
+  ]);
 
   const [showAddClient, setShowAddClient] = useState(false);
-  const [editingClient, setEditingClient] = useState<any>(null);
-  const [newClient, setNewClient] = useState<NewClient>({
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [newClient, setNewClient] = useState<Partial<Client>>({
     name: '',
-    company: '',
-    status: 'active',
-    contact_email: '',
-    contact_phone: ''
+    status: 'Active',
+    departments: ['IT'], // Default to IT department for Team Lead
+    tags: [],
+    projects: [],
+    contactPerson: '',
+    email: '',
+    phone: '',
+    address: ''
   });
   const [newTag, setNewTag] = useState('');
   const [showManagerApprovalDialog, setShowManagerApprovalDialog] = useState(false);
-  const [clientToDeactivate, setClientToDeactivate] = useState<any>(null);
+  const [clientToDeactivate, setClientToDeactivate] = useState<Client | null>(null);
   const [approvalReason, setApprovalReason] = useState('');
 
-  const handleAddClient = async () => {
-    if (newClient.name?.trim() && newClient.company?.trim()) {
-      const success = await addClient({
+  const handleAddClient = () => {
+    if (newClient.name?.trim()) {
+      const client: Client = {
+        id: Math.max(...clients.map(c => c.id)) + 1,
         name: newClient.name.trim(),
-        company: newClient.company.trim(),
-        status: newClient.status,
-        contact_email: newClient.contact_email?.trim() || null,
-        contact_phone: newClient.contact_phone?.trim() || null
-      });
+        status: newClient.status as 'Active' | 'Inactive',
+        departments: ['IT'], // Team Lead can only assign to IT
+        tags: newClient.tags || [],
+        projects: newClient.projects || [],
+        contactPerson: newClient.contactPerson || '',
+        email: newClient.email || '',
+        phone: newClient.phone || '',
+        address: newClient.address || '',
+        image: null
+      };
       
-      if (success) {
-        setNewClient({
-          name: '',
-          company: '',
-          status: 'active',
-          contact_email: '',
-          contact_phone: ''
-        });
-        setShowAddClient(false);
-        toast.success('Client added successfully');
-      } else {
-        toast.error('Failed to add client');
-      }
-    } else {
-      toast.error('Please fill in required fields');
+      const updatedClients = [...clients, client];
+      setClients(updatedClients);
+      
+      setNewClient({
+        name: '',
+        status: 'Active',
+        departments: ['IT'],
+        tags: [],
+        projects: [],
+        contactPerson: '',
+        email: '',
+        phone: '',
+        address: ''
+      });
+      setShowAddClient(false);
+      
+      console.log('Team Lead added client:', client);
+      console.log('Updated clients:', updatedClients);
+      toast.success('Client added successfully');
     }
   };
 
-  const handleUpdateClient = async () => {
+  const handleUpdateClient = () => {
     if (editingClient) {
-      const success = await updateClient(editingClient.id, {
-        name: editingClient.name,
-        company: editingClient.company,
-        status: editingClient.status,
-        contact_email: editingClient.contact_email,
-        contact_phone: editingClient.contact_phone
-      });
+      const updatedClients = clients.map(c => c.id === editingClient.id ? editingClient : c);
+      setClients(updatedClients);
+      setEditingClient(null);
       
-      if (success) {
-        setEditingClient(null);
-        toast.success('Client updated successfully');
-      } else {
-        toast.error('Failed to update client');
-      }
+      console.log('Team Lead updated client:', editingClient);
+      console.log('Updated clients:', updatedClients);
+      toast.success('Client updated successfully');
     }
   };
 
-  const addTag = async (clientId: string) => {
+  const handleImageUpload = (clientId: number, file: File) => {
+    const updatedClients = clients.map(client => 
+      client.id === clientId ? { ...client, image: file } : client
+    );
+    setClients(updatedClients);
+    console.log('Client image uploaded for client:', clientId);
+    toast.success('Client image uploaded successfully');
+  };
+
+  const addTag = (clientId: number) => {
     if (newTag.trim()) {
-      const success = await addClientTag(clientId, newTag.trim());
-      if (success) {
-        setNewTag('');
-        toast.success('Tag added successfully');
-      } else {
-        toast.error('Failed to add tag');
-      }
+      const updatedClients = clients.map(client => 
+        client.id === clientId 
+          ? { ...client, tags: [...client.tags, newTag.trim()] }
+          : client
+      );
+      setClients(updatedClients);
+      setNewTag('');
+      toast.success('Tag added successfully');
     }
   };
 
-  const removeTag = async (clientId: string, tagToRemove: string) => {
-    const success = await removeClientTag(clientId, tagToRemove);
-    if (success) {
-      toast.success('Tag removed successfully');
-    } else {
-      toast.error('Failed to remove tag');
-    }
+  const removeTag = (clientId: number, tagToRemove: string) => {
+    const updatedClients = clients.map(client => 
+      client.id === clientId 
+        ? { ...client, tags: client.tags.filter(tag => tag !== tagToRemove) }
+        : client
+    );
+    setClients(updatedClients);
+    toast.success('Tag removed successfully');
   };
 
-  const requestClientDeactivation = (client: any) => {
+  const requestClientDeactivation = (client: Client) => {
     setClientToDeactivate(client);
     setShowManagerApprovalDialog(true);
   };
 
   const submitDeactivationRequest = () => {
     if (clientToDeactivate && approvalReason.trim()) {
+      // In a real app, this would send a request to the manager
       console.log('Deactivation request submitted:', {
         clientId: clientToDeactivate.id,
         clientName: clientToDeactivate.name,
@@ -140,39 +196,22 @@ const TeamLeadClients = () => {
     }
   };
 
-  const toggleClientStatus = async (client: any) => {
-    if (client.status === 'active') {
+  const toggleClientStatus = (client: Client) => {
+    if (client.status === 'Active') {
+      // Request manager approval for deactivation
       requestClientDeactivation(client);
     } else {
-      const success = await updateClient(client.id, { status: 'active' });
-      if (success) {
-        toast.success('Client reactivated successfully');
-      } else {
-        toast.error('Failed to reactivate client');
-      }
+      // Can reactivate without approval
+      const updatedClients = clients.map(c => 
+        c.id === client.id ? { ...c, status: 'Active' as const } : c
+      );
+      setClients(updatedClients);
+      toast.success('Client reactivated successfully');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Client Portfolio</h1>
-            <p className="text-gray-600">Loading clients...</p>
-          </div>
-        </div>
-        <div className="animate-pulse space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-gray-200 rounded"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const activeClients = clients.filter(c => c.status === 'active');
-  const inactiveClients = clients.filter(c => c.status === 'inactive');
+  const activeClients = clients.filter(c => c.status === 'Active');
+  const inactiveClients = clients.filter(c => c.status === 'Inactive');
 
   return (
     <div className="space-y-6">
@@ -195,40 +234,47 @@ const TeamLeadClients = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  value={newClient.name}
+                  value={newClient.name || ''}
                   onChange={(e) => setNewClient({...newClient, name: e.target.value})}
                   placeholder="Company name"
                 />
+                <Select
+                  value={newClient.status}
+                  onValueChange={(value) => setNewClient({...newClient, status: value as 'Active' | 'Inactive'})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <Input
-                  value={newClient.company}
-                  onChange={(e) => setNewClient({...newClient, company: e.target.value})}
-                  placeholder="Company full name"
+                  value={newClient.contactPerson || ''}
+                  onChange={(e) => setNewClient({...newClient, contactPerson: e.target.value})}
+                  placeholder="Contact person"
+                />
+                <Input
+                  value={newClient.email || ''}
+                  onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                  placeholder="Email"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  value={newClient.contact_email || ''}
-                  onChange={(e) => setNewClient({...newClient, contact_email: e.target.value})}
-                  placeholder="Contact email"
-                />
-                <Input
-                  value={newClient.contact_phone || ''}
-                  onChange={(e) => setNewClient({...newClient, contact_phone: e.target.value})}
-                  placeholder="Contact phone"
+                  value={newClient.phone || ''}
+                  onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                  placeholder="Phone"
                 />
               </div>
-              <Select
-                value={newClient.status}
-                onValueChange={(value) => setNewClient({...newClient, status: value as 'active' | 'inactive'})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+              <Textarea
+                value={newClient.address || ''}
+                onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                placeholder="Address"
+              />
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setShowAddClient(false)}>
                   Cancel
@@ -250,97 +296,85 @@ const TeamLeadClients = () => {
 
         <TabsContent value="active">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activeClients.map(client => {
-              const clientTags = getClientTags(client.id);
-              const clientProjects = getClientProjects(client.id);
-              
-              return (
-                <Card key={client.id} className="relative">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                          <Building className="h-6 w-6 text-gray-500" />
-                        </div>
-                        <span>{client.name}</span>
-                      </CardTitle>
-                      <Badge variant="default">Active</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Company: {client.company}</p>
-                      {client.contact_email && (
-                        <p className="text-sm text-gray-600">Email: {client.contact_email}</p>
-                      )}
-                      {client.contact_phone && (
-                        <p className="text-sm text-gray-600">Phone: {client.contact_phone}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium mb-2">Projects ({clientProjects.length}):</p>
-                      <div className="flex flex-wrap gap-1">
-                        {clientProjects.slice(0, 3).map((project) => (
-                          <Badge key={project.id} variant="outline">{project.name}</Badge>
-                        ))}
-                        {clientProjects.length > 3 && (
-                          <Badge variant="outline">+{clientProjects.length - 3} more</Badge>
-                        )}
+            {activeClients.map(client => (
+              <Card key={client.id} className="relative">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                        <Building className="h-6 w-6 text-gray-500" />
                       </div>
+                      <span>{client.name}</span>
+                    </CardTitle>
+                    <Badge variant="default">Active</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
+                    <p className="text-sm text-gray-600">Email: {client.email}</p>
+                    <p className="text-sm text-gray-600">Phone: {client.phone}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium mb-2">Projects:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {client.projects.map((project, index) => (
+                        <Badge key={index} variant="outline">{project}</Badge>
+                      ))}
                     </div>
+                  </div>
 
-                    <div>
-                      <p className="text-sm font-medium mb-2">Tags:</p>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {clientTags.map((tag, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="secondary"
-                            className="cursor-pointer"
-                            onClick={() => removeTag(client.id, tag)}
-                          >
-                            {tag} ×
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          value={newTag}
-                          onChange={(e) => setNewTag(e.target.value)}
-                          placeholder="Add tag"
-                          className="text-xs"
-                          onKeyPress={(e) => e.key === 'Enter' && addTag(client.id)}
-                        />
-                        <Button size="sm" onClick={() => addTag(client.id)}>
-                          <Tag className="h-3 w-3" />
-                        </Button>
-                      </div>
+                  <div>
+                    <p className="text-sm font-medium mb-2">Tags:</p>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {client.tags.map((tag, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() => removeTag(client.id, tag)}
+                        >
+                          {tag} ×
+                        </Badge>
+                      ))}
                     </div>
-
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingClient(client)}
-                      >
-                        <Edit2 className="h-3 w-3 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toggleClientStatus(client)}
-                        className="text-orange-600 hover:text-orange-700"
-                      >
-                        <Shield className="h-3 w-3 mr-1" />
-                        Mark Inactive
+                      <Input
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        placeholder="Add tag"
+                        className="text-xs"
+                        onKeyPress={(e) => e.key === 'Enter' && addTag(client.id)}
+                      />
+                      <Button size="sm" onClick={() => addTag(client.id)}>
+                        <Tag className="h-3 w-3" />
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingClient(client)}
+                    >
+                      <Edit2 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleClientStatus(client)}
+                      className="text-orange-600 hover:text-orange-700"
+                    >
+                      <Shield className="h-3 w-3 mr-1" />
+                      Mark Inactive
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
 
@@ -361,10 +395,8 @@ const TeamLeadClients = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-gray-600">Company: {client.company}</p>
-                    {client.contact_email && (
-                      <p className="text-sm text-gray-600">Email: {client.contact_email}</p>
-                    )}
+                    <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
+                    <p className="text-sm text-gray-600">Email: {client.email}</p>
                   </div>
                   
                   <div className="flex gap-2">
@@ -443,22 +475,29 @@ const TeamLeadClients = () => {
                   onChange={(e) => setEditingClient({...editingClient, name: e.target.value})}
                   placeholder="Company name"
                 />
-                <Input
-                  value={editingClient.company}
-                  onChange={(e) => setEditingClient({...editingClient, company: e.target.value})}
-                  placeholder="Company full name"
-                />
+                <Select
+                  value={editingClient.status}
+                  onValueChange={(value) => setEditingClient({...editingClient, status: value as 'Active' | 'Inactive'})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  value={editingClient.contact_email || ''}
-                  onChange={(e) => setEditingClient({...editingClient, contact_email: e.target.value})}
-                  placeholder="Contact email"
+                  value={editingClient.contactPerson}
+                  onChange={(e) => setEditingClient({...editingClient, contactPerson: e.target.value})}
+                  placeholder="Contact person"
                 />
                 <Input
-                  value={editingClient.contact_phone || ''}
-                  onChange={(e) => setEditingClient({...editingClient, contact_phone: e.target.value})}
-                  placeholder="Contact phone"
+                  value={editingClient.email}
+                  onChange={(e) => setEditingClient({...editingClient, email: e.target.value})}
+                  placeholder="Email"
                 />
               </div>
               <div className="flex justify-end space-x-2">
