@@ -1,162 +1,164 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Users, FileText, Activity } from "lucide-react";
-import LineChart from "@/components/charts/LineChart";
+import { Users, Shield, Database, Activity } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import BarChart from "@/components/charts/BarChart";
-import StatCard from "@/components/StatCard";
-import { Link } from "react-router-dom";
-
-// Mock data for charts
-const userActivityData = [
-  { name: 'Jan', value: 45 },
-  { name: 'Feb', value: 52 },
-  { name: 'Mar', value: 49 },
-  { name: 'Apr', value: 63 },
-  { name: 'May', value: 59 },
-  { name: 'Jun', value: 68 },
-  { name: 'Jul', value: 72 },
-];
-
-const roleTotalData = [
-  { name: 'Admin', value: 4 },
-  { name: 'Manager', value: 12 },
-  { name: 'Team Lead', value: 28 },
-  { name: 'User', value: 85 },
-];
+import LineChart from "@/components/charts/LineChart";
+import { useAdminData } from "@/hooks/useAdminData";
+import DashboardHeader from "@/components/admin/DashboardHeader";
+import DashboardStatsCards from "@/components/admin/DashboardStatsCards";
+import RecentActivityCard from "@/components/admin/RecentActivityCard";
+import SystemHealthCard from "@/components/admin/SystemHealthCard";
 
 const AdminDashboard = () => {
+  const { stats, departments, loading, error } = useAdminData();
+
+  const userActivityData = [
+    { name: 'Jan', value: 45 },
+    { name: 'Feb', value: 52 },
+    { name: 'Mar', value: 48 },
+    { name: 'Apr', value: 65 },
+    { name: 'May', value: 58 },
+    { name: 'Jun', value: 72 },
+    { name: 'Jul', value: 75 },
+  ];
+
+  const userDistributionData = [
+    { name: 'Admin', value: 5 },
+    { name: 'Manager', value: 15 },
+    { name: 'Team Lead', value: 25 },
+    { name: 'User', value: 85 },
+  ];
+
+  const recentActivities = [
+    {
+      id: 1,
+      user: 'Robert Manager',
+      action: 'added a new team member',
+      time: '2 hours ago',
+      color: 'bg-green-500'
+    },
+    {
+      id: 2,
+      user: 'Sarah Lead',
+      action: 'updated performance ratings',
+      time: '5 hours ago',
+      color: 'bg-blue-500'
+    },
+    {
+      id: 3,
+      user: 'New user registered',
+      action: 'Emily Davis',
+      time: '1 day ago',
+      color: 'bg-purple-500'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading admin dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Error Loading Dashboard</h2>
+          <p className="text-gray-600">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <Link to="/admin/settings" className="text-blue-600 hover:underline text-sm font-medium">
-          System Settings
-        </Link>
-      </div>
+    <div className="space-y-10 max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4">
+      <DashboardHeader />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Users"
-          value="129"
-          icon={<Users size={24} />}
-          change="+8 from last month"
-          trend="up"
-        />
-        <StatCard 
-          title="System Security"
-          value="99.8%"
-          icon={<Shield size={24} />}
-          change="No recent threats"
-          trend="neutral"
-        />
-        <StatCard 
-          title="Locked Records"
-          value="42"
-          icon={<FileText size={24} />}
-          change="+5 from last week"
-          trend="up"
-        />
-        <StatCard 
-          title="Audit Logs"
-          value="1,256"
-          icon={<Activity size={24} />}
-          change="+36 today"
-          trend="up"
-        />
-      </div>
+      <DashboardStatsCards stats={{
+        totalUsers: stats?.totalUsers || 129,
+        lockedRecords: stats?.lockedRecords || 42,
+        auditLogs: stats?.auditLogs || 1256
+      }} />
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LineChart 
-          data={userActivityData} 
-          title="User Activity" 
-          subtitle="Active users over time"
-        />
-        <BarChart 
-          data={roleTotalData} 
-          title="User Distribution" 
-          subtitle="Users by role"
-        />
+        <Card className="bg-white shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div>
+                <CardTitle className="text-lg font-semibold text-gray-900">User Activity</CardTitle>
+                <p className="text-sm text-gray-500 mt-1">Active users over time</p>
+              </div>
+              <Select defaultValue="thismonth">
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="This Month" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-white">
+                  <SelectItem value="thismonth">This Month</SelectItem>
+                  <SelectItem value="lastmonth">Last Month</SelectItem>
+                  <SelectItem value="thisyear">This Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="h-64">
+              <LineChart 
+                data={userActivityData}
+                title=""
+                subtitle=""
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div>
+                <CardTitle className="text-lg font-semibold text-gray-900">User Distribution</CardTitle>
+                <p className="text-sm text-gray-500 mt-1">Users by role</p>
+              </div>
+              <Select defaultValue="thismonth">
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="This Month" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-white">
+                  <SelectItem value="thismonth">This Month</SelectItem>
+                  <SelectItem value="lastmonth">Last Month</SelectItem>
+                  <SelectItem value="thisyear">This Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="h-64">
+              <BarChart 
+                data={userDistributionData}
+                title=""
+                subtitle=""
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>Recent User Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <p className="text-sm">Robert Manager added a new team member</p>
-                <span className="text-xs text-gray-500 ml-auto">2 hours ago</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <p className="text-sm">Sarah Lead updated performance ratings</p>
-                <span className="text-xs text-gray-500 ml-auto">5 hours ago</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <p className="text-sm">New user registered: Emily Davis</p>
-                <span className="text-xs text-gray-500 ml-auto">1 day ago</span>
-              </div>
-            </div>
-            <div className="mt-4 text-center">
-              <Link to="/admin/audit-log" className="text-blue-600 hover:underline text-sm">
-                View All Activity
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>System Health</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Server Uptime</span>
-                  <span className="text-sm font-medium">99.9%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '99.9%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Database Load</span>
-                  <span className="text-sm font-medium">45%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Storage Usage</span>
-                  <span className="text-sm font-medium">72%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '72%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">API Request Rate</span>
-                  <span className="text-sm font-medium">28%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '28%' }}></div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentActivityCard />
+        <SystemHealthCard />
       </div>
     </div>
   );

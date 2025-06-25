@@ -1,62 +1,15 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+
+import { useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, Star, Save } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import DropdownDateFilter from '@/components/charts/DropdownDateFilter';
-
-// Mock department data - only IT department
-const departmentsData = {
-  1: { id: 1, name: 'IT', teamLead: 'You' },
-};
-
-// Enhanced team members with multiple criteria ratings
-const teamMembersByDepartment = {
-  1: [
-    { 
-      id: 101, 
-      name: 'John Smith', 
-      designation: 'Senior Developer', 
-      avatar: null,
-      ratings: {
-        productivity: 95,
-        collaboration: 88,
-        timeliness: 92,
-        overall: 92
-      },
-      locked: false
-    },
-    { 
-      id: 102, 
-      name: 'Emily Wilson', 
-      designation: 'UX Designer', 
-      avatar: null,
-      ratings: {
-        productivity: 90,
-        collaboration: 95,
-        timeliness: 85,
-        overall: 90
-      },
-      locked: false
-    },
-    { 
-      id: 103, 
-      name: 'Michael Brown', 
-      designation: 'Backend Developer', 
-      avatar: null,
-      ratings: {
-        productivity: 88,
-        collaboration: 90,
-        timeliness: 94,
-        overall: 91
-      },
-      locked: true // Example of locked rating
-    },
-  ],
-};
+import { useTeamData } from '@/hooks/useTeamData';
+import TeamPerformanceRating from '@/components/TeamPerformanceRating';
 
 const criteriaLabels = {
   productivity: 'Productivity',
@@ -65,18 +18,19 @@ const criteriaLabels = {
   overall: 'Overall Performance'
 };
 
-const timePeriods = [
-  { value: 'month', label: 'This Month' },
-  { value: 'quarter', label: 'This Quarter' },
-  { value: 'year', label: 'This Year' },
-];
-
 const TeamLeadTeamDepartment = () => {
   const { deptId } = useParams<{deptId: string}>();
-  const [department, setDepartment] = useState<any>(null);
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [timePeriod, setTimePeriod] = useState('month');
-  const memberOrderRef = useRef<number[]>([]);
+  const memberOrderRef = useRef<string[]>([]);
+
+  const { 
+    department, 
+    teamMembers, 
+    loading, 
+    error, 
+    updateRating, 
+    lockRatings 
+  } = useTeamData(deptId);
 
   // Initialize and maintain stable member order
   const displayMembers = useMemo(() => {
@@ -98,38 +52,21 @@ const TeamLeadTeamDepartment = () => {
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
       
-      return a.id - b.id;
+      return a.id.localeCompare(b.id);
     });
     
     return sortedMembers;
   }, [teamMembers]);
 
-  useEffect(() => {
-    if (deptId && departmentsData[Number(deptId)]) {
-      setDepartment(departmentsData[Number(deptId)]);
-      setTeamMembers(teamMembersByDepartment[Number(deptId)] || []);
+  const handleRatingChange = async (memberId: string, criterion: string, rating: number) => {
+    const success = await updateRating(memberId, criterion, rating);
+    if (!success) {
+      toast.error('Failed to update rating');
     }
-  }, [deptId]);
-
-  const handleRatingChange = (memberId: number, criterion: string, rating: number) => {
-    setTeamMembers(teamMembers.map(member => {
-      if (member.id === memberId && !member.locked) {
-        const newRatings = { ...member.ratings, [criterion]: rating };
-        const overall = Math.round((newRatings.productivity + newRatings.collaboration + newRatings.timeliness) / 3);
-        return { 
-          ...member, 
-          ratings: { ...newRatings, overall }
-        };
-      }
-      return member;
-    }));
   };
 
-  const handleSaveRatings = (memberId: number) => {
-    setTeamMembers(teamMembers.map(member => 
-      member.id === memberId ? { ...member, locked: true } : member
-    ));
-    toast.success('Ratings saved and locked successfully');
+  const handleSaveRatings = async (memberId: string) => {
+    await lockRatings(memberId);
   };
 
   const handleDateFilterChange = (period: string, customRange?: { start: Date; end: Date }) => {
@@ -148,10 +85,21 @@ const TeamLeadTeamDepartment = () => {
     }
   };
 
-  if (!department) {
+  if (loading) {
     return (
       <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-800">Department not found</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading team data...</p>
+      </div>
+    );
+  }
+
+  if (error || !department) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-800">
+          {error || 'Department not found'}
+        </h2>
         <Link to="/teamlead/team">
           <Button className="mt-4">Return to Teams</Button>
         </Link>
@@ -159,9 +107,9 @@ const TeamLeadTeamDepartment = () => {
     );
   }
 
-  const averageRating = Math.round(
-    displayMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / displayMembers.length
-  );
+  const averageRating = displayMembers.length > 0 
+    ? Math.round(displayMembers.reduce((acc, member) => acc + member.ratings.overall, 0) / displayMembers.length)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -174,7 +122,7 @@ const TeamLeadTeamDepartment = () => {
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{department.name} Department</h1>
-            <p className="text-gray-600">Team Lead: {department.teamLead}</p>
+            <p className="text-gray-600">Team Lead Dashboard</p>
           </div>
         </div>
         
@@ -215,74 +163,16 @@ const TeamLeadTeamDepartment = () => {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Performance Ratings</CardTitle>
-          <p className="text-sm text-gray-600">
-            Rate team members across multiple criteria. Once saved, ratings are locked and can only be edited by administrators.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {displayMembers.map(member => (
-              <Card key={member.id} className={member.locked ? 'bg-gray-50' : ''}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={member.avatar} />
-                        <AvatarFallback>{member.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h3 className="font-semibold">{member.name}</h3>
-                        <p className="text-sm text-gray-600">{member.designation}</p>
-                        <Badge variant="outline">ID: {member.id}</Badge>
-                      </div>
-                    </div>
-                    {member.locked && (
-                      <Badge variant="destructive">Locked</Badge>
-                    )}
-                    {!member.locked && (
-                      <Button 
-                        onClick={() => handleSaveRatings(member.id)}
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <Save className="h-4 w-4" />
-                        Save & Lock
-                      </Button>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {Object.entries(criteriaLabels).map(([key, label]) => (
-                      <div key={key} className="space-y-2">
-                        <label className="text-sm font-medium">{label}</label>
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-4 w-4 ${member.locked ? 'cursor-not-allowed' : 'cursor-pointer'} ${
-                                  star <= Math.round(member.ratings[key] / 20) 
-                                    ? 'fill-yellow-400 text-yellow-400' 
-                                    : 'text-gray-300'
-                                }`}
-                                onClick={() => !member.locked && handleRatingChange(member.id, key, star * 20)}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-sm text-gray-600">({member.ratings[key]}%)</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <TeamPerformanceRating
+        members={displayMembers.map(member => ({
+          id: member.id,
+          name: member.name,
+          position: member.designation,
+          department: department.name,
+          ratings: member.ratings
+        }))}
+        onRatingUpdate={handleRatingChange}
+      />
     </div>
   );
 };

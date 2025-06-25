@@ -1,18 +1,11 @@
-import { useState } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ArrowUp, ArrowDown, User, BarChart3, Eye, Bell } from "lucide-react";
+import { Users, User, BarChart3, Building } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Link } from "react-router-dom";
 
-// Mock data for charts
 const employeeOverviewData = [
   { name: 'Jan', value: 65 },
   { name: 'Feb', value: 59 },
@@ -31,275 +24,171 @@ const employeeProgressData = [
   { name: 'Finance', value: 70 },
 ];
 
-// Mock clients data with enhanced structure
-const clientsData = [
-  { 
-    id: 1, 
-    name: 'TechCorp Solutions', 
-    company: 'TechCorp Inc.', 
-    status: 'working',
-    projects: [
-      { id: 1, name: 'Mobile App Development', status: 'working' },
-      { id: 2, name: 'Web Platform Redesign', status: 'working' }
-    ]
-  },
-  { 
-    id: 2, 
-    name: 'HealthCare Inc', 
-    company: 'HealthCare Systems', 
-    status: 'working',
-    projects: [
-      { id: 3, name: 'Patient Management System', status: 'working' },
-      { id: 4, name: 'Telemedicine Platform', status: 'stopped' }
-    ]
-  },
-  { 
-    id: 3, 
-    name: 'Finance Plus', 
-    company: 'Financial Services Ltd', 
-    status: 'stopped',
-    projects: [
-      { id: 5, name: 'Trading Platform', status: 'stopped' }
-    ]
-  },
-  { 
-    id: 4, 
-    name: 'Retail Masters', 
-    company: 'Retail Solutions', 
-    status: 'working',
-    projects: [
-      { id: 6, name: 'E-commerce Migration', status: 'working' }
-    ]
-  },
-];
-
 const ManagerDashboard = () => {
-  const navigate = useNavigate();
-  const [departments] = useState([
+  const departments = [
     { id: 1, name: 'IT', employeeCount: 35, growth: '+5%', trend: 'up' as const },
     { id: 2, name: 'HR', employeeCount: 12, growth: '-2%', trend: 'down' as const },
     { id: 3, name: 'Sales', employeeCount: 28, growth: '+10%', trend: 'up' as const },
     { id: 4, name: 'Marketing', employeeCount: 18, growth: '+3%', trend: 'up' as const },
     { id: 5, name: 'Finance', employeeCount: 14, growth: '0%', trend: 'neutral' as const },
-  ]);
+  ];
 
-  const [selectedClient, setSelectedClient] = useState<any>(null);
-  const [showClientDialog, setShowClientDialog] = useState(false);
-  const [showAlertsDialog, setShowAlertsDialog] = useState(false);
-
-  const handleClientClick = (client: any) => {
-    setSelectedClient(client);
-    setShowClientDialog(true);
-  };
-
-  const handleViewAllClients = () => {
-    navigate('/manager/clients');
-    console.log('Navigating to full client portfolio');
-  };
-
-  const toggleProjectStatus = (projectId: number) => {
-    if (selectedClient) {
-      const updatedProjects = selectedClient.projects.map((project: any) => 
-        project.id === projectId 
-          ? { ...project, status: project.status === 'working' ? 'stopped' : 'working' }
-          : project
-      );
-      setSelectedClient({ ...selectedClient, projects: updatedProjects });
-      toast.success('Project status updated');
-    }
-  };
+  const totalEmployees = departments.reduce((sum, dept) => sum + dept.employeeCount, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-        <div className="flex gap-2">
-          <Dialog open={showAlertsDialog} onOpenChange={setShowAlertsDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                Send Alert
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Send Performance Alert</DialogTitle>
-              </DialogHeader>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      <div className="space-y-6 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              Manager Dashboard
+            </h1>
+            <p className="text-gray-600 mt-2">Comprehensive team management and insights</p>
+          </div>
+          <Link 
+            to="/manager/settings" 
+            className="text-blue-600 hover:text-blue-500 text-sm font-medium bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm transition-colors"
+          >
+            Manager Settings
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-blue-100">
+            <CardContent className="p-4">
+              <StatCard 
+                title="Total Employees"
+                value={totalEmployees.toString()}
+                icon={<Users size={24} className="text-blue-600" />}
+                change="+5.3% from last month"
+                trend="up"
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-green-50 to-green-100">
+            <CardContent className="p-4">
+              <StatCard 
+                title="New Employees"
+                value="12"
+                icon={<User size={24} className="text-green-600" />}
+                change="+2 from last week"
+                trend="up"
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-purple-100">
+            <CardContent className="p-4">
+              <StatCard 
+                title="Departments"
+                value={departments.length.toString()}
+                icon={<Building size={24} className="text-purple-600" />}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-orange-50 to-orange-100">
+            <CardContent className="p-4">
+              <StatCard 
+                title="Average Performance"
+                value="78%"
+                icon={<BarChart3 size={24} className="text-orange-600" />}
+                change="+2.5% from last quarter"
+                trend="up"
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-gray-800">
+                <BarChart3 className="h-5 w-5 text-green-600" />
+                Employee Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LineChart 
+                data={employeeOverviewData} 
+                title="" 
+                subtitle="Employee count over time"
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-gray-800">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                Department Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BarChart 
+                data={employeeProgressData} 
+                title="" 
+                subtitle="Average performance by department"
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-gray-800">
+                <Building className="h-5 w-5 text-purple-600" />
+                Department Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Send performance report reminders to all Team Leads
-                </p>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setShowAlertsDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={() => {
-                    toast.success('Performance report alert sent to all Team Leads');
-                    setShowAlertsDialog(false);
-                  }}>
-                    Send Alert
-                  </Button>
+                {departments.map((dept) => (
+                  <div key={dept.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
+                    <div>
+                      <h3 className="font-semibold text-gray-800">{dept.name}</h3>
+                      <p className="text-sm text-gray-600">{dept.employeeCount} employees</p>
+                    </div>
+                    <div className={`text-sm font-semibold px-3 py-1 rounded-full ${
+                      dept.trend === 'up' ? 'text-green-700 bg-green-100' : 
+                      dept.trend === 'down' ? 'text-red-700 bg-red-100' : 'text-gray-700 bg-gray-100'
+                    }`}>
+                      {dept.growth}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-gray-800">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm font-medium text-green-800">New team member onboarded in IT</p>
+                  <span className="text-xs text-green-600 ml-auto">2h ago</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <p className="text-sm font-medium text-blue-800">Performance review completed for Sales</p>
+                  <span className="text-xs text-blue-600 ml-auto">5h ago</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <p className="text-sm font-medium text-yellow-800">Monthly reports due tomorrow</p>
+                  <span className="text-xs text-yellow-600 ml-auto">1d ago</span>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Employees"
-          value="107"
-          icon={<Users size={24} />}
-          change="+5.3% from last month"
-          trend="up"
-        />
-        <StatCard 
-          title="New Employees"
-          value="12"
-          icon={<User size={24} />}
-          change="+2 from last week"
-          trend="up"
-        />
-        <StatCard 
-          title="Departments"
-          value={departments.length.toString()}
-          icon={<Users size={24} />}
-        />
-        <StatCard 
-          title="Average Performance"
-          value="78%"
-          icon={<BarChart3 size={24} />}
-          change="+2.5% from last quarter"
-          trend="up"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LineChart 
-          data={employeeOverviewData} 
-          title="Employee Overview" 
-          subtitle="Employee count over time"
-        />
-        <BarChart 
-          data={employeeProgressData} 
-          title="Department Performance" 
-          subtitle="Average performance by department"
-        />
-      </div>
-
-      {/* Clients Section - SIMPLIFIED WITHOUT DEPARTMENT ASSIGNMENT */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Client Portfolio</CardTitle>
-            <Button 
-              onClick={handleViewAllClients}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              View All Clients
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clientsData.slice(0, 3).map(client => (
-              <Card 
-                key={client.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleClientClick(client)}
-              >
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">{client.name}</h3>
-                    <p className="text-sm text-gray-600">{client.company}</p>
-                    <Badge 
-                      variant={client.status === 'working' ? 'default' : 'destructive'}
-                      className={client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
-                    >
-                      {client.status === 'working' ? 'Working' : 'Stopped'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Department Map - Read Only */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Department Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {departments.map(dept => (
-              <Card key={dept.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <Link to={`/manager/department/${dept.id}`}>
-                    <div>
-                      <h3 className="font-semibold">{dept.name}</h3>
-                      <p className="text-sm text-gray-500">{dept.employeeCount} employees</p>
-                    </div>
-                  </Link>
-                  <div className={`text-sm font-medium flex items-center mt-2 ${
-                    dept.trend === 'up' ? 'text-green-500' : 
-                    dept.trend === 'down' ? 'text-red-500' : 'text-gray-500'
-                  }`}>
-                    {dept.growth}
-                    {dept.trend === 'up' && <ArrowUp size={16} className="ml-1" />}
-                    {dept.trend === 'down' && <ArrowDown size={16} className="ml-1" />}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Client Projects Dialog - SIMPLIFIED */}
-      <Dialog open={showClientDialog} onOpenChange={setShowClientDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedClient?.name} - Projects
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            {selectedClient?.projects.map((project: any) => (
-              <Card key={project.id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{project.name}</h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge 
-                          variant={project.status === 'working' ? 'default' : 'destructive'}
-                          className={`${project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
-                        >
-                          {project.status === 'working' ? 'Working' : 'Stopped'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => toggleProjectStatus(project.id)}
-                      >
-                        Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
