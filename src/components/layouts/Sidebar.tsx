@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, ChevronRight, ChevronLeft } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   links: {
@@ -18,19 +17,6 @@ interface SidebarProps {
 
 const Sidebar = ({ links, role, userName, onLogout }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
-  const { signOut } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      if (onLogout) {
-        onLogout();
-      } else {
-        await signOut();
-      }
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
-  };
 
   return (
     <div className={`bg-white shadow-lg h-screen relative transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
@@ -75,7 +61,7 @@ const Sidebar = ({ links, role, userName, onLogout }: SidebarProps) => {
 
         <div>
           <Button
-            onClick={handleLogout}
+            onClick={onLogout}
             variant="outline"
             className={`flex items-center gap-2 w-full ${collapsed ? 'justify-center' : ''}`}
           >
