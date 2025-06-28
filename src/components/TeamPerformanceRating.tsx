@@ -1,16 +1,17 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import ProfilePictureUpload from "@/components/ProfilePictureUpload";
 
 interface TeamMember {
   id: string;
   name: string;
   position: string;
   department: string;
+  avatar_url?: string;
   ratings: {
     productivity: number;
     collaboration: number;
@@ -29,14 +30,48 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
   onRatingUpdate 
 }) => {
   const [lockedMembers, setLockedMembers] = useState<Set<string>>(new Set());
+  const [memberOrder, setMemberOrder] = useState<string[]>([]);
+  const [memberAvatars, setMemberAvatars] = useState<Record<string, string>>({});
 
-  // FIXED: Always maintain original order with stable sort
+  // Initialize member order on first render and maintain it
   const displayMembers = useMemo(() => {
-    return [...members].sort((a, b) => {
-      // Use string comparison for stable sorting
+    if (memberOrder.length === 0) {
+      const initialOrder = members.map(member => member.id);
+      setMemberOrder(initialOrder);
+      return members;
+    }
+    
+    // Sort members based on the fixed order, new members go to the end
+    const sortedMembers = [...members].sort((a, b) => {
+      const indexA = memberOrder.indexOf(a.id);
+      const indexB = memberOrder.indexOf(b.id);
+      
+      // If both members are in the order, use that order
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      
+      // If only one member is in the order, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      
+      // If neither is in the order, sort by id for consistency
       return a.id.localeCompare(b.id);
     });
-  }, [members]);
+    
+    // Update order to include any new members
+    const currentIds = members.map(m => m.id);
+    const newOrder = [
+      ...memberOrder.filter(id => currentIds.includes(id)),
+      ...currentIds.filter(id => !memberOrder.includes(id))
+    ];
+    
+    if (newOrder.length !== memberOrder.length) {
+      setMemberOrder(newOrder);
+    }
+    
+    return sortedMembers;
+  }, [members, memberOrder]);
 
   const handleStarClick = (memberId: string, category: string, starIndex: number, event: React.MouseEvent) => {
     event.preventDefault();
@@ -116,11 +151,15 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
     toast.success('Ratings saved and locked');
   };
 
-  const handleImageUpload = (memberId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      toast.success('Profile image uploaded successfully');
-      console.log('Image uploaded for member:', memberId);
+  const handleImageUpdate = (memberId: string, newImageUrl: string | null) => {
+    if (newImageUrl) {
+      setMemberAvatars(prev => ({ ...prev, [memberId]: newImageUrl }));
+    } else {
+      setMemberAvatars(prev => {
+        const updated = { ...prev };
+        delete updated[memberId];
+        return updated;
+      });
     }
   };
 
@@ -136,38 +175,39 @@ const TeamPerformanceRating: React.FC<TeamPerformanceRatingProps> = ({
         <CardContent className="space-y-6">
           {displayMembers.map((member) => {
             const isLocked = lockedMembers.has(member.id);
+            const avatarUrl = memberAvatars[member.id] || member.avatar_url;
             
             return (
               <div key={member.id} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
-                        <span className="text-sm font-semibold text-blue-600">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-2">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src={avatarUrl} />
+                        <AvatarFallback className="text-sm font-semibold">
                           {member.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <label 
-                        htmlFor={`upload-${member.id}`}
-                        className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-                        title="Upload profile image"
-                      >
-                        <Upload className="h-3 w-3 text-gray-600" />
-                        <input
-                          id={`upload-${member.id}`}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleImageUpload(member.id, e)}
-                        />
-                      </label>
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      {!isLocked && (
+                        <div className="text-center">
+                          <ProfilePictureUpload
+                            userId={member.id}
+                            currentImageUrl={avatarUrl}
+                            userName={member.name}
+                            onImageUpdate={(url) => handleImageUpdate(member.id, url)}
+                          />
+                        </div>
+                      )}
                     </div>
+                    
                     <div>
                       <h3 className="font-semibold">{member.name}</h3>
                       <p className="text-sm text-gray-600">{member.position}</p>
                       <p className="text-xs text-gray-500">ID: {member.id}</p>
                     </div>
                   </div>
+                  
                   <div className="flex items-center gap-2">
                     {isLocked && (
                       <Badge variant="destructive">Locked</Badge>

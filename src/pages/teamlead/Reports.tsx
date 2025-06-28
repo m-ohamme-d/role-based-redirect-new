@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,9 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, FileText, Calendar, Users, TrendingUp, BarChart3, Lock, Award, Clock, Target } from 'lucide-react';
+import { generatePDFContent, generateExcelContent, downloadFile, prepareReportData } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 // Enhanced team data with comprehensive realistic information
 const teamData = [
@@ -252,76 +252,96 @@ const TeamLeadReports = () => {
     }
   };
 
-  const exportToStyledPDF = (data, filename = 'team_report') => {
-    if (!data || data.length === 0) {
-      toast.error('No data to export!');
-      return;
-    }
-    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'l' });
-    const margin = 40;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const logo = new window.Image();
-    logo.src = '/your-logo.svg';
-    logo.crossOrigin = 'anonymous';
-    let startY = margin;
-    logo.onload = () => {
-      const logoW = 80;
-      const logoH = (logo.height / logo.width) * logoW;
-      doc.addImage(logo, 'PNG', margin, margin, logoW, logoH);
-      startY += logoH + 20;
-      drawTableAndSave();
-    };
-    logo.onerror = () => {
-      drawTableAndSave();
-    };
-    setTimeout(() => {
-      if (!logo.complete) return;
-      drawTableAndSave();
-    }, 500);
-    function drawTableAndSave() {
-      doc.setFontSize(18);
-      doc.setTextColor('#333');
-      doc.text(
-        'Team Performance Report',
-        pageWidth / 2,
-        startY,
-        { align: 'center' }
-      );
-      doc.setFontSize(10);
-      doc.setTextColor('#555');
-      doc.text(
-        `Generated: ${new Date().toLocaleString()}`,
-        pageWidth - margin,
-        startY,
-        { align: 'right' }
-      );
-      const head = [Object.keys(data[0] || {})];
-      const body = data.map(r => head[0].map(k => String(r[k] ?? '')));
-      autoTable(doc, {
-        head,
-        body,
-        startY: startY + 20,
-        theme: 'striped',
-        headStyles: { fillColor: [41,128,185], textColor: 255, fontStyle: 'bold' },
-        bodyStyles: { fontSize: 10, textColor: 50 },
-        styles: { cellPadding: 6, halign: 'left', valign: 'middle' },
-        margin: { left: margin, right: margin },
-        didDrawPage: (dataArg) => {
-          const pageCount = doc.getNumberOfPages();
-          doc.setFontSize(9);
-          doc.setTextColor('#999');
-          doc.text(
-            `Page ${dataArg.pageNumber} of ${pageCount}`,
-            pageWidth / 2,
-            pageHeight - 10,
-            { align: 'center' }
-          );
-        },
-      });
-      doc.save(`${filename}.pdf`);
-      toast.success('PDF report generated and downloaded successfully');
-    }
+  const generateEnhancedPDFContent = (data: any) => {
+    return `
+=== ${data.reportType} ===
+Generated: ${new Date().toLocaleString()}
+Period: ${data.dateRange}
+Department: ${data.department}
+Team Lead: ${data.teamLead}
+
+=== EXECUTIVE SUMMARY ===
+Total Team Members: ${teamData.length}
+Average Performance: ${(teamData.reduce((sum, member) => sum + member.performance, 0) / teamData.length).toFixed(1)}%
+Total Hours Worked: ${teamData.reduce((sum, member) => sum + member.hoursWorked, 0)}
+Total Tasks Completed: ${teamData.reduce((sum, member) => sum + member.tasksCompleted, 0)}
+Average Client Satisfaction: ${(teamData.reduce((sum, member) => sum + member.clientSatisfaction, 0) / teamData.length).toFixed(1)}/5
+
+=== TEAM PERFORMANCE DETAILS ===
+${teamData.map(member => `
+Employee: ${member.name}
+Position: ${member.position}
+Email: ${member.email}
+Performance Rating: ${member.performance}%
+Tasks Completed: ${member.tasksCompleted}
+Hours Worked: ${member.hoursWorked}
+Client Satisfaction: ${member.clientSatisfaction}/5
+Productivity: ${member.productivity}%
+Collaboration: ${member.collaboration}%
+Timeliness: ${member.timeliness}%
+Salary: ${member.salary}
+Bonus: ${member.bonus}
+Training Hours: ${member.trainingHours}
+Certifications: ${member.certifications.join(', ')}
+Work Type: ${member.workType}
+Location: ${member.location}
+Projects: ${member.projects.join(', ')}
+Skills: ${member.skills.join(', ')}
+Join Date: ${member.joinDate}
+Last Review: ${member.lastReview}
+`).join('\n')}
+
+=== PROJECT STATUS REPORT ===
+${departmentProjects.map(project => `
+Project: ${project.name}
+Client: ${project.clientName} (${project.clientIndustry})
+Status: ${project.status}
+Progress: ${project.progress}%
+Budget: ${project.budget}
+Actual Cost: ${project.actualCost}
+Priority: ${project.priority}
+Risk Level: ${project.riskLevel}
+Start Date: ${project.startDate}
+Expected Completion: ${project.expectedCompletion}
+Team Members: ${project.teamMembers.join(', ')}
+Technologies: ${project.technologies.join(', ')}
+Hours Spent: ${project.hoursSpent}
+Milestones: ${project.completedMilestones}/${project.milestones}
+Client Satisfaction: ${project.clientSatisfaction}/5
+Project Manager: ${project.projectManager}
+`).join('\n')}
+
+=== FINANCIAL SUMMARY ===
+Total Project Budgets: $${departmentProjects.reduce((sum, project) => sum + parseInt(project.budget.replace(/[$,]/g, '')), 0).toLocaleString()}
+Total Actual Costs: $${departmentProjects.reduce((sum, project) => sum + parseInt(project.actualCost.replace(/[$,]/g, '')), 0).toLocaleString()}
+Total Team Salaries: $${teamData.reduce((sum, member) => sum + parseInt(member.salary.replace(/[$,]/g, '')), 0).toLocaleString()}
+Total Bonuses: $${teamData.reduce((sum, member) => sum + parseInt(member.bonus.replace(/[$,]/g, '')), 0).toLocaleString()}
+
+=== TRAINING & DEVELOPMENT ===
+Total Training Hours: ${teamData.reduce((sum, member) => sum + member.trainingHours, 0)}
+Total Certifications: ${teamData.reduce((sum, member) => sum + member.certifications.length, 0)}
+
+=== ACCESS LOG ===
+Report Generated By: ${data.generatedBy}
+Access Level: Team Lead - ${data.department} Department Only
+Timestamp: ${new Date().toISOString()}
+`;
+  };
+
+  const generateEnhancedCSVContent = (data: any) => {
+    const teamCSV = `
+Employee Name,Position,Email,Performance %,Tasks Completed,Hours Worked,Client Satisfaction,Productivity %,Collaboration %,Timeliness %,Salary,Bonus,Training Hours,Certifications,Work Type,Location,Join Date,Last Review
+${teamData.map(member => 
+  `"${member.name}","${member.position}","${member.email}",${member.performance},${member.tasksCompleted},${member.hoursWorked},${member.clientSatisfaction},${member.productivity},${member.collaboration},${member.timeliness},"${member.salary}","${member.bonus}",${member.trainingHours},"${member.certifications.join('; ')}","${member.workType}","${member.location}","${member.joinDate}","${member.lastReview}"`
+).join('\n')}
+
+PROJECT DATA:
+Project Name,Client,Industry,Status,Progress %,Budget,Actual Cost,Priority,Risk Level,Start Date,Expected Completion,Team Size,Technologies,Hours Spent,Milestones,Client Satisfaction,Project Manager
+${departmentProjects.map(project => 
+  `"${project.name}","${project.clientName}","${project.clientIndustry}","${project.status}",${project.progress},"${project.budget}","${project.actualCost}","${project.priority}","${project.riskLevel}","${project.startDate}","${project.expectedCompletion}",${project.teamMembers.length},"${project.technologies.join('; ')}",${project.hoursSpent},"${project.completedMilestones}/${project.milestones}",${project.clientSatisfaction},"${project.projectManager}"`
+).join('\n')}
+`;
+    return teamCSV;
   };
 
   const handleDownloadReport = (format: 'pdf' | 'csv') => {
@@ -332,51 +352,30 @@ const TeamLeadReports = () => {
 
     let data;
     let filename;
+    let content;
     
     switch (reportType) {
       case 'team-performance':
-        data = teamData.map(member => ({
-          'Employee Name': member.name,
-          'Position': member.position,
-          'Email': member.email,
-          'Performance %': member.performance,
-          'Tasks Completed': member.tasksCompleted,
-          'Hours Worked': member.hoursWorked,
-          'Client Satisfaction': member.clientSatisfaction,
-          'Productivity %': member.productivity,
-          'Collaboration %': member.collaboration,
-          'Timeliness %': member.timeliness,
-          'Salary': member.salary,
-          'Bonus': member.bonus,
-          'Training Hours': member.trainingHours,
-          'Certifications': member.certifications.join(', '),
-          'Work Type': member.workType,
-          'Location': member.location,
-          'Join Date': member.joinDate,
-          'Last Review': member.lastReview
-        }));
+        data = {
+          reportType: 'Team Performance Report',
+          teamLead: currentUser.name,
+          department: userDepartment,
+          dateRange: getPeriodLabel(selectedPeriod),
+          restrictedAccess: true,
+          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
+        };
         filename = `team-performance-${userDepartment}-${selectedPeriod}`;
         break;
       case 'project-status':
-        data = departmentProjects.map(project => ({
-          'Project Name': project.name,
-          'Client': project.clientName,
-          'Industry': project.clientIndustry,
-          'Status': project.status,
-          'Progress %': project.progress,
-          'Budget': project.budget,
-          'Actual Cost': project.actualCost,
-          'Priority': project.priority,
-          'Risk Level': project.riskLevel,
-          'Start Date': project.startDate,
-          'Expected Completion': project.expectedCompletion,
-          'Team Size': project.teamMembers.length,
-          'Technologies': project.technologies.join(', '),
-          'Hours Spent': project.hoursSpent,
-          'Milestones': `${project.completedMilestones}/${project.milestones}`,
-          'Client Satisfaction': project.clientSatisfaction,
-          'Project Manager': project.projectManager
-        }));
+        data = {
+          reportType: 'Project Status Report',
+          projects: departmentProjects,
+          teamLead: currentUser.name,
+          department: userDepartment,
+          dateRange: getPeriodLabel(selectedPeriod),
+          restrictedAccess: true,
+          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
+        };
         filename = `project-status-${userDepartment}-${selectedPeriod}`;
         break;
       default:
@@ -386,9 +385,21 @@ const TeamLeadReports = () => {
 
     try {
       if (format === 'pdf') {
-        exportToStyledPDF(data, filename);
+        content = generateEnhancedPDFContent(data);
+        const success = downloadFile(content, `${filename}.txt`, 'text/plain');
+        if (success) {
+          toast.success(`PDF report downloaded successfully (${userDepartment} team only)`);
+        } else {
+          toast.error('Failed to download PDF report');
+        }
       } else {
-        toast.error('CSV export is currently unavailable.');
+        content = generateEnhancedCSVContent(data);
+        const success = downloadFile(content, `${filename}.csv`, 'text/csv');
+        if (success) {
+          toast.success(`CSV report downloaded successfully (${userDepartment} team only)`);
+        } else {
+          toast.error('Failed to download CSV report');
+        }
       }
     } catch (error) {
       console.error('Report generation failed:', error);
