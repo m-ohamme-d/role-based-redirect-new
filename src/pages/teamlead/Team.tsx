@@ -3,38 +3,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDepartments } from '@/hooks/useDepartments';
+
+// Mock departments data - restricted to IT only for team leads
+const departments = [
+  { id: 1, name: 'IT', memberCount: 15 },
+];
 
 const TeamLeadTeam = () => {
-  const { teamLeadDepartments, loading } = useDepartments();
-  const [activeTab, setActiveTab] = useState(teamLeadDepartments[0]?.id || "");
-  
-  if (loading) {
-    return (
-      <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading departments...</p>
-      </div>
-    );
-  }
-
-  if (teamLeadDepartments.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Team Overview</h1>
-        </div>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Departments Assigned</h3>
-            <p className="text-gray-600">
-              You haven't been assigned to any departments yet. Please contact your administrator.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const [activeTab, setActiveTab] = useState("1");
   
   return (
     <div className="space-y-6">
@@ -47,15 +23,15 @@ const TeamLeadTeam = () => {
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
-          {teamLeadDepartments.map(dept => (
-            <TabsTrigger key={dept.id} value={dept.id}>
+          {departments.map(dept => (
+            <TabsTrigger key={dept.id} value={dept.id.toString()}>
               {dept.name} ({dept.memberCount})
             </TabsTrigger>
           ))}
         </TabsList>
         
-        {teamLeadDepartments.map(dept => (
-          <TabsContent key={dept.id} value={dept.id}>
+        {departments.map(dept => (
+          <TabsContent key={dept.id} value={dept.id.toString()}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
