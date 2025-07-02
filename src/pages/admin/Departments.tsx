@@ -9,11 +9,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Building, Users, Briefcase, Check, X, AlertTriangle } from 'lucide-react';
-import { useDepartments } from '@/hooks/useDepartments';
+import { useSupabaseDepartments } from '@/hooks/useSupabaseDepartments';
 
 // Mock departments data with enhanced details
 const AdminDepartments = () => {
-  const { departments, addDepartment, updateDepartment, deleteDepartment } = useDepartments();
+  const { departments, loading, addDepartment, updateDepartment, deleteDepartment } = useSupabaseDepartments();
   
   // Enhanced department data structure
   const [departmentDetails, setDepartmentDetails] = useState<Record<string, any>>({
@@ -42,13 +42,14 @@ const AdminDepartments = () => {
     workType: 'hybrid'
   });
 
-  const handleCreateDepartment = () => {
+  const handleCreateDepartment = async () => {
     if (!newDepartment.name || !newDepartment.manager) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    if (addDepartment(newDepartment.name)) {
+    const success = await addDepartment(newDepartment.name);
+    if (success) {
       // Add default details for new department
       setDepartmentDetails(prev => ({
         ...prev,
@@ -77,13 +78,16 @@ const AdminDepartments = () => {
     setEditName(deptName);
   };
 
-  const handleSaveEdit = (oldName: string) => {
+  const handleSaveEdit = async (oldName: string) => {
     if (!editName.trim()) {
       toast.error('Department name cannot be empty');
       return;
     }
 
-    if (updateDepartment(oldName, editName.trim())) {
+    const dept = departments.find(d => d.name === oldName);
+    if (dept) {
+      const success = await updateDepartment(dept.id, editName.trim());
+      if (success) {
       // Update department details with new name
       setDepartmentDetails(prev => {
         const { [oldName]: oldDetails, ...rest } = prev;
@@ -93,11 +97,9 @@ const AdminDepartments = () => {
         };
       });
 
-      setEditingDepartment(null);
-      setEditName('');
-      toast.success('Department name updated successfully - synced to Manager dashboard');
-    } else {
-      toast.error('Department already exists or invalid name');
+        setEditingDepartment(null);
+        setEditName('');
+      }
     }
   };
 
@@ -106,18 +108,18 @@ const AdminDepartments = () => {
     setEditName('');
   };
 
-  const confirmDeleteDepartment = (deptName: string) => {
+  const confirmDeleteDepartment = async (deptName: string) => {
     // Allow deletion even with teams or users
-    if (deleteDepartment(deptName)) {
-      // Remove department details
-      setDepartmentDetails(prev => {
-        const { [deptName]: removed, ...rest } = prev;
-        return rest;
-      });
-
-      toast.success('Department deleted successfully - synced to Manager dashboard');
-    } else {
-      toast.error('Failed to delete department');
+    const dept = departments.find(d => d.name === deptName);
+    if (dept) {
+      const success = await deleteDepartment(dept.id);
+      if (success) {
+        // Remove department details
+        setDepartmentDetails(prev => {
+          const { [deptName]: removed, ...rest } = prev;
+          return rest;
+        });
+      }
     }
   };
 
@@ -284,8 +286,8 @@ const AdminDepartments = () => {
           <CardContent className="p-4">
             <div>
               <p className="text-2xl font-bold">
-                {Object.entries(departmentDetails).filter(([name, details]) => 
-                  departments.includes(name) && details?.status === 'active'
+                 {Object.entries(departmentDetails).filter(([name, details]) => 
+                  departments.find(dept => dept.name === name) && details?.status === 'active'
                 ).length}
               </p>
               <p className="text-sm text-gray-600">Active Departments</p>
@@ -295,27 +297,27 @@ const AdminDepartments = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {departments.map((deptName) => {
-          const details = getDepartmentDetails(deptName);
+        {departments.map((dept) => {
+          const details = getDepartmentDetails(dept.name);
           return (
-            <Card key={deptName} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <Card key={dept.id} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Building className="h-5 w-5" />
-                    {editingDepartment === deptName ? (
+                    {editingDepartment === dept.name ? (
                       <div className="flex items-center gap-2">
                         <Input 
                           value={editName} 
                           onChange={(e) => setEditName(e.target.value)}
                           className="max-w-[120px] h-8"
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveEdit(deptName);
+                            if (e.key === 'Enter') handleSaveEdit(dept.name);
                             if (e.key === 'Escape') handleCancelEdit();
                           }}
                           autoFocus
                         />
-                        <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(deptName)}>
+                        <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(dept.name)}>
                           <Check className="h-4 w-4 text-green-600" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
@@ -325,16 +327,16 @@ const AdminDepartments = () => {
                     ) : (
                       <span 
                         className="cursor-pointer hover:text-blue-600"
-                        onClick={() => handleStartEdit(deptName)}
+                        onClick={() => handleStartEdit(dept.name)}
                       >
-                        {deptName}
+                        {dept.name}
                       </span>
                     )}
                   </CardTitle>
                   <Badge 
                     variant={details.status === 'active' ? 'default' : 'destructive'}
                     className={`cursor-pointer ${details.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}
-                    onClick={() => toggleDepartmentStatus(deptName)}
+                    onClick={() => toggleDepartmentStatus(dept.name)}
                   >
                     {details.status}
                   </Badge>
@@ -379,8 +381,8 @@ const AdminDepartments = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStartEdit(deptName)}
-                    disabled={editingDepartment === deptName}
+                    onClick={() => handleStartEdit(dept.name)}
+                    disabled={editingDepartment === dept.name}
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
@@ -395,7 +397,7 @@ const AdminDepartments = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Department</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete the "{deptName}" department? 
+                          Are you sure you want to delete the "{dept.name}" department? 
                           {details.employeeCount > 0 && (
                             <div className="flex items-start gap-2 mt-2 p-2 bg-orange-50 border border-orange-200 rounded-md">
                               <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
@@ -411,7 +413,7 @@ const AdminDepartments = () => {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => confirmDeleteDepartment(deptName)}
+                          onClick={() => confirmDeleteDepartment(dept.name)}
                           className="bg-red-600 hover:bg-red-700"
                         >
                           Delete Department
