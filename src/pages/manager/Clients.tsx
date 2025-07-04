@@ -10,11 +10,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Building2, Tag, FolderOpen, X } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
-import { useClients } from '@/hooks/useClients';
+
+// Mock clients data with enhanced structure
+const mockClients = [
+  {
+    id: 1,
+    name: 'TechCorp Solutions',
+    company: 'TechCorp Inc.',
+    status: 'active',
+    departments: ['IT', 'Marketing'],
+    tags: ['Enterprise', 'Technology', 'Priority'],
+    projects: [
+      { id: 1, name: 'Mobile App Development', status: 'active', assignedDepartment: 'IT' },
+      { id: 2, name: 'Web Platform Redesign', status: 'active', assignedDepartment: 'IT' }
+    ],
+    contactEmail: 'contact@techcorp.com',
+    contactPhone: '+1 (555) 123-4567'
+  },
+  {
+    id: 2,
+    name: 'HealthCare Inc',
+    company: 'HealthCare Systems',
+    status: 'active',
+    departments: ['IT'],
+    tags: ['Healthcare', 'Compliance'],
+    projects: [
+      { id: 3, name: 'Patient Management System', status: 'active', assignedDepartment: 'IT' }
+    ],
+    contactEmail: 'info@healthcare.com',
+    contactPhone: '+1 (555) 987-6543'
+  },
+  {
+    id: 3,
+    name: 'Retail Masters',
+    company: 'Retail Solutions Ltd',
+    status: 'inactive',
+    departments: ['Sales', 'Marketing'],
+    tags: ['Retail', 'E-commerce'],
+    projects: [
+      { id: 4, name: 'E-commerce Platform', status: 'stopped', assignedDepartment: 'Sales' }
+    ],
+    contactEmail: 'support@retailmasters.com',
+    contactPhone: '+1 (555) 456-7890'
+  }
+];
 
 const ManagerClients = () => {
   const { departments } = useDepartments();
-  const { clients, loading: clientsLoading, createClient, updateClient, deleteClient, addProject, updateProject } = useClients();
+  const [clients, setClients] = useState(mockClients);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
@@ -23,88 +66,129 @@ const ManagerClients = () => {
   const [newClient, setNewClient] = useState({
     name: '',
     company: '',
-    status: 'active' as const,
-    assigned_departments: [] as string[],
+    status: 'active',
+    departments: [] as string[],
     tags: [] as string[],
-    contact_email: '',
-    contact_phone: ''
+    contactEmail: '',
+    contactPhone: '',
+    projects: []
   });
   const [newProject, setNewProject] = useState({ 
     name: '', 
-    status: 'active' as const,
-    assigned_department_id: '' 
+    status: 'active', 
+    assignedDepartment: '' 
   });
   const [newTag, setNewTag] = useState('');
-
-  if (clientsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   const filteredClients = clients.filter(client => {
     if (activeTab === 'all') return true;
     return client.status === activeTab;
   });
 
-  const handleCreateClient = async () => {
+  const handleCreateClient = () => {
     if (!newClient.name || !newClient.company) {
       toast.error('Please fill in required fields');
       return;
     }
 
-    const success = await createClient(newClient);
-    if (success) {
-      // Reset form
-      setNewClient({
-        name: '', 
-        company: '', 
-        status: 'active', 
-        assigned_departments: [], 
-        tags: [],
-        contact_email: '', 
-        contact_phone: ''
-      });
-      setShowCreateDialog(false);
-    }
+    const client = {
+      ...newClient,
+      id: Math.max(...clients.map(c => c.id)) + 1,
+      projects: []
+    };
+
+    const updatedClients = [...clients, client];
+    setClients(updatedClients);
+    
+    // Reset form
+    setNewClient({
+      name: '', company: '', status: 'active', departments: [], tags: [],
+      contactEmail: '', contactPhone: '', projects: []
+    });
+    setShowCreateDialog(false);
+    
+    console.log('Client created successfully:', client);
+    toast.success('Client created successfully');
   };
 
-  const handleEditClient = async () => {
+  const handleEditClient = () => {
     if (!selectedClient) return;
 
-    const success = await updateClient(selectedClient.id, selectedClient);
-    if (success) {
-      setShowEditDialog(false);
-      setSelectedClient(null);
-    }
+    const updatedClients = clients.map(client => 
+      client.id === selectedClient.id ? selectedClient : client
+    );
+    
+    setClients(updatedClients);
+    setShowEditDialog(false);
+    setSelectedClient(null);
+    
+    console.log('Client updated successfully:', selectedClient);
+    toast.success('Client updated successfully');
   };
 
-  const handleDeleteClient = async (clientId: string) => {
-    await deleteClient(clientId);
+  const handleDeleteClient = (clientId: number) => {
+    const updatedClients = clients.filter(client => client.id !== clientId);
+    setClients(updatedClients);
+    console.log('Client deleted, updated list:', updatedClients);
+    toast.success('Client deleted successfully');
   };
 
-  const toggleClientStatus = async (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    if (client) {
-      await updateClient(clientId, {
-        status: client.status === 'active' ? 'inactive' : 'active'
-      });
-    }
+  const toggleClientStatus = (clientId: number) => {
+    const updatedClients = clients.map(client => 
+      client.id === clientId 
+        ? { ...client, status: client.status === 'active' ? 'inactive' : 'active' }
+        : client
+    );
+    setClients(updatedClients);
+    console.log('Client status updated:', updatedClients);
+    toast.success('Client status updated');
   };
 
-  const handleAddProject = async () => {
+  const addProject = () => {
     if (!newProject.name || !selectedClient) return;
 
-    const success = await addProject(selectedClient.id, newProject);
-    if (success) {
-      setNewProject({ name: '', status: 'active', assigned_department_id: '' });
+    const project = {
+      ...newProject,
+      id: Date.now()
+    };
+
+    const updatedClient = {
+      ...selectedClient,
+      projects: [...selectedClient.projects, project]
+    };
+
+    const updatedClients = clients.map(client => 
+      client.id === selectedClient.id ? updatedClient : client
+    );
+    
+    setClients(updatedClients);
+    setSelectedClient(updatedClient);
+    setNewProject({ name: '', status: 'active', assignedDepartment: '' });
+    
+    if (project.assignedDepartment) {
+      toast.success(`Project added and assigned to ${project.assignedDepartment} department`);
+    } else {
+      toast.success('Project added successfully');
     }
   };
 
-  const assignProjectToDepartment = async (projectId: string, departmentId: string) => {
-    await updateProject(projectId, { assigned_department_id: departmentId });
+  const assignProjectToDepartment = (projectId: number, department: string) => {
+    if (!selectedClient) return;
+
+    const updatedProjects = selectedClient.projects.map((project: any) => 
+      project.id === projectId 
+        ? { ...project, assignedDepartment: department }
+        : project
+    );
+
+    const updatedClient = { ...selectedClient, projects: updatedProjects };
+    const updatedClients = clients.map(client => 
+      client.id === selectedClient.id ? updatedClient : client
+    );
+    
+    setClients(updatedClients);
+    setSelectedClient(updatedClient);
+    toast.success(`Project assigned to ${department} department`);
   };
 
   const addTag = () => {
@@ -129,13 +213,24 @@ const ManagerClients = () => {
     });
   };
 
-  const removeTagFromClient = async (clientId: string, tagToRemove: string) => {
-    const client = clients.find(c => c.id === clientId);
-    if (client) {
-      await updateClient(clientId, {
-        tags: client.tags.filter(tag => tag !== tagToRemove)
-      });
-    }
+  const addTagToClient = (clientId: number, tag: string) => {
+    const updatedClients = clients.map(client => 
+      client.id === clientId 
+        ? { ...client, tags: [...client.tags, tag] }
+        : client
+    );
+    setClients(updatedClients);
+    toast.success('Tag added to client');
+  };
+
+  const removeTagFromClient = (clientId: number, tagToRemove: string) => {
+    const updatedClients = clients.map(client => 
+      client.id === clientId 
+        ? { ...client, tags: client.tags.filter(tag => tag !== tagToRemove) }
+        : client
+    );
+    setClients(updatedClients);
+    toast.success('Tag removed from client');
   };
 
   return (
@@ -184,8 +279,8 @@ const ManagerClients = () => {
                   <Input
                     id="contact-email"
                     type="email"
-                    value={newClient.contact_email}
-                    onChange={(e) => setNewClient({...newClient, contact_email: e.target.value})}
+                    value={newClient.contactEmail}
+                    onChange={(e) => setNewClient({...newClient, contactEmail: e.target.value})}
                     placeholder="Enter contact email"
                   />
                 </div>
@@ -193,8 +288,8 @@ const ManagerClients = () => {
                   <Label htmlFor="contact-phone">Contact Phone</Label>
                   <Input
                     id="contact-phone"
-                    value={newClient.contact_phone}
-                    onChange={(e) => setNewClient({...newClient, contact_phone: e.target.value})}
+                    value={newClient.contactPhone}
+                    onChange={(e) => setNewClient({...newClient, contactPhone: e.target.value})}
                     placeholder="Enter contact phone"
                   />
                 </div>
@@ -204,8 +299,8 @@ const ManagerClients = () => {
                 <Label>Assigned Departments</Label>
                 <Select 
                   onValueChange={(value) => {
-                    if (!newClient.assigned_departments.includes(value)) {
-                      setNewClient({...newClient, assigned_departments: [...newClient.assigned_departments, value]});
+                    if (!newClient.departments.includes(value)) {
+                      setNewClient({...newClient, departments: [...newClient.departments, value]});
                     }
                   }}
                 >
@@ -219,11 +314,11 @@ const ManagerClients = () => {
                   </SelectContent>
                 </Select>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {newClient.assigned_departments.map((dept, index) => (
+                  {newClient.departments.map((dept, index) => (
                     <Badge key={index} variant="outline" className="cursor-pointer"
                       onClick={() => setNewClient({
                         ...newClient, 
-                        assigned_departments: newClient.assigned_departments.filter((_, i) => i !== index)
+                        departments: newClient.departments.filter((_, i) => i !== index)
                       })}
                     >
                       {dept} <X className="h-3 w-3 ml-1" />
@@ -296,13 +391,13 @@ const ManagerClients = () => {
                 <CardContent className="space-y-4">
                   <div>
                     <p className="text-sm text-gray-600">{client.company}</p>
-                    <p className="text-xs text-gray-500">{client.contact_email}</p>
+                    <p className="text-xs text-gray-500">{client.contactEmail}</p>
                   </div>
 
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-1">Departments:</p>
                     <div className="flex flex-wrap gap-1">
-                      {client.assigned_departments?.map((dept, index) => (
+                      {client.departments.map((dept, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {dept}
                         </Badge>
@@ -311,7 +406,7 @@ const ManagerClients = () => {
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Projects: {client.projects?.length || 0}</p>
+                    <p className="text-sm font-medium text-gray-700 mb-1">Projects: {client.projects.length}</p>
                     <Button
                       variant="outline"
                       size="sm"
@@ -326,7 +421,7 @@ const ManagerClients = () => {
                     </Button>
                   </div>
 
-                  {client.tags && client.tags.length > 0 && (
+                  {client.tags.length > 0 && (
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-1">Tags:</p>
                       <div className="flex flex-wrap gap-1">
@@ -371,7 +466,7 @@ const ManagerClients = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Edit Client Dialog */}
+      {/* Edit Client Dialog - keeping existing code structure but with enhanced tag management */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -403,16 +498,16 @@ const ManagerClients = () => {
                   <Label>Contact Email</Label>
                   <Input
                     type="email"
-                    value={selectedClient.contact_email || ''}
-                    onChange={(e) => setSelectedClient({...selectedClient, contact_email: e.target.value})}
+                    value={selectedClient.contactEmail}
+                    onChange={(e) => setSelectedClient({...selectedClient, contactEmail: e.target.value})}
                     placeholder="Enter contact email"
                   />
                 </div>
                 <div>
                   <Label>Contact Phone</Label>
                   <Input
-                    value={selectedClient.contact_phone || ''}
-                    onChange={(e) => setSelectedClient({...selectedClient, contact_phone: e.target.value})}
+                    value={selectedClient.contactPhone}
+                    onChange={(e) => setSelectedClient({...selectedClient, contactPhone: e.target.value})}
                     placeholder="Enter contact phone"
                   />
                 </div>
@@ -432,6 +527,41 @@ const ManagerClients = () => {
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label>Assigned Departments</Label>
+                <Select 
+                  onValueChange={(value) => {
+                    if (!selectedClient.departments.includes(value)) {
+                      setSelectedClient({
+                        ...selectedClient, 
+                        departments: [...selectedClient.departments, value]
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Add departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedClient.departments.map((dept: string, index: number) => (
+                    <Badge key={index} variant="outline" className="cursor-pointer"
+                      onClick={() => setSelectedClient({
+                        ...selectedClient, 
+                        departments: selectedClient.departments.filter((_: string, i: number) => i !== index)
+                      })}
+                    >
+                      {dept} ×
+                    </Badge>
+                  ))}
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2">
@@ -463,8 +593,8 @@ const ManagerClients = () => {
                 placeholder="Enter project name"
               />
               <Select 
-                value={newProject.assigned_department_id}
-                onValueChange={(value) => setNewProject({...newProject, assigned_department_id: value})}
+                value={newProject.assignedDepartment}
+                onValueChange={(value) => setNewProject({...newProject, assignedDepartment: value})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Assign to department" />
@@ -476,10 +606,10 @@ const ManagerClients = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleAddProject} className="w-full">Add Project</Button>
+            <Button onClick={addProject} className="w-full">Add Project</Button>
             
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {selectedClient?.projects?.map((project: any) => (
+              {selectedClient?.projects.map((project: any) => (
                 <Card key={project.id}>
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center">
@@ -492,16 +622,16 @@ const ManagerClients = () => {
                           >
                             {project.status}
                           </Badge>
-                          {project.assigned_department_id && (
+                          {project.assignedDepartment && (
                             <Badge variant="outline">
-                              {project.assigned_department_id}
+                              {project.assignedDepartment}
                             </Badge>
                           )}
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <Select
-                          value={project.assigned_department_id || ''}
+                          value={project.assignedDepartment || ''}
                           onValueChange={(value) => assignProjectToDepartment(project.id, value)}
                         >
                           <SelectTrigger className="w-32">
@@ -517,9 +647,15 @@ const ManagerClients = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            updateProject(project.id, {
-                              status: project.status === 'active' ? 'stopped' : 'active'
-                            });
+                            const updatedProjects = selectedClient.projects.map((p: any) =>
+                              p.id === project.id 
+                                ? { ...p, status: p.status === 'active' ? 'stopped' : 'active' }
+                                : p
+                            );
+                            const updatedClient = { ...selectedClient, projects: updatedProjects };
+                            setClients(clients.map(c => c.id === selectedClient.id ? updatedClient : c));
+                            setSelectedClient(updatedClient);
+                            toast.success('Project status updated');
                           }}
                         >
                           Toggle Status

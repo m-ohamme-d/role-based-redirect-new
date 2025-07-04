@@ -1,5 +1,4 @@
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import jsPDF from 'jspdf';
 
 export interface ReportData {
   title: string;
@@ -16,15 +15,6 @@ export interface ReportSection {
   title: string;
   content: string | TableData | ChartData | PerformanceData;
   type: 'text' | 'table' | 'chart' | 'performance';
-  // Enhanced chart support
-  chartData?: {
-    data: { label: string; value: number }[];
-    imageDataUrl?: string;
-    imageWidth?: number;
-    imageHeight?: number;
-  };
-  // Text content array for better formatting
-  textContent?: string[];
 }
 
 export interface TableData {
@@ -123,8 +113,6 @@ export const prepareReportData = (data: any) => {
 };
 
 export const generatePDFReport = (data: ReportData): void => {
-  console.log('🔍 PDF Generation - Input data:', data); // Debug logging
-  
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -184,17 +172,11 @@ export const generatePDFReport = (data: ReportData): void => {
       case 'text':
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        
-        // Handle both string content and textContent array
-        const content = section.textContent || [section.content as string];
-        content.forEach(text => {
-          const textLines = doc.splitTextToSize(text, pageWidth - 40);
-          textLines.forEach((line: string) => {
-            checkNewPage(8);
-            doc.text(line, 20, yPosition);
-            yPosition += 8;
-          });
-          yPosition += 4; // Extra spacing between paragraphs
+        const textLines = doc.splitTextToSize(section.content as string, pageWidth - 40);
+        textLines.forEach((line: string) => {
+          checkNewPage(8);
+          doc.text(line, 20, yPosition);
+          yPosition += 8;
         });
         break;
 
@@ -202,28 +184,23 @@ export const generatePDFReport = (data: ReportData): void => {
         const tableData = section.content as TableData;
         doc.setFontSize(9);
         
-        // Use autoTable for better table formatting
-        checkNewPage(30);
-        (doc as any).autoTable({
-          head: [tableData.headers],
-          body: tableData.rows,
-          startY: yPosition,
-          margin: { left: 20, right: 20 },
-          styles: { 
-            fontSize: 10,
-            cellPadding: 3
-          },
-          headStyles: {
-            fillColor: [64, 64, 64],
-            textColor: 255,
-            fontStyle: 'bold'
-          },
-          alternateRowStyles: {
-            fillColor: [245, 245, 245]
-          }
+        // Headers
+        doc.setFont('helvetica', 'bold');
+        const colWidth = (pageWidth - 40) / tableData.headers.length;
+        tableData.headers.forEach((header, colIndex) => {
+          doc.text(header, 20 + (colIndex * colWidth), yPosition);
         });
-        // @ts-ignore - autoTable adds finalY property
-        yPosition = (doc as any).lastAutoTable.finalY + 15;
+        yPosition += 10;
+
+        // Rows
+        doc.setFont('helvetica', 'normal');
+        tableData.rows.forEach(row => {
+          checkNewPage(10);
+          row.forEach((cell, colIndex) => {
+            doc.text(cell, 20 + (colIndex * colWidth), yPosition);
+          });
+          yPosition += 8;
+        });
         break;
 
       case 'performance':
@@ -307,37 +284,18 @@ export const generatePDFReport = (data: ReportData): void => {
 
       case 'chart':
         const chartData = section.content as ChartData;
-        const chartConfig = section.chartData;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
         
         checkNewPage(50);
-        
-        if (chartConfig?.imageDataUrl) {
-          // Add chart image if available
-          doc.addImage(
-            chartConfig.imageDataUrl, 
-            'PNG', 
-            20, 
-            yPosition, 
-            chartConfig.imageWidth ?? 150, 
-            chartConfig.imageHeight ?? 80
-          );
-          yPosition += (chartConfig.imageHeight ?? 80) + 15;
-        } else {
-          // Fallback to text representation
-          doc.setFontSize(12);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Chart Data:', 20, yPosition);
-          yPosition += 10;
+        doc.text('Chart Data:', 20, yPosition);
+        yPosition += 10;
 
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'normal');
-          chartData.data.forEach(item => {
-            checkNewPage(8);
-            doc.text(`• ${item.label}: ${item.value}`, 25, yPosition);
-            yPosition += 8;
-          });
-          yPosition += 10;
-        }
+        chartData.data.forEach(item => {
+          checkNewPage(8);
+          doc.text(`${item.label}: ${item.value}`, 30, yPosition);
+          yPosition += 8;
+        });
         break;
     }
 
