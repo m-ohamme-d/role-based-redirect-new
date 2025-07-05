@@ -1,10 +1,14 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, Users, TrendingUp, BarChart3, Award } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Download, Users, TrendingUp, BarChart3, Award, Lock, FileText, Target } from 'lucide-react';
 import { useReportDownload } from '@/hooks/useReportDownload';
 import { GenerateReportButton } from '@/components/GenerateReportButton';
+import { downloadFile } from '@/utils/reportGenerator';
+import { toast } from 'sonner';
 
 // Enhanced team data with comprehensive realistic information
 const teamData = [
@@ -491,7 +495,7 @@ ${departmentProjects.map(project =>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Clock className="h-6 w-6 text-indigo-600" />
+              <Target className="h-6 w-6 text-indigo-600" />
               <div>
                 <p className="text-xl font-bold">{stats.totalHours}</p>
                 <p className="text-sm text-gray-600">Total Hours This Month</p>
