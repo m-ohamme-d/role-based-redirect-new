@@ -110,3 +110,74 @@ export function formatTableData(data: any[], columns: string[]): { headers: stri
     )
   };
 }
+
+// Generate PDF content as text (for the Reports components)
+export function generatePDFContent(reportData: any): string {
+  const { employees, department, teamLead, reportType, dateRange } = reportData;
+  
+  let content = `${reportType} Report\n`;
+  content += `Generated: ${new Date().toLocaleDateString()}\n`;
+  content += `Period: ${dateRange}\n`;
+  if (department) content += `Department: ${department}\n`;
+  if (teamLead) content += `Team Lead: ${teamLead}\n`;
+  content += `\n`;
+  
+  if (employees && employees.length > 0) {
+    content += `Employee Performance:\n`;
+    content += `${'='.repeat(50)}\n`;
+    employees.forEach((emp: any) => {
+      content += `Name: ${emp.name}\n`;
+      content += `Position: ${emp.position}\n`;
+      content += `Performance: ${emp.performance}%\n`;
+      content += `Email: ${emp.email}\n`;
+      content += `\n`;
+    });
+  }
+  
+  return content;
+}
+
+// Generate Excel/CSV content (for the Reports components)
+export function generateExcelContent(reportData: any): string {
+  const { employees } = reportData;
+  
+  let csvContent = 'Name,Position,Performance,Email\n';
+  
+  if (employees && employees.length > 0) {
+    employees.forEach((emp: any) => {
+      csvContent += `"${emp.name}","${emp.position}",${emp.performance},"${emp.email}"\n`;
+    });
+  }
+  
+  return csvContent;
+}
+
+// Download file utility (for the Reports components)
+export function downloadFile(content: string, filename: string, mimeType: string): boolean {
+  try {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    return true;
+  } catch (error) {
+    console.error('Download failed:', error);
+    return false;
+  }
+}
+
+// Prepare report data utility (for the Reports components)
+export function prepareReportData(data: any): any {
+  return {
+    employees: data.employees || [],
+    department: data.department,
+    teamLead: data.teamLead,
+    reportType: data.reportType || 'General',
+    dateRange: data.dateRange || 'Current Period'
+  };
+}
