@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -324,7 +325,6 @@ const ManagerClients = () => {
                   </div>
                   <div className="flex gap-2">
                     <Input
-                      size="sm"
                       placeholder="Add tag"
                       value={newTagInputs[client.id] || ''}
                       onChange={(e) => setNewTagInputs(prev => ({
@@ -336,6 +336,7 @@ const ManagerClients = () => {
                           addTag(client.id, newTagInputs[client.id] || '');
                         }
                       }}
+                      className="text-sm"
                     />
                     <Button
                       size="sm"
