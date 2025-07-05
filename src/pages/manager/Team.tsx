@@ -55,8 +55,39 @@ const ManagerTeam = () => {
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
 
+  // Fetch real teams data
+  const fetchTeams = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform data to match existing structure
+      const transformedTeams = data?.map((team, index) => ({
+        id: index + 1, // Use index for numeric ID to match existing structure
+        name: team.name,
+        lead: 'Team Lead Name', // You might want to join with profiles table
+        leadEmail: 'email@example.com',
+        leadPhone: '+1 (555) 000-0000',
+        members: [], // You might want to fetch team members
+        department: team.department_id || 'General',
+        performance: 85 // Calculate from actual data
+      })) || [];
+      
+      setTeams(transformedTeams);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+      toast.error('Failed to load teams');
+    }
+  };
+
   // Set up real-time subscription for teams data
   useEffect(() => {
+    fetchTeams();
+    
     const channel = supabase
       .channel('manager-teams-updates')
       .on(
@@ -68,7 +99,7 @@ const ManagerTeam = () => {
         },
         (payload) => {
           console.log('Team change detected:', payload);
-          // In a real app, you'd refetch teams data here
+          fetchTeams(); // Refetch teams data
           toast.info('Team data updated');
         }
       )
