@@ -1,168 +1,141 @@
-
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Download, Users, TrendingUp, BarChart3, Award, Lock, FileText, Target } from 'lucide-react';
+import { useReportDownload } from '@/hooks/useReportDownload';
+import { GenerateReportButton } from '@/components/GenerateReportButton';
+import { downloadFile } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
-import { 
-  FileText, 
-  Download, 
-  TrendingUp, 
-  Users, 
-  Clock, 
-  Target,
-  Building,
-  BarChart3
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { usePerformanceReport } from '@/hooks/usePerformanceReport';
-import { generatePerformanceReport, exportPerformanceReportPDF, downloadFile } from '@/utils/reportGenerator';
+import { teamData } from '@/data/mockTeamData';
+import { departmentProjects } from '@/data/mockProjectData';
 import { generateEnhancedPDFContent, generateEnhancedCSVContent } from '@/utils/reportUtils';
 
 const TeamLeadReports = () => {
-  const { profile } = useAuth();
-  const { data: reportData, loading: reportLoading, error } = usePerformanceReport(
-    profile?.role || 'teamlead', 
-    profile?.id || ''
-  );
-  
-  const [reportType, setReportType] = useState('Performance Review');
-  const [dateRange, setDateRange] = useState('Last 30 Days');
-  const [department, setDepartment] = useState('All Departments');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('current-month');
+  const [reportType, setReportType] = useState('team-performance');
+  const [activeTab, setActiveTab] = useState('overview');
+  const { downloadPerformanceReport, loading } = useReportDownload();
 
-  const handleGenerateReport = async () => {
-    if (!reportData) {
-      toast.error('No data available for report generation');
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userDepartment = 'IT';
+
+  const getPeriodLabel = (period: string) => {
+    switch (period) {
+      case 'current-week': return 'Current Week';
+      case 'current-month': return 'Current Month';
+      case 'current-quarter': return 'Current Quarter';
+      case 'current-year': return 'Current Year';
+      default: return 'Current Month';
+    }
+  };
+
+  const handleDownloadReport = (format: 'pdf' | 'csv') => {
+    if (!currentUser.name || currentUser.role !== 'teamlead') {
+      toast.error('Access denied: Only team leads can download reports');
       return;
     }
 
-    setIsGenerating(true);
-    toast.info('Download started - generating report...');
+    let data;
+    let filename;
+    let content;
+    
+    switch (reportType) {
+      case 'team-performance':
+        data = {
+          reportType: 'Team Performance Report',
+          teamLead: currentUser.name,
+          department: userDepartment,
+          dateRange: getPeriodLabel(selectedPeriod),
+          restrictedAccess: true,
+          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
+        };
+        filename = `team-performance-${userDepartment}-${selectedPeriod}`;
+        break;
+      case 'project-status':
+        data = {
+          reportType: 'Project Status Report',
+          projects: departmentProjects,
+          teamLead: currentUser.name,
+          department: userDepartment,
+          dateRange: getPeriodLabel(selectedPeriod),
+          restrictedAccess: true,
+          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
+        };
+        filename = `project-status-${userDepartment}-${selectedPeriod}`;
+        break;
+      default:
+        toast.error('Invalid report type selected');
+        return;
+    }
 
     try {
-      const reportConfig = {
-        reportType,
-        dateRange,
-        department,
-        teamLead: profile?.name || 'Unknown',
-        generatedBy: profile?.name || 'System'
-      };
-
-      const performanceReport = generatePerformanceReport(reportData, reportType);
-      if (!performanceReport) {
-        toast.error('Failed to generate report data');
-        return;
+      if (format === 'pdf') {
+        content = generateEnhancedPDFContent(data, teamData, departmentProjects);
+        const success = downloadFile(content, `${filename}.txt`, 'text/plain');
+        if (success) {
+          toast.success(`PDF report downloaded successfully (${userDepartment} team only)`);
+        } else {
+          toast.error('Failed to download PDF report');
+        }
+      } else {
+        content = generateEnhancedCSVContent(data, teamData, departmentProjects);
+        const success = downloadFile(content, `${filename}.csv`, 'text/csv');
+        if (success) {
+          toast.success(`CSV report downloaded successfully (${userDepartment} team only)`);
+        } else {
+          toast.error('Failed to download CSV report');
+        }
       }
-
-      // Generate PDF using jsPDF
-      await exportPerformanceReportPDF(
-        performanceReport, 
-        `${reportType.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
-      );
-    } catch (error: any) {
-      console.error('Error generating report:', error);
+    } catch (error) {
+      console.error('Report generation failed:', error);
       toast.error('Failed to generate report');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
-  const handleDownloadCSV = () => {
-    if (!reportData) {
-      toast.error('No data available for CSV export');
-      return;
-    }
-
-    toast.info('Download started - generating CSV...');
-
-    try {
-      const reportConfig = {
-        reportType,
-        dateRange,
-        department,
-        teamLead: profile?.name || 'Unknown',
-        generatedBy: profile?.name || 'System'
-      };
-
-      const csvContent = generateEnhancedCSVContent(
-        reportConfig,
-        reportData.employees || [],
-        reportData.projects || []
-      );
-
-      if (!csvContent || csvContent.trim() === '') {
-        toast.error('No data available to export');
-        return;
-      }
-
-      downloadFile(
-        csvContent,
-        `${reportType.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`,
-        'text/csv'
-      );
-    } catch (error: any) {
-      console.error('Error generating CSV:', error);
-      toast.error('Failed to generate CSV');
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed': return 'bg-green-200 text-green-800';
-      case 'active': return 'bg-blue-200 text-blue-800';
-      case 'on-hold': return 'bg-yellow-200 text-yellow-800';
-      case 'cancelled': return 'bg-red-200 text-red-800';
-      default: return 'bg-gray-200 text-gray-800';
-    }
-  };
-
-  if (reportLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-4">Loading report data...</span>
-      </div>
+  const getTeamStats = () => {
+    const avgPerformance = teamData.reduce((sum, member) => sum + member.performance, 0) / teamData.length;
+    const topPerformer = teamData.reduce((top, member) => 
+      member.performance > top.performance ? member : top
     );
-  }
+    const activeProjects = departmentProjects.filter(p => p.status === 'working').length;
+    const totalHours = teamData.reduce((sum, member) => sum + member.hoursWorked, 0);
+    const totalTasks = teamData.reduce((sum, member) => sum + member.tasksCompleted, 0);
+    const avgClientSatisfaction = teamData.reduce((sum, member) => sum + member.clientSatisfaction, 0) / teamData.length;
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <p className="text-red-600">Error loading report data: {error}</p>
-      </div>
-    );
-  }
+    return {
+      avgPerformance: avgPerformance.toFixed(1),
+      topPerformer: topPerformer.name,
+      activeProjects,
+      totalMembers: teamData.length,
+      totalHours,
+      totalTasks,
+      avgClientSatisfaction: avgClientSatisfaction.toFixed(1)
+    };
+  };
+
+  const stats = getTeamStats();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team Reports</h1>
-          <p className="text-gray-600">Generate and download performance reports</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleDownloadCSV}
-            variant="outline"
-            disabled={isGenerating || !reportData}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
+          <p className="text-gray-600">Generate and download performance reports for your team</p>
+          <p className="text-sm text-gray-500">Department: {userDepartment} | Access: Team Lead Only</p>
         </div>
       </div>
 
-      {/* Performance Metrics */}
+      {/* Enhanced Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Users className="h-8 w-8 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">{reportData?.reportMetrics?.totalEmployees || 0}</p>
+                <p className="text-2xl font-bold">{stats.totalMembers}</p>
                 <p className="text-sm text-gray-600">Team Members</p>
               </div>
             </div>
@@ -173,7 +146,7 @@ const TeamLeadReports = () => {
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{reportData?.reportMetrics?.avgPerformance?.toFixed(1) || 0}%</p>
+                <p className="text-2xl font-bold">{stats.avgPerformance}%</p>
                 <p className="text-sm text-gray-600">Avg Performance</p>
               </div>
             </div>
@@ -182,9 +155,9 @@ const TeamLeadReports = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Target className="h-8 w-8 text-purple-600" />
+              <BarChart3 className="h-8 w-8 text-purple-600" />
               <div>
-                <p className="text-2xl font-bold">{reportData?.reportMetrics?.activeProjects || 0}</p>
+                <p className="text-2xl font-bold">{stats.activeProjects}</p>
                 <p className="text-sm text-gray-600">Active Projects</p>
               </div>
             </div>
@@ -193,165 +166,258 @@ const TeamLeadReports = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <BarChart3 className="h-8 w-8 text-orange-600" />
+              <Award className="h-8 w-8 text-orange-600" />
               <div>
-                <p className="text-2xl font-bold">{reportData?.reportMetrics?.completionRate?.toFixed(1) || 0}%</p>
-                <p className="text-sm text-gray-600">Completion Rate</p>
+                <p className="text-lg font-bold text-orange-600">{stats.topPerformer}</p>
+                <p className="text-sm text-gray-600">Top Performer</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Report Generation Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Generate Performance Report
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-              <Select value={reportType} onValueChange={setReportType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select report type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Performance Review">Performance Review</SelectItem>
-                  <SelectItem value="Project Summary">Project Summary</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select date range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Last 7 Days">Last 7 Days</SelectItem>
-                  <SelectItem value="Last 30 Days">Last 30 Days</SelectItem>
-                  <SelectItem value="Last 90 Days">Last 90 Days</SelectItem>
-                  <SelectItem value="This Year">This Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
-              <Select value={department} onValueChange={setDepartment}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All Departments">All Departments</SelectItem>
-                  {reportData?.departments?.map((dept: any) => (
-                    <SelectItem key={dept.id} value={dept.name}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button
-              onClick={handleGenerateReport}
-              disabled={isGenerating || !reportData}
-              className="flex items-center gap-2"
-            >
-              {isGenerating ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <FileText className="h-4 w-4" />
-              )}
-              {isGenerating ? 'Generating...' : 'Generate PDF Report'}
-            </Button>
-            {!reportData && (
-              <p className="text-sm text-gray-500 self-center">No data available for report generation</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Team Performance Overview */}
-      {reportData?.employees && reportData.employees.length > 0 && (
+      {/* Additional Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Team Performance Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {reportData.employees.slice(0, 5).map((member: any) => (
-                <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <h4 className="font-medium">{member.profiles?.name || 'Unknown'}</h4>
-                      <p className="text-sm text-gray-600">{member.position || 'No position'}</p>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Target className="h-6 w-6 text-indigo-600" />
+              <div>
+                <p className="text-xl font-bold">{stats.totalHours}</p>
+                <p className="text-sm text-gray-600">Total Hours This Month</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Target className="h-6 w-6 text-cyan-600" />
+              <div>
+                <p className="text-xl font-bold">{stats.totalTasks}</p>
+                <p className="text-sm text-gray-600">Tasks Completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Award className="h-6 w-6 text-yellow-600" />
+              <div>
+                <p className="text-xl font-bold">{stats.avgClientSatisfaction}/5</p>
+                <p className="text-sm text-gray-600">Client Satisfaction</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="download">Download Reports</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Team Performance</CardTitle>
+                <CardDescription>Current team member performance ratings with detailed metrics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {teamData.map((member) => (
+                    <div key={member.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-sm text-gray-600">{member.position}</p>
+                        </div>
+                        <Badge 
+                          variant={member.performance >= 90 ? 'default' : member.performance >= 80 ? 'secondary' : 'outline'}
+                          className={member.performance >= 90 ? 'bg-green-500' : member.performance >= 80 ? 'bg-blue-500' : ''}
+                        >
+                          {member.performance}%
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                        <div>Tasks: {member.tasksCompleted}</div>
+                        <div>Hours: {member.hoursWorked}</div>
+                        <div>Rating: {member.clientSatisfaction}/5</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <Badge variant="outline">
-                      {member.departments?.name || 'No Department'}
-                    </Badge>
-                    <span className="text-sm font-medium">
-                      {member.performance_rating || 0}% Performance
-                    </span>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
 
-      {/* Project Status Overview */}
-      {reportData?.projects && reportData.projects.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Status Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {reportData.projects.slice(0, 5).map((project: any) => (
-                <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
+            <Card>
+              <CardHeader>
+                <CardTitle>Department Projects</CardTitle>
+                <CardDescription>Projects assigned to {userDepartment} department with progress tracking</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {departmentProjects.map((project) => (
+                    <div key={project.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{project.name}</p>
+                          <p className="text-sm text-gray-600">{project.clientName}</p>
+                        </div>
+                        <Badge 
+                          variant={project.status === 'working' ? 'default' : 'destructive'}
+                          className={project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
+                        >
+                          {project.progress}%
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                        <div>Budget: {project.budget}</div>
+                        <div>Team: {project.teamMembers.length}</div>
+                        <div>Milestones: {project.completedMilestones}/{project.milestones}</div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                            style={{ width: `${project.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="download" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-red-600" />
+                Generate Enhanced Reports - Restricted Access
+              </CardTitle>
+              <CardDescription>Download comprehensive reports with detailed team and project data. Reports include financial data, training records, and performance analytics.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Report Type</label>
+                  <Select value={reportType} onValueChange={setReportType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="team-performance">Comprehensive Team Performance</SelectItem>
+                      <SelectItem value="project-status">Detailed Project Portfolio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Time Period</label>
+                  <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current-week">Current Week</SelectItem>
+                      <SelectItem value="current-month">Current Month</SelectItem>
+                      <SelectItem value="current-quarter">Current Quarter</SelectItem>
+                      <SelectItem value="current-year">Current Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">Report Contents Include:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Detailed employee performance metrics and ratings</li>
+                  <li>• Comprehensive project status and financial data</li>
+                  <li>• Training records and certification tracking</li>
+                  <li>• Client satisfaction scores and feedback</li>
+                  <li>• Salary, bonus, and compensation details</li>
+                  <li>• Resource allocation and time tracking</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-4">
+                <Button 
+                  onClick={() => handleDownloadReport('pdf')}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Download Enhanced PDF
+                </Button>
+                <Button 
+                  onClick={() => handleDownloadReport('csv')}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Enhanced CSV
+                </Button>
+              </div>
+
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Lock className="h-5 w-5 text-red-600 mt-0.5" />
                   <div>
-                    <h4 className="font-medium">{project.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      Client: {project.clients?.name || 'No client'}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <Badge variant="outline">
-                      {project.departments?.name || 'No Department'}
-                    </Badge>
-                    <Badge className={getStatusColor(project.status)}>
-                      {project.status || 'unknown'}
-                    </Badge>
+                    <p className="text-sm text-red-800 font-medium">Access Restrictions</p>
+                    <ul className="text-sm text-red-700 mt-1 space-y-1">
+                      <li>• Reports contain sensitive financial and performance data</li>
+                      <li>• Access restricted to {userDepartment} department only</li>
+                      <li>• All downloads are logged and monitored</li>
+                      <li>• Reports include salary, bonus, and compensation details</li>
+                      <li>• Contact your manager for cross-department access</li>
+                    </ul>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* No Data Message */}
-      {(!reportData?.employees || reportData.employees.length === 0) && 
-       (!reportData?.projects || reportData.projects.length === 0) && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
-            <p className="text-gray-600">
-              No employee or project data found for report generation.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="analytics" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Analytics</CardTitle>
+              <CardDescription>Detailed analytics for your team</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h3 className="font-semibold text-green-800">High Performers</h3>
+                  <p className="text-2xl font-bold text-green-600">
+                    {teamData.filter(m => m.performance >= 90).length}
+                  </p>
+                  <p className="text-sm text-green-700">Members with 90%+ performance</p>
+                </div>
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h3 className="font-semibold text-blue-800">Good Performers</h3>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {teamData.filter(m => m.performance >= 80 && m.performance < 90).length}
+                  </p>
+                  <p className="text-sm text-blue-700">Members with 80-89% performance</p>
+                </div>
+                <div className="p-4 bg-orange-50 rounded-lg">
+                  <h3 className="font-semibold text-orange-800">Needs Improvement</h3>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {teamData.filter(m => m.performance < 80).length}
+                  </p>
+                  <p className="text-sm text-orange-700">Members below 80% performance</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

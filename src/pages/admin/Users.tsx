@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Users, Shield, Key, Building } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Shield, Key, RotateCcw, Building } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -47,18 +47,17 @@ const AdminUsers = () => {
     status: 'active'
   });
 
-  // Fetch all registered users from Supabase profiles table
+  // Fetch users from Supabase
   const fetchUsers = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, name, role, created_at, updated_at')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setUsers(data || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
     } finally {
@@ -69,9 +68,9 @@ const AdminUsers = () => {
   useEffect(() => {
     fetchUsers();
 
-    // Set up real-time subscription for user changes
+    // Set up real-time subscription
     const channel = supabase
-      .channel('admin-users-updates')
+      .channel('admin-users-changes')
       .on(
         'postgres_changes',
         {
@@ -92,6 +91,10 @@ const AdminUsers = () => {
   }, []);
 
   const handleCreateUser = async () => {
+    // Note: Creating users requires proper Supabase Auth setup
+    // This would typically involve:
+    // 1. Creating the auth user with supabase.auth.signUp()
+    // 2. The profile is auto-created via database trigger
     toast.info('User creation requires Supabase Auth configuration');
     setShowCreateDialog(false);
   };
@@ -113,7 +116,7 @@ const AdminUsers = () => {
       setShowEditDialog(false);
       setSelectedUser(null);
       toast.success('User updated successfully');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating user:', error);
       toast.error('Failed to update user');
     }
@@ -137,21 +140,6 @@ const AdminUsers = () => {
     setShowPasswordDialog(false);
     setNewPassword('');
     setSelectedUser(null);
-  };
-
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole as 'admin' | 'manager' | 'teamlead' })
-        .eq('id', userId);
-
-      if (error) throw error;
-      toast.success(`User role updated to ${newRole}`);
-    } catch (error: any) {
-      console.error('Error updating role:', error);
-      toast.error('Failed to update role');
-    }
   };
 
   const handleAddDepartment = () => {
@@ -190,6 +178,21 @@ const AdminUsers = () => {
       toast.success('Department deleted successfully - changes synced to Manager dashboard');
     } else {
       toast.error('Failed to delete department');
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole as 'admin' | 'manager' | 'teamlead' })
+        .eq('id', userId);
+
+      if (error) throw error;
+      toast.success(`User role updated to ${newRole}`);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update role');
     }
   };
 
@@ -379,9 +382,17 @@ const AdminUsers = () => {
             <div className="flex items-center space-x-2">
               <Shield className="h-8 w-8 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
-                <p className="text-sm text-gray-600">Admins</p>
+                <p className="text-2xl font-bold">{users.filter(u => u.status === 'active').length}</p>
+                <p className="text-sm text-gray-600">Active Users</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div>
+              <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
+              <p className="text-sm text-gray-600">Admins</p>
             </div>
           </CardContent>
         </Card>
@@ -393,25 +404,16 @@ const AdminUsers = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-2xl font-bold">{users.filter(u => u.role === 'teamlead').length}</p>
-              <p className="text-sm text-gray-600">Team Leads</p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle>All Registered Users</CardTitle>
+          <CardTitle>All Users</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Profile ID</TableHead>
                 <TableHead>Login ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
@@ -423,7 +425,7 @@ const AdminUsers = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       <span className="ml-2">Loading users...</span>
@@ -432,14 +434,13 @@ const AdminUsers = () => {
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                     No users found
                   </TableCell>
                 </TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-mono text-xs">{user.id}</TableCell>
                     <TableCell className="font-mono text-sm">{user.id.slice(0, 8)}...</TableCell>
                     <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                     <TableCell>{user.email}</TableCell>

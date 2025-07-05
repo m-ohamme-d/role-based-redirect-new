@@ -1,121 +1,161 @@
 
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { toast } from 'sonner';
+// jsPDF + autoTable + optional chart images with data validation
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
-export const generatePerformanceReport = (data: any, reportType: string) => {
-  if (!data || (!data.employees?.length && !data.projects?.length)) {
-    toast.error('No data available for report generation');
-    return null;
-  }
-
-  const reportData = {
-    reportType,
-    generatedAt: new Date().toISOString(),
-    employees: data.employees || [],
-    projects: data.projects || [],
-    metrics: data.reportMetrics || {}
+export interface ReportSection {
+  type: 'text' | 'table' | 'chart';
+  textContent?: string[];
+  tableData?: { 
+    headers: string[]; 
+    rows: string[][];
   };
+  chartData?: {
+    data: { label: string; value: number }[];
+    imageDataUrl?: string;
+    imageWidth?: number;
+    imageHeight?: number;
+  };
+}
 
-  return reportData;
-};
+export interface ReportData { 
+  title: string; 
+  sections: ReportSection[];
+}
 
-export const exportPerformanceReportPDF = async (reportData: any, filename: string) => {
-  try {
-    toast.info('Download started - generating PDF...');
-    
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    
-    // Title
-    doc.setFontSize(20);
-    doc.text('Performance Report', pageWidth / 2, 20, { align: 'center' });
-    
-    // Generated date
-    doc.setFontSize(12);
-    doc.text(`Generated: ${new Date(reportData.generatedAt).toLocaleString()}`, 14, 35);
-    
-    // Metrics section
-    doc.setFontSize(16);
-    doc.text('Key Metrics', 14, 50);
-    
-    const metricsData = [
-      ['Total Employees', reportData.metrics.totalEmployees?.toString() || '0'],
-      ['Active Projects', reportData.metrics.activeProjects?.toString() || '0'],
-      ['Average Performance', `${reportData.metrics.avgPerformance?.toFixed(1) || '0'}%`],
-      ['Completion Rate', `${reportData.metrics.completionRate?.toFixed(1) || '0'}%`]
-    ];
-    
-    autoTable(doc, {
-      startY: 55,
-      head: [['Metric', 'Value']],
-      body: metricsData,
-      theme: 'grid'
-    });
-
-    // Employee data
-    if (reportData.employees?.length > 0) {
-      doc.setFontSize(16);
-      doc.text('Employee Performance', 14, (doc as any).lastAutoTable.finalY + 20);
-      
-      const employeeData = reportData.employees.map((emp: any) => [
-        emp.profiles?.name || 'N/A',
-        emp.departments?.name || 'N/A',
-        emp.position || 'N/A',
-        `${emp.performance_rating || 0}%`
-      ]);
-
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 25,
-        head: [['Name', 'Department', 'Position', 'Performance']],
-        body: employeeData.length > 0 ? employeeData : [['No employee data available', '', '', '']],
-        theme: 'striped'
+export function generatePDFReport(data: ReportData) {
+  console.log('🔍 PDF Report data:', data);
+  
+  const doc = new jsPDF();
+  let y = 20;
+  
+  // Title
+  doc.setFontSize(22);
+  doc.text(data.title, 20, y);
+  y += 15;
+  
+  // Process sections
+  for (const section of data.sections) {
+    if (section.type === 'text' && section.textContent) {
+      doc.setFontSize(12);
+      section.textContent.forEach(line => {
+        doc.text(line, 20, y);
+        y += 8;
       });
+      y += 10;
+    } 
+    else if (section.type === 'table' && section.tableData) {
+      (doc as any).autoTable({
+        head: [section.tableData.headers],
+        body: section.tableData.rows,
+        startY: y,
+        margin: { left: 20, right: 20 },
+        styles: { fontSize: 10 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 15;
+    } 
+    else if (section.type === 'chart' && section.chartData) {
+      const chartData = section.chartData;
+      if (chartData.imageDataUrl) {
+        doc.addImage(
+          chartData.imageDataUrl, 
+          'PNG', 
+          20, 
+          y, 
+          chartData.imageWidth ?? 150, 
+          chartData.imageHeight ?? 80
+        );
+        y += (chartData.imageHeight ?? 80) + 15;
+      } else {
+        // Fallback to text representation
+        doc.setFontSize(12);
+        doc.text('Chart Data:', 20, y);
+        y += 8;
+        chartData.data.forEach(({ label, value }) => {
+          doc.text(`• ${label}: ${value}`, 25, y);
+          y += 8;
+        });
+        y += 10;
+      }
     }
-
-    // Project data
-    if (reportData.projects?.length > 0) {
+    
+    // Add new page if needed
+    if (y > 270) {
       doc.addPage();
-      doc.setFontSize(16);
-      doc.text('Project Status', 14, 20);
-      
-      const projectData = reportData.projects.map((proj: any) => [
-        proj.name || 'N/A',
-        proj.clients?.name || 'N/A',
-        proj.departments?.name || 'N/A',
-        proj.status || 'unknown'
-      ]);
-
-      autoTable(doc, {
-        startY: 25,
-        head: [['Project', 'Client', 'Department', 'Status']],
-        body: projectData.length > 0 ? projectData : [['No project data available', '', '', '']],
-        theme: 'striped'
-      });
+      y = 20;
     }
-
-    // Handle empty data case
-    if (reportData.employees?.length === 0 && reportData.projects?.length === 0) {
-      doc.setFontSize(14);
-      doc.text('No records found for the selected criteria.', pageWidth / 2, 100, { align: 'center' });
-    }
-
-    doc.save(filename);
-    toast.success('Report downloaded successfully');
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    toast.error('Failed to generate PDF report');
   }
-};
+  
+  doc.save(`${data.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
+  console.log('✅ PDF generated successfully');
+}
 
-export const downloadFile = (content: string, filename: string, type: string = 'text/plain') => {
+// Utility function to generate chart image from canvas
+export function getChartImageFromCanvas(canvasId: string): string | null {
+  const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
+  if (canvas) {
+    return canvas.toDataURL('image/png');
+  }
+  return null;
+}
+
+// Helper function to format data for PDF tables
+export function formatTableData(data: any[], columns: string[]): { headers: string[]; rows: string[][] } {
+  return {
+    headers: columns,
+    rows: data.map(item => 
+      columns.map(column => 
+        item[column]?.toString() || ''
+      )
+    )
+  };
+}
+
+// Generate PDF content as text (for the Reports components)
+export function generatePDFContent(reportData: any): string {
+  const { employees, department, teamLead, reportType, dateRange } = reportData;
+  
+  let content = `${reportType} Report\n`;
+  content += `Generated: ${new Date().toLocaleDateString()}\n`;
+  content += `Period: ${dateRange}\n`;
+  if (department) content += `Department: ${department}\n`;
+  if (teamLead) content += `Team Lead: ${teamLead}\n`;
+  content += `\n`;
+  
+  if (employees && employees.length > 0) {
+    content += `Employee Performance:\n`;
+    content += `${'='.repeat(50)}\n`;
+    employees.forEach((emp: any) => {
+      content += `Name: ${emp.name}\n`;
+      content += `Position: ${emp.position}\n`;
+      content += `Performance: ${emp.performance}%\n`;
+      content += `Email: ${emp.email}\n`;
+      content += `\n`;
+    });
+  }
+  
+  return content;
+}
+
+// Generate Excel/CSV content (for the Reports components)
+export function generateExcelContent(reportData: any): string {
+  const { employees } = reportData;
+  
+  let csvContent = 'Name,Position,Performance,Email\n';
+  
+  if (employees && employees.length > 0) {
+    employees.forEach((emp: any) => {
+      csvContent += `"${emp.name}","${emp.position}",${emp.performance},"${emp.email}"\n`;
+    });
+  }
+  
+  return csvContent;
+}
+
+// Download file utility (for the Reports components)
+export function downloadFile(content: string, filename: string, mimeType: string): boolean {
   try {
-    if (!content || content.trim() === '') {
-      toast.error('No data available to download');
-      return;
-    }
-
-    const blob = new Blob([content], { type });
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -124,10 +164,20 @@ export const downloadFile = (content: string, filename: string, type: string = '
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
-    toast.success('File downloaded successfully');
+    return true;
   } catch (error) {
-    console.error('Error downloading file:', error);
-    toast.error('Failed to download file');
+    console.error('Download failed:', error);
+    return false;
   }
-};
+}
+
+// Prepare report data utility (for the Reports components)
+export function prepareReportData(data: any): any {
+  return {
+    employees: data.employees || [],
+    department: data.department,
+    teamLead: data.teamLead,
+    reportType: data.reportType || 'General',
+    dateRange: data.dateRange || 'Current Period'
+  };
+}
