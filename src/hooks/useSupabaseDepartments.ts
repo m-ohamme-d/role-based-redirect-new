@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,23 +38,29 @@ export const useSupabaseDepartments = () => {
   useEffect(() => {
     fetchDepartments();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with proper cleanup
     const channel = supabase
       .channel('departments-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*',  
           schema: 'public',
           table: 'departments'
         },
         () => {
+          console.log('Department change detected, refetching...');
           fetchDepartments();
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe to the channel
+    channel.subscribe((status) => {
+      console.log('Department subscription status:', status);
+    });
 
     return () => {
+      console.log('Cleaning up department subscription');
       supabase.removeChannel(channel);
     };
   }, []);

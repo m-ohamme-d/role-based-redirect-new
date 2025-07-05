@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -63,7 +64,7 @@ export const useEmployees = () => {
   useEffect(() => {
     fetchEmployees();
 
-    // Set up real-time subscription
+    // Set up real-time subscription with proper cleanup
     const channel = supabase
       .channel('employees-changes')
       .on(
@@ -74,12 +75,18 @@ export const useEmployees = () => {
           table: 'employees'
         },
         () => {
+          console.log('Employee change detected, refetching...');
           fetchEmployees();
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe to the channel
+    channel.subscribe((status) => {
+      console.log('Employee subscription status:', status);
+    });
 
     return () => {
+      console.log('Cleaning up employee subscription');
       supabase.removeChannel(channel);
     };
   }, []);
