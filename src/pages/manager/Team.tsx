@@ -1,214 +1,270 @@
 
 import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Download } from 'lucide-react';
-import UnifiedDepartmentDialog from '@/components/manager/UnifiedDepartmentDialog';
-import DepartmentManagementCard from '@/components/manager/DepartmentManagementCard';
-import TeamsTable from '@/components/manager/TeamsTable';
-import TeamDetailsDialog from '@/components/manager/TeamDetailsDialog';
-import TeamLeadDetailsDialog from '@/components/manager/TeamLeadDetailsDialog';
-import NotificationDialog from '@/components/manager/NotificationDialog';
+import { Users, Plus, Search, Building } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-const teamsData = [
-  { 
-    id: 1, 
-    name: 'Development Team', 
-    lead: 'John Smith',
-    leadEmail: 'john.smith@company.com',
-    leadPhone: '+1 (555) 123-4567',
-    members: [
-      { id: 101, name: 'Alice Johnson', position: 'Senior Developer', ratings: { productivity: 92, collaboration: 88, timeliness: 90, overall: 90 }, avatar: null },
-      { id: 102, name: 'Bob Wilson', position: 'Frontend Developer', ratings: { productivity: 85, collaboration: 92, timeliness: 88, overall: 88 }, avatar: null },
-      { id: 103, name: 'Carol Brown', position: 'Backend Developer', ratings: { productivity: 90, collaboration: 85, timeliness: 92, overall: 89 }, avatar: null }
-    ],
-    department: 'IT', 
-    performance: 92 
-  },
-  { 
-    id: 2, 
-    name: 'Design Team', 
-    lead: 'Emily Wilson',
-    leadEmail: 'emily.wilson@company.com',
-    leadPhone: '+1 (555) 987-6543',
-    members: [
-      { id: 201, name: 'David Lee', position: 'UI Designer', ratings: { productivity: 89, collaboration: 91, timeliness: 87, overall: 89 }, avatar: null },
-      { id: 202, name: 'Emma Davis', position: 'UX Designer', ratings: { productivity: 93, collaboration: 89, timeliness: 91, overall: 91 }, avatar: null }
-    ],
-    department: 'IT', 
-    performance: 88 
-  },
-  { id: 3, name: 'HR Team', lead: 'Michael Brown', leadEmail: 'michael.brown@company.com', leadPhone: '+1 (555) 456-7890', members: [], department: 'HR', performance: 85 },
-  { id: 4, name: 'Sales Team', lead: 'Sarah Johnson', leadEmail: 'sarah.johnson@company.com', leadPhone: '+1 (555) 321-0987', members: [], department: 'Sales', performance: 90 },
-  { id: 5, name: 'Marketing Team', lead: 'David Lee', leadEmail: 'david.lee@company.com', leadPhone: '+1 (555) 111-2222', members: [], department: 'Marketing', performance: 87 },
-];
-
 const ManagerTeam = () => {
-  const [teams, setTeams] = useState(teamsData);
-  const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
-  const [selectedTeam, setSelectedTeam] = useState<any>(null);
-  const [showTeamDetails, setShowTeamDetails] = useState(false);
-  const [selectedTeamLead, setSelectedTeamLead] = useState<any>(null);
-  const [showTeamLeadDetails, setShowTeamLeadDetails] = useState(false);
-  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
-  const [notificationText, setNotificationText] = useState('');
-  const [reminderDate, setReminderDate] = useState('');
+  const [teams, setTeams] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Set up real-time subscription for teams data
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch teams with department and lead info
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select(`
+          *,
+          departments(id, name),
+          profiles!team_lead_id(name, email)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (teamsError) throw teamsError;
+
+      // Fetch employees with profile and department info
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('employees')
+        .select(`
+          *,
+          profiles!user_id(name, email, role),
+          departments(id, name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (employeesError) throw employeesError;
+
+      // Fetch departments
+      const { data: departmentsData, error: departmentsError } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name');
+
+      if (departmentsError) throw departmentsError;
+
+      setTeams(teamsData || []);
+      setEmployees(employeesData || []);
+      setDepartments(departmentsData || []);
+    } catch (error: any) {
+      console.error('Error fetching team data:', error);
+      toast.error('Failed to load team data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const channel = supabase
+    fetchData();
+
+    // Set up real-time subscriptions with proper cleanup
+    const teamsChannel = supabase
       .channel('manager-teams-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'teams'
-        },
-        (payload) => {
-          console.log('Team change detected:', payload);
-          // In a real app, you'd refetch teams data here
-          toast.info('Team data updated');
-        }
-      )
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'teams'
+      }, () => {
+        console.log('Teams change detected');
+        fetchData();
+      })
+      .subscribe();
+
+    const employeesChannel = supabase
+      .channel('manager-employees-updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'employees'
+      }, () => {
+        console.log('Employees change detected');
+        fetchData();
+      })
       .subscribe();
 
     return () => {
-      console.log('Cleaning up team subscription');
-      supabase.removeChannel(channel);
+      // Proper cleanup to prevent subscription conflicts
+      supabase.removeChannel(teamsChannel);
+      supabase.removeChannel(employeesChannel);
     };
   }, []);
 
-  const handleSelectTeam = (teamId: number) => {
-    if (selectedTeams.includes(teamId)) {
-      setSelectedTeams(selectedTeams.filter(id => id !== teamId));
-    } else {
-      setSelectedTeams([...selectedTeams, teamId]);
-    }
+  const filteredTeams = teams.filter(team =>
+    team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    team.departments?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getEmployeesForTeam = (teamId: string) => {
+    return employees.filter(emp => emp.department_id === teamId);
   };
 
-  const handleSelectAll = () => {
-    if (selectedTeams.length === teams.length) {
-      setSelectedTeams([]);
-    } else {
-      setSelectedTeams(teams.map(team => team.id));
-    }
-  };
-
-  const handleExport = () => {
-    if (selectedTeams.length === 0) {
-      toast.error('Please select teams to export');
-      return;
-    }
-
-    const selectedTeamData = teams.filter(team => selectedTeams.includes(team.id));
-    
-    const headers = ['Team Name', 'Team Lead', 'Department', 'Members', 'Performance'];
-    const csvContent = [
-      headers.join(','),
-      ...selectedTeamData.map(team => 
-        [team.name, team.lead, team.department, Array.isArray(team.members) ? team.members.length : 0, `${team.performance}%`].join(',')
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `team_export_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    toast.success(`Exported ${selectedTeams.length} teams successfully`);
-  };
-
-  const handleTeamClick = (team: any) => {
-    setSelectedTeam(team);
-    setShowTeamDetails(true);
-  };
-
-  const handleTeamLeadClick = (teamLead: any) => {
-    setSelectedTeamLead(teamLead);
-    setShowTeamLeadDetails(true);
-  };
-
-  const handleRatingUpdate = (memberId: string, category: string, rating: number) => {
-    if (selectedTeam) {
-      const updatedMembers = selectedTeam.members.map((member: any) => 
-        member.id.toString() === memberId ? { 
-          ...member, 
-          ratings: { ...member.ratings, [category]: rating }
-        } : member
-      );
-      const updatedTeam = { ...selectedTeam, members: updatedMembers };
-      setSelectedTeam(updatedTeam);
-      setTeams(teams.map(team => team.id === selectedTeam.id ? updatedTeam : team));
-      console.log('Rating updated for member:', memberId, 'category:', category, 'rating:', rating);
-    }
-  };
-
-  const handleSendDirectMessage = (teamLead: any) => {
-    setNotificationText(`Hi ${teamLead.lead}, I need an update on the current projects.`);
-    setShowNotificationDialog(true);
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-4">Loading team data...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
-        <div className="space-x-2">
-          <UnifiedDepartmentDialog teams={teams} setTeams={setTeams} />
-          
-          <Button
-            variant="outline"
-            className="flex items-center gap-2"
-            disabled={selectedTeams.length === 0}
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-
-          <NotificationDialog
-            showDialog={showNotificationDialog}
-            onOpenChange={setShowNotificationDialog}
-            selectedTeams={selectedTeams}
-            teams={teams}
-            notificationText={notificationText}
-            setNotificationText={setNotificationText}
-            reminderDate={reminderDate}
-            setReminderDate={setReminderDate}
-          />
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
+          <p className="text-gray-600">Manage teams and team assignments</p>
         </div>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Add Team
+        </Button>
       </div>
 
-      <DepartmentManagementCard teams={teams} />
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search teams or departments..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <TeamsTable 
-        teams={teams}
-        selectedTeams={selectedTeams}
-        onSelectTeam={handleSelectTeam}
-        onSelectAll={handleSelectAll}
-        onTeamClick={handleTeamClick}
-        onTeamLeadClick={handleTeamLeadClick}
-      />
+      {/* Team Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-8 w-8 text-blue-600" />
+              <div>
+                <p className="text-2xl font-bold">{teams.length}</p>
+                <p className="text-sm text-gray-600">Total Teams</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Building className="h-8 w-8 text-green-600" />
+              <div>
+                <p className="text-2xl font-bold">{departments.length}</p>
+                <p className="text-sm text-gray-600">Departments</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div>
+              <p className="text-2xl font-bold">{employees.length}</p>
+              <p className="text-sm text-gray-600">Total Employees</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div>
+              <p className="text-2xl font-bold">{teams.filter(t => t.profiles).length}</p>
+              <p className="text-sm text-gray-600">Teams with Leads</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <TeamDetailsDialog
-        showDialog={showTeamDetails}
-        onOpenChange={setShowTeamDetails}
-        selectedTeam={selectedTeam}
-        onRatingUpdate={handleRatingUpdate}
-      />
+      {/* Teams Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTeams.map((team) => {
+          const teamEmployees = getEmployeesForTeam(team.department_id);
+          
+          return (
+            <Card key={team.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-lg">{team.name}</CardTitle>
+                    <p className="text-sm text-gray-600">{team.description}</p>
+                  </div>
+                  <Badge variant="outline">
+                    {team.departments?.name || 'No Department'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Team Lead</p>
+                  <p className="text-sm text-gray-600">
+                    {team.profiles?.name || 'No Lead Assigned'}
+                  </p>
+                  {team.profiles?.email && (
+                    <p className="text-xs text-gray-500">{team.profiles.email}</p>
+                  )}
+                </div>
 
-      <TeamLeadDetailsDialog
-        showDialog={showTeamLeadDetails}
-        onOpenChange={setShowTeamLeadDetails}
-        selectedTeamLead={selectedTeamLead}
-        onSendMessage={handleSendDirectMessage}
-      />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Team Members</p>
+                  <p className="text-sm text-gray-600">
+                    {teamEmployees.length} members
+                  </p>
+                  <div className="mt-2 space-y-1">
+                    {teamEmployees.slice(0, 3).map((employee: any) => (
+                      <div key={employee.id} className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-xs text-gray-600">
+                          {employee.profiles?.name || 'Unknown'}
+                        </span>
+                      </div>
+                    ))}
+                    {teamEmployees.length > 3 && (
+                      <p className="text-xs text-gray-500">
+                        +{teamEmployees.length - 3} more members
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      View Details
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {filteredTeams.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Teams Found</h3>
+            <p className="text-gray-600">
+              {searchTerm ? 'No teams match your search criteria.' : 'Get started by creating your first team.'}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
