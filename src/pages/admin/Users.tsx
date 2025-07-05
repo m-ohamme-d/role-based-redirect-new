@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -23,20 +23,12 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Users, Shield, Key, RotateCcw, Building } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
-
-// Mock users data with departments
-const mockUsers = [
-  { id: 1, name: 'John Doe', email: 'john@example.com', role: 'user', department: 'IT', status: 'active' },
-  { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'user', department: 'HR', status: 'active' },
-  { id: 3, name: 'Robert Manager', email: 'robert@example.com', role: 'manager', department: 'IT', status: 'active' },
-  { id: 4, name: 'Sarah Lead', email: 'sarah@example.com', role: 'teamlead', department: 'IT', status: 'active' },
-  { id: 5, name: 'Tom Wilson', email: 'tom@example.com', role: 'user', department: 'Sales', status: 'inactive' },
-  { id: 6, name: 'Emily Davis', email: 'emily@example.com', role: 'admin', department: 'Administration', status: 'active' },
-];
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminUsers = () => {
   const { departments, addDepartment, updateDepartment, deleteDepartment } = useDepartments();
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -50,37 +42,84 @@ const AdminUsers = () => {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    role: 'user',
+    role: 'teamlead',
     department: '',
     status: 'active'
   });
 
-  const handleCreateUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.department) {
-      toast.error('Please fill in all required fields');
-      return;
+  // Fetch users from Supabase
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setLoading(false);
     }
-
-    const user = {
-      ...newUser,
-      id: Math.max(...users.map(u => u.id)) + 1
-    };
-
-    setUsers([...users, user]);
-    setNewUser({ name: '', email: '', role: 'user', department: '', status: 'active' });
-    setShowCreateDialog(false);
-    toast.success('User created successfully');
   };
 
-  const handleEditUser = () => {
+  useEffect(() => {
+    fetchUsers();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('admin-users-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log('User change detected:', payload);
+          fetchUsers(); // Refresh the list
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleCreateUser = async () => {
+    // Note: Creating users requires proper Supabase Auth setup
+    // This would typically involve:
+    // 1. Creating the auth user with supabase.auth.signUp()
+    // 2. The profile is auto-created via database trigger
+    toast.info('User creation requires Supabase Auth configuration');
+    setShowCreateDialog(false);
+  };
+
+  const handleEditUser = async () => {
     if (!selectedUser) return;
 
-    setUsers(users.map(user => 
-      user.id === selectedUser.id ? selectedUser : user
-    ));
-    setShowEditDialog(false);
-    setSelectedUser(null);
-    toast.success('User updated successfully');
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: selectedUser.name,
+          role: selectedUser.role
+        })
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+
+      setShowEditDialog(false);
+      setSelectedUser(null);
+      toast.success('User updated successfully');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error('Failed to update user');
+    }
   };
 
   const handlePasswordAction = (user: any, action: 'set' | 'reset') => {
@@ -142,13 +181,19 @@ const AdminUsers = () => {
     }
   };
 
-  const handleRoleChange = (userId: number, newRole: string) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, role: newRole } 
-        : user
-    ));
-    toast.success(`User role updated to ${newRole}`);
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole as 'admin' | 'manager' | 'teamlead' })
+        .eq('id', userId);
+
+      if (error) throw error;
+      toast.success(`User role updated to ${newRole}`);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update role');
+    }
   };
 
   const handleDepartmentChange = (userId: number, newDepartment: string) => {
@@ -369,116 +414,81 @@ const AdminUsers = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Login ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Select
-                      defaultValue={user.role}
-                      onValueChange={(value) => {
-                        setUsers(users.map(u => 
-                          u.id === user.id ? { ...u, role: value } : u
-                        ));
-                        toast.success(`User role updated to ${value}`);
-                      }}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="teamlead">Team Lead</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      defaultValue={user.department}
-                      onValueChange={(value) => {
-                        setUsers(users.map(u => 
-                          u.id === user.id ? { ...u, department: value } : u
-                        ));
-                        toast.success(`User department updated to ${value}`);
-                      }}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map(dept => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={user.status === 'active' ? 'default' : 'destructive'}
-                      className={`cursor-pointer ${user.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}
-                      onClick={() => {
-                        setUsers(users.map(u => 
-                          u.id === user.id 
-                            ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } 
-                            : u
-                        ));
-                        toast.success('User status updated');
-                      }}
-                    >
-                      {user.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePasswordAction(user, 'set')}
-                      >
-                        <Key className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePasswordAction(user, 'reset')}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowEditDialog(true);
-                        }}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setUsers(users.filter(u => u.id !== user.id));
-                          toast.success('User deleted successfully');
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-2">Loading users...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    No users found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-mono text-sm">{user.id.slice(0, 8)}...</TableCell>
+                    <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Select
+                        defaultValue={user.role}
+                        onValueChange={(value) => handleRoleChange(user.id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          <SelectItem value="teamlead">Team Lead</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-500">
+                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePasswordAction(user, 'reset')}
+                        >
+                          <Key className="h-3 w-3 mr-1" />
+                          Reset
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowEditDialog(true);
+                          }}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

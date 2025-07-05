@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
@@ -9,6 +9,7 @@ import TeamsTable from '@/components/manager/TeamsTable';
 import TeamDetailsDialog from '@/components/manager/TeamDetailsDialog';
 import TeamLeadDetailsDialog from '@/components/manager/TeamLeadDetailsDialog';
 import NotificationDialog from '@/components/manager/NotificationDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const teamsData = [
   { 
@@ -53,6 +54,31 @@ const ManagerTeam = () => {
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
+
+  // Set up real-time subscription for teams data
+  useEffect(() => {
+    const channel = supabase
+      .channel('manager-teams-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'teams'
+        },
+        (payload) => {
+          console.log('Team change detected:', payload);
+          // In a real app, you'd refetch teams data here
+          toast.info('Team data updated');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up team subscription');
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleSelectTeam = (teamId: number) => {
     if (selectedTeams.includes(teamId)) {

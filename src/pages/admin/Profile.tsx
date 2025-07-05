@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,18 +9,22 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Building, Calendar, Save } from 'lucide-react';
+import { User, Mail, Phone, Building, Calendar, Save, Upload, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminProfile = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
     phone: '',
     department: '',
-    joinDate: ''
+    joinDate: '',
+    avatar_url: ''
   });
 
   useEffect(() => {
@@ -42,18 +46,83 @@ const AdminProfile = () => {
         email: profile.email || '',
         phone: '+1 (555) 123-4567', // Default phone
         department: 'Administration',
-        joinDate: '2024-01-01' // Default join date
+        joinDate: '2024-01-01', // Default join date
+        avatar_url: (profile as any).avatar_url || ''
       });
       
       console.log('Admin accessing profile:', profile.name);
     }
   }, [profile, loading, navigate]);
 
-  const handleSave = () => {
-    // Note: In a real app, you'd update the profile in Supabase here
-    // For now, we'll just show a success message
-    setIsEditing(false);
-    toast.success('Profile updated successfully');
+  const handleSave = async () => {
+    if (!profile) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profileData.name,
+          avatar_url: profileData.avatar_url
+        })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+      
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !profile) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
+      setProfileData(prev => ({ ...prev, avatar_url: publicUrl }));
+      toast.success('Avatar updated successfully');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload avatar');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) {
@@ -86,12 +155,33 @@ const AdminProfile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-4">
-            <Avatar className="h-32 w-32">
-              <AvatarImage src="" />
-              <AvatarFallback className="text-2xl">
-                {profile.name?.split(' ').map((n: string) => n[0]).join('') || 'A'}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-32 w-32">
+                <AvatarImage src={profileData.avatar_url} />
+                <AvatarFallback className="text-2xl">
+                  {profile.name?.split(' ').map((n: string) => n[0]).join('') || 'A'}
+                </AvatarFallback>
+              </Avatar>
+              <Button
+                size="sm"
+                className="absolute bottom-0 right-0 rounded-full"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
               Administrator
             </Badge>

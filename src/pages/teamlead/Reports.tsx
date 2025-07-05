@@ -1,13 +1,10 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, FileText, Calendar, Users, TrendingUp, BarChart3, Lock, Award, Clock, Target } from 'lucide-react';
-import { generatePDFContent, generateExcelContent, downloadFile, prepareReportData } from '@/utils/reportGenerator';
-import { toast } from 'sonner';
+import { Download, Users, TrendingUp, BarChart3, Award } from 'lucide-react';
+import { useReportDownload } from '@/hooks/useReportDownload';
+import { GenerateReportButton } from '@/components/GenerateReportButton';
 
 // Enhanced team data with comprehensive realistic information
 const teamData = [
@@ -238,6 +235,7 @@ const TeamLeadReports = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [reportType, setReportType] = useState('team-performance');
   const [activeTab, setActiveTab] = useState('overview');
+  const { downloadPerformanceReport, loading } = useReportDownload();
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const userDepartment = 'IT';
