@@ -54,6 +54,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          created_by: string | null
           id: string
           name: string
           status: string
@@ -66,6 +67,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           name: string
           status?: string
@@ -78,6 +80,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           name?: string
           status?: string
@@ -149,6 +152,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          created_by: string | null
           department_id: string | null
           hire_date: string | null
           id: string
@@ -162,6 +166,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          created_by?: string | null
           department_id?: string | null
           hire_date?: string | null
           id?: string
@@ -175,6 +180,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          created_by?: string | null
           department_id?: string | null
           hire_date?: string | null
           id?: string
@@ -242,6 +248,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           email: string
           id: string
@@ -250,6 +257,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           email: string
           id: string
@@ -258,6 +266,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string
           id?: string
@@ -272,6 +281,7 @@ export type Database = {
           assigned_department_id: string | null
           client_id: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           id: string
           name: string
@@ -282,6 +292,7 @@ export type Database = {
           assigned_department_id?: string | null
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           name: string
@@ -292,6 +303,7 @@ export type Database = {
           assigned_department_id?: string | null
           client_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           name?: string
