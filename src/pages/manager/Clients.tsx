@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Plus, Search, Building, TrendingUp, Tag, X } from 'lucide-react';
+import { Users, Plus, Search, Building, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const ManagerClients = () => {
@@ -15,7 +14,6 @@ const ManagerClients = () => {
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newTagInputs, setNewTagInputs] = useState<{[key: string]: string}>({});
 
   const fetchData = async () => {
     try {
@@ -63,9 +61,9 @@ const ManagerClients = () => {
   useEffect(() => {
     fetchData();
 
-    // Enhanced real-time subscriptions
+    // Set up real-time subscriptions with proper cleanup
     const clientsChannel = supabase
-      .channel('manager-clients-enhanced')
+      .channel('manager-clients-updates')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -77,7 +75,7 @@ const ManagerClients = () => {
       .subscribe();
 
     const projectsChannel = supabase
-      .channel('manager-projects-enhanced')
+      .channel('manager-projects-updates')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -89,81 +87,15 @@ const ManagerClients = () => {
       .subscribe();
 
     return () => {
+      // Proper cleanup to prevent subscription conflicts
       supabase.removeChannel(clientsChannel);
       supabase.removeChannel(projectsChannel);
     };
   }, []);
 
-  // Enhanced tag management
-  const addTag = async (clientId: string, newTag: string) => {
-    if (!newTag.trim()) return;
-
-    try {
-      const client = clients.find(c => c.id === clientId);
-      const currentTags = client?.tags || [];
-      
-      if (currentTags.includes(newTag.trim())) {
-        toast.error('Tag already exists');
-        return;
-      }
-
-      const updatedTags = [...currentTags, newTag.trim()];
-      
-      const { error } = await supabase
-        .from('clients')
-        .update({ tags: updatedTags })
-        .eq('id', clientId);
-
-      if (error) throw error;
-      
-      setNewTagInputs(prev => ({ ...prev, [clientId]: '' }));
-      toast.success('Tag added successfully');
-    } catch (error: any) {
-      console.error('Error adding tag:', error);
-      toast.error('Failed to add tag');
-    }
-  };
-
-  const removeTag = async (clientId: string, tagToRemove: string) => {
-    try {
-      const client = clients.find(c => c.id === clientId);
-      const updatedTags = (client?.tags || []).filter((tag: string) => tag !== tagToRemove);
-      
-      const { error } = await supabase
-        .from('clients')
-        .update({ tags: updatedTags })
-        .eq('id', clientId);
-
-      if (error) throw error;
-      toast.success('Tag removed successfully');
-    } catch (error: any) {
-      console.error('Error removing tag:', error);
-      toast.error('Failed to remove tag');
-    }
-  };
-
-  // Enhanced department assignment
-  const updateClientDepartment = async (clientId: string, departmentId: string) => {
-    try {
-      const assignedDepartments = departmentId ? [departmentId] : [];
-      
-      const { error } = await supabase
-        .from('clients')
-        .update({ assigned_departments: assignedDepartments })
-        .eq('id', clientId);
-
-      if (error) throw error;
-      toast.success('Department assignment updated');
-    } catch (error: any) {
-      console.error('Error updating department:', error);
-      toast.error('Failed to update department');
-    }
-  };
-
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.tags || []).some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    client.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getProjectsForClient = (clientId: string) => {
@@ -265,7 +197,6 @@ const ManagerClients = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredClients.map((client) => {
           const clientProjects = getProjectsForClient(client.id);
-          const assignedDepartment = client.assigned_departments?.[0];
           
           return (
             <Card key={client.id} className="hover:shadow-lg transition-shadow">
@@ -281,73 +212,6 @@ const ManagerClients = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Enhanced department assignment */}
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Assigned Department</p>
-                  <Select
-                    value={assignedDepartment || ""}
-                    onValueChange={(value) => updateClientDepartment(client.id, value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">No Department</SelectItem>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Enhanced tag management */}
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Tags</p>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {(client.tags || []).map((tag: string, index: number) => (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="text-xs flex items-center gap-1"
-                      >
-                        <Tag className="h-3 w-3" />
-                        {tag}
-                        <button
-                          onClick={() => removeTag(client.id, tag)}
-                          className="ml-1 hover:text-red-600"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add tag"
-                      value={newTagInputs[client.id] || ''}
-                      onChange={(e) => setNewTagInputs(prev => ({
-                        ...prev,
-                        [client.id]: e.target.value
-                      }))}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          addTag(client.id, newTagInputs[client.id] || '');
-                        }
-                      }}
-                      className="text-sm"
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => addTag(client.id, newTagInputs[client.id] || '')}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-
                 <div>
                   <p className="text-sm font-medium text-gray-700">Contact Information</p>
                   <p className="text-sm text-gray-600">{client.contact_email || 'No email'}</p>
@@ -382,6 +246,24 @@ const ManagerClients = () => {
                     )}
                   </div>
                 </div>
+
+                {client.tags && client.tags.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Tags</p>
+                    <div className="flex flex-wrap gap-1">
+                      {client.tags.slice(0, 3).map((tag: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                      {client.tags.length > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{client.tags.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-4 border-t">
                   <div className="flex gap-2">
