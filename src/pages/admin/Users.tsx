@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Users, Shield, Key, Building } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Shield, Key, Building, Search } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,6 +29,7 @@ const AdminUsers = () => {
   const { departments, addDepartment, updateDepartment, deleteDepartment } = useDepartments();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -47,7 +48,7 @@ const AdminUsers = () => {
     status: 'active'
   });
 
-  // Fetch all registered users from Supabase profiles table
+  // Enhanced user fetching with better error handling
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -69,9 +70,9 @@ const AdminUsers = () => {
   useEffect(() => {
     fetchUsers();
 
-    // Set up real-time subscription for user changes
+    // Enhanced real-time subscription with better cleanup
     const channel = supabase
-      .channel('admin-users-updates')
+      .channel('admin-users-realtime')
       .on(
         'postgres_changes',
         {
@@ -81,7 +82,7 @@ const AdminUsers = () => {
         },
         (payload) => {
           console.log('User change detected:', payload);
-          fetchUsers(); // Refresh the list
+          fetchUsers();
         }
       )
       .subscribe();
@@ -211,12 +212,19 @@ const AdminUsers = () => {
     toast.success('User status updated');
   };
 
+  // Filter users based on search term
+  const filteredUsers = users.filter(user =>
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Create, edit, and manage user roles and departments</p>
+          <p className="text-gray-600">Manage users, roles, and departments</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={showDepartmentDialog} onOpenChange={setShowDepartmentDialog}>
@@ -230,7 +238,7 @@ const AdminUsers = () => {
               <DialogHeader>
                 <DialogTitle>Department Management</DialogTitle>
                 <DialogDescription>
-                  Add, edit, or delete departments. Changes will sync to Manager dashboard.
+                  Add, edit, or delete departments.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -362,13 +370,29 @@ const AdminUsers = () => {
         </div>
       </div>
 
+      {/* Enhanced search functionality */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search users by name, email, or role..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Enhanced stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Users className="h-8 w-8 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">{users.length}</p>
+                <p className="text-2xl font-bold">{filteredUsers.length}</p>
                 <p className="text-sm text-gray-600">Total Users</p>
               </div>
             </div>
@@ -379,7 +403,7 @@ const AdminUsers = () => {
             <div className="flex items-center space-x-2">
               <Shield className="h-8 w-8 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
+                <p className="text-2xl font-bold">{filteredUsers.filter(u => u.role === 'admin').length}</p>
                 <p className="text-sm text-gray-600">Admins</p>
               </div>
             </div>
@@ -388,7 +412,7 @@ const AdminUsers = () => {
         <Card>
           <CardContent className="p-4">
             <div>
-              <p className="text-2xl font-bold">{users.filter(u => u.role === 'manager').length}</p>
+              <p className="text-2xl font-bold">{filteredUsers.filter(u => u.role === 'manager').length}</p>
               <p className="text-sm text-gray-600">Managers</p>
             </div>
           </CardContent>
@@ -396,23 +420,23 @@ const AdminUsers = () => {
         <Card>
           <CardContent className="p-4">
             <div>
-              <p className="text-2xl font-bold">{users.filter(u => u.role === 'teamlead').length}</p>
+              <p className="text-2xl font-bold">{filteredUsers.filter(u => u.role === 'teamlead').length}</p>
               <p className="text-sm text-gray-600">Team Leads</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Enhanced user table */}
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle>All Registered Users</CardTitle>
+          <CardTitle>Registered Users ({filteredUsers.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Profile ID</TableHead>
-                <TableHead>Login ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
@@ -423,24 +447,23 @@ const AdminUsers = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       <span className="ml-2">Loading users...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : users.length === 0 ? (
+              ) : filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                    No users found
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    {searchTerm ? 'No users match your search criteria' : 'No users found'}
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
+                filteredUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-mono text-xs">{user.id}</TableCell>
-                    <TableCell className="font-mono text-sm">{user.id.slice(0, 8)}...</TableCell>
+                    <TableCell className="font-mono text-xs">{user.id.slice(0, 8)}...</TableCell>
                     <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
@@ -468,7 +491,11 @@ const AdminUsers = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handlePasswordAction(user, 'reset')}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setPasswordAction('reset');
+                            setShowPasswordDialog(true);
+                          }}
                         >
                           <Key className="h-3 w-3 mr-1" />
                           Reset
