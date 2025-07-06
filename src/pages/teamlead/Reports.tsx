@@ -46,7 +46,7 @@ const TeamLeadReports = () => {
     try {
       const data = await fetch();
       if (!data || data.length === 0) {
-        toast.error('No records to download');
+        toast.error('No records');
         return;
       }
 
