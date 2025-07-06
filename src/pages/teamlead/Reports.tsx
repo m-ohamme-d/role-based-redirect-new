@@ -23,7 +23,6 @@ const TeamLeadReports = () => {
   const { downloadPerformanceReport, loading: oldLoading } = useReportDownload();
   const { fetch, loading } = usePerformanceReport(profile?.role || 'teamlead', profile?.id || '');
 
-  const currentUser = profile || {};
   const userDepartment = 'IT';
 
   const getPeriodLabel = (period: string) => {
@@ -37,7 +36,7 @@ const TeamLeadReports = () => {
   };
 
   const handleDownloadReport = async (format: 'pdf' | 'csv') => {
-    if (!currentUser.name || currentUser.role !== 'teamlead') {
+    if (!profile?.name || profile?.role !== 'teamlead') {
       toast.error('Access denied: Only team leads can download reports');
       return;
     }
@@ -53,11 +52,11 @@ const TeamLeadReports = () => {
 
       const reportData = {
         reportType: `Team Lead ${reportType.replace('-', ' ').toUpperCase()} Report`,
-        teamLead: currentUser.name,
+        teamLead: profile?.name || 'Unknown',
         department: userDepartment,
         dateRange: getPeriodLabel(selectedPeriod),
         restrictedAccess: true,
-        generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`,
+        generatedBy: `${profile?.name || 'Unknown'} (Team Lead - ${userDepartment})`,
         employees: data
       };
 
