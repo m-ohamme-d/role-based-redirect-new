@@ -3,11 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 export async function generatePerformanceReport(userRole: string, userId: string) {
   /**
    * Fetch employees depending on role:
-   * - manager: all employees
+   * - admin & manager: all employees
    * - teamlead: only employees of their department
    */
   try {
-    if (userRole === "manager") {
+    if (userRole === "admin" || userRole === "manager") {
       const { data, error } = await supabase
         .from("employees")
         .select(`
