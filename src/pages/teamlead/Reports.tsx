@@ -4,22 +4,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, Users, TrendingUp, BarChart3, Award, Lock, FileText, Target } from 'lucide-react';
+import { Download, Users, TrendingUp, BarChart3, Award, Lock, FileText, Target, Loader2 } from 'lucide-react';
 import { useReportDownload } from '@/hooks/useReportDownload';
 import { GenerateReportButton } from '@/components/GenerateReportButton';
-import { downloadFile } from '@/utils/reportGenerator';
+import { downloadFile, generatePDFContent } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
 import { teamData } from '@/data/mockTeamData';
 import { departmentProjects } from '@/data/mockProjectData';
 import { generateEnhancedPDFContent, generateEnhancedCSVContent } from '@/utils/reportUtils';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePerformanceReport } from '@/hooks/usePerformanceReport';
 
 const TeamLeadReports = () => {
+  const { profile } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [reportType, setReportType] = useState('team-performance');
   const [activeTab, setActiveTab] = useState('overview');
-  const { downloadPerformanceReport, loading } = useReportDownload();
+  const { downloadPerformanceReport, loading: oldLoading } = useReportDownload();
+  const { fetch, loading } = usePerformanceReport(profile?.role || 'teamlead', profile?.id || '');
 
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = profile || {};
   const userDepartment = 'IT';
 
   const getPeriodLabel = (period: string) => {
@@ -32,62 +36,53 @@ const TeamLeadReports = () => {
     }
   };
 
-  const handleDownloadReport = (format: 'pdf' | 'csv') => {
+  const handleDownloadReport = async (format: 'pdf' | 'csv') => {
     if (!currentUser.name || currentUser.role !== 'teamlead') {
       toast.error('Access denied: Only team leads can download reports');
       return;
     }
 
-    let data;
-    let filename;
-    let content;
+    toast('Download started');
     
-    switch (reportType) {
-      case 'team-performance':
-        data = {
-          reportType: 'Team Performance Report',
-          teamLead: currentUser.name,
-          department: userDepartment,
-          dateRange: getPeriodLabel(selectedPeriod),
-          restrictedAccess: true,
-          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
-        };
-        filename = `team-performance-${userDepartment}-${selectedPeriod}`;
-        break;
-      case 'project-status':
-        data = {
-          reportType: 'Project Status Report',
-          projects: departmentProjects,
-          teamLead: currentUser.name,
-          department: userDepartment,
-          dateRange: getPeriodLabel(selectedPeriod),
-          restrictedAccess: true,
-          generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`
-        };
-        filename = `project-status-${userDepartment}-${selectedPeriod}`;
-        break;
-      default:
-        toast.error('Invalid report type selected');
-        return;
-    }
-
     try {
+      const data = await fetch();
+      if (!data || data.length === 0) {
+        toast.error('No records to download');
+        return;
+      }
+
+      const reportData = {
+        reportType: `Team Lead ${reportType.replace('-', ' ').toUpperCase()} Report`,
+        teamLead: currentUser.name,
+        department: userDepartment,
+        dateRange: getPeriodLabel(selectedPeriod),
+        restrictedAccess: true,
+        generatedBy: `${currentUser.name} (Team Lead - ${userDepartment})`,
+        employees: data
+      };
+
+      let content: string;
+      let filename: string;
+      let mimeType: string;
+
       if (format === 'pdf') {
-        content = generateEnhancedPDFContent(data, teamData, departmentProjects);
-        const success = downloadFile(content, `${filename}.txt`, 'text/plain');
-        if (success) {
-          toast.success(`PDF report downloaded successfully (${userDepartment} team only)`);
-        } else {
-          toast.error('Failed to download PDF report');
-        }
+        content = generatePDFContent(reportData);
+        filename = `teamlead-report-${reportType}-${selectedPeriod}.txt`;
+        mimeType = 'text/plain';
       } else {
-        content = generateEnhancedCSVContent(data, teamData, departmentProjects);
-        const success = downloadFile(content, `${filename}.csv`, 'text/csv');
-        if (success) {
-          toast.success(`CSV report downloaded successfully (${userDepartment} team only)`);
-        } else {
-          toast.error('Failed to download CSV report');
-        }
+        content = 'Name,Position,Performance,Email,Department\n';
+        data.forEach((emp: any) => {
+          content += `"${emp.profiles?.name || 'N/A'}","${emp.position || 'N/A'}",${emp.performance_rating || 0},"${emp.profiles?.email || 'N/A'}","${emp.departments?.name || 'N/A'}"\n`;
+        });
+        filename = `teamlead-report-${reportType}-${selectedPeriod}.csv`;
+        mimeType = 'text/csv';
+      }
+
+      const success = downloadFile(content, filename, mimeType);
+      if (success) {
+        toast.success(`Report downloaded successfully (${userDepartment} team only)`);
+      } else {
+        toast.error('Failed to download report');
       }
     } catch (error) {
       console.error('Report generation failed:', error);
@@ -350,17 +345,19 @@ const TeamLeadReports = () => {
               <div className="flex gap-4">
                 <Button 
                   onClick={() => handleDownloadReport('pdf')}
+                  disabled={loading}
                   className="flex items-center gap-2"
                 >
-                  <FileText className="h-4 w-4" />
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                   Download Enhanced PDF
                 </Button>
                 <Button 
                   onClick={() => handleDownloadReport('csv')}
+                  disabled={loading}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
-                  <Download className="h-4 w-4" />
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Download Enhanced CSV
                 </Button>
               </div>

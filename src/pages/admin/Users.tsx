@@ -24,8 +24,10 @@ import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Users, Shield, Key, RotateCcw, Building } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AdminUsers = () => {
+  const { profile } = useAuth();
   const { departments, addDepartment, updateDepartment, deleteDepartment } = useDepartments();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +72,7 @@ const AdminUsers = () => {
 
     // Set up real-time subscription
     const channel = supabase
-      .channel('admin-users-changes')
+      .channel(`admin-users-changes-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -222,13 +224,14 @@ const AdminUsers = () => {
           <p className="text-gray-600">Create, edit, and manage user roles and departments</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={showDepartmentDialog} onOpenChange={setShowDepartmentDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Building className="h-4 w-4" />
-                Manage Departments
-              </Button>
-            </DialogTrigger>
+          {profile?.role === 'admin' && (
+            <Dialog open={showDepartmentDialog} onOpenChange={setShowDepartmentDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  Manage Departments
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Department Management</DialogTitle>
@@ -293,6 +296,7 @@ const AdminUsers = () => {
               </div>
             </DialogContent>
           </Dialog>
+          )}
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">

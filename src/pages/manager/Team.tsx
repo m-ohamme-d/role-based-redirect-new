@@ -58,7 +58,7 @@ const ManagerTeam = () => {
   // Set up real-time subscription for teams data
   useEffect(() => {
     const channel = supabase
-      .channel('manager-teams-updates')
+      .channel(`manager-teams-updates-${Date.now()}`)
       .on(
         'postgres_changes',
         {
