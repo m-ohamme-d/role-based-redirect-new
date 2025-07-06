@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +11,10 @@ import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Building2, Tag, FolderOpen, X } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useClients } from '@/hooks/useClients';
-import { supabase } from '@/integrations/supabase/client';
 
 const ManagerClients = () => {
   const { departments } = useDepartments();
-  const { clients, loading: clientsLoading, createClient, updateClient, deleteClient, addProject, updateProject, refetch } = useClients();
+  const { clients, loading: clientsLoading, createClient, updateClient, deleteClient, addProject, updateProject } = useClients();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
@@ -37,24 +36,13 @@ const ManagerClients = () => {
   });
   const [newTag, setNewTag] = useState('');
 
-  // Set up real-time subscription for clients
-  useEffect(() => {
-    const channel = supabase
-      .channel("clients-updates")
-      .on("postgres_changes", { 
-        event: "*", 
-        schema: "public", 
-        table: "clients" 
-      }, () => {
-        refetch();
-        toast.info("Client data updated");
-      })
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  if (clientsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   const filteredClients = clients.filter(client => {
     if (activeTab === 'all') return true;
@@ -141,69 +129,12 @@ const ManagerClients = () => {
     });
   };
 
-  // Add tag to client
-  const handleAddTag = async (clientId: string, tagInput: HTMLInputElement) => {
-    const newTag = tagInput.value.trim();
-    if (!newTag) return;
-    
+  const removeTagFromClient = async (clientId: string, tagToRemove: string) => {
     const client = clients.find(c => c.id === clientId);
-    if (!client) return;
-    
-    const currentTags = client.tags || [];
-    if (currentTags.includes(newTag)) {
-      toast.error('Tag already exists');
-      return;
-    }
-    
-    const updatedTags = [...currentTags, newTag];
-    const { error } = await supabase
-      .from("clients")
-      .update({ tags: updatedTags })
-      .eq("id", clientId);
-      
-    if (error) {
-      console.error("Error adding tag:", error);
-      toast.error("Failed to add tag");
-    } else {
-      toast.success("Tag added successfully");
-      tagInput.value = '';
-      refetch();
-    }
-  };
-
-  // Remove tag from client
-  const handleRemoveTag = async (clientId: string, tagToRemove: string) => {
-    const client = clients.find(c => c.id === clientId);
-    if (!client) return;
-    
-    const updatedTags = (client.tags || []).filter(tag => tag !== tagToRemove);
-    const { error } = await supabase
-      .from("clients")
-      .update({ tags: updatedTags })
-      .eq("id", clientId);
-      
-    if (error) {
-      console.error("Error removing tag:", error);
-      toast.error("Failed to remove tag");
-    } else {
-      toast.success("Tag removed successfully");
-      refetch();
-    }
-  };
-
-  // Update client department assignment
-  const handleDepartmentChange = async (clientId: string, departmentIds: string[]) => {
-    const { error } = await supabase
-      .from("clients")
-      .update({ assigned_departments: departmentIds })
-      .eq("id", clientId);
-      
-    if (error) {
-      console.error("Error updating department:", error);
-      toast.error("Failed to update department");
-    } else {
-      toast.success("Department updated successfully");
-      refetch();
+    if (client) {
+      await updateClient(clientId, {
+        tags: client.tags.filter(tag => tag !== tagToRemove)
+      });
     }
   };
 
@@ -370,30 +301,13 @@ const ManagerClients = () => {
 
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-1">Departments:</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
+                    <div className="flex flex-wrap gap-1">
                       {client.assigned_departments?.map((dept, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {dept}
                         </Badge>
                       ))}
                     </div>
-                    <Select
-                      onValueChange={(value) => {
-                        const currentDepts = client.assigned_departments || [];
-                        if (!currentDepts.includes(value)) {
-                          handleDepartmentChange(client.id, [...currentDepts, value]);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full text-xs">
-                        <SelectValue placeholder="Add department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map(dept => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div>
@@ -415,29 +329,19 @@ const ManagerClients = () => {
                   {client.tags && client.tags.length > 0 && (
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-1">Tags:</p>
-                      <div className="flex flex-wrap gap-1 mb-2">
+                      <div className="flex flex-wrap gap-1">
                         {client.tags.map((tag, index) => (
                           <Badge 
                             key={index} 
                             variant="secondary" 
                             className="text-xs cursor-pointer hover:bg-red-100"
-                            onClick={() => handleRemoveTag(client.id, tag)}
+                            onClick={() => removeTagFromClient(client.id, tag)}
                           >
                             <Tag className="h-3 w-3 mr-1" />
                             {tag} <X className="h-3 w-3 ml-1" />
                           </Badge>
                         ))}
                       </div>
-                      <input
-                        type="text"
-                        placeholder="Add tag (press Enter)"
-                        className="w-full text-xs border rounded px-2 py-1"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleAddTag(client.id, e.currentTarget);
-                          }
-                        }}
-                      />
                     </div>
                   )}
 
