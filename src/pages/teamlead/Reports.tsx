@@ -65,9 +65,10 @@ const TeamLeadReports = () => {
       let mimeType: string;
 
       if (format === 'pdf') {
-        content = generatePDFContent(reportData);
-        filename = `teamlead-report-${reportType}-${selectedPeriod}.txt`;
-        mimeType = 'text/plain';
+        // Use the proper PDF export function
+        const { exportPerformanceReportPDF } = await import('@/utils/pdfReport');
+        exportPerformanceReportPDF(data, `Report-${profile?.role || 'teamlead'}`);
+        toast.success(`Report downloaded successfully (${userDepartment} team only)`);
       } else {
         content = 'Name,Position,Performance,Email,Department\n';
         data.forEach((emp: any) => {
@@ -75,13 +76,13 @@ const TeamLeadReports = () => {
         });
         filename = `teamlead-report-${reportType}-${selectedPeriod}.csv`;
         mimeType = 'text/csv';
-      }
-
-      const success = downloadFile(content, filename, mimeType);
-      if (success) {
-        toast.success(`Report downloaded successfully (${userDepartment} team only)`);
-      } else {
-        toast.error('Failed to download report');
+        
+        const success = downloadFile(content, filename, mimeType);
+        if (success) {
+          toast.success(`Report downloaded successfully (${userDepartment} team only)`);
+        } else {
+          toast.error('Failed to download report');
+        }
       }
     } catch (error) {
       console.error('Report generation failed:', error);

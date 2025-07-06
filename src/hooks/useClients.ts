@@ -35,9 +35,14 @@ export const useClients = () => {
   const fetchClients = async () => {
     try {
       setLoading(true);
+      
+      // Fetch clients with department names
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select('*')
+        .select(`
+          *,
+          departments!inner(id, name)
+        `)
         .order('name');
 
       if (clientsError) throw clientsError;
@@ -49,15 +54,24 @@ export const useClients = () => {
 
       if (projectsError) throw projectsError;
 
-      // Combine clients with their projects
-      const clientsWithProjects = (clientsData || []).map(client => ({
-        ...client,
-        status: client.status as 'active' | 'inactive',
-        projects: (projectsData || []).filter(project => project.client_id === client.id).map(project => ({
-          ...project,
-          status: project.status as 'active' | 'stopped' | 'completed'
-        }))
-      }));
+      // Process clients data - convert department IDs to names where available
+      const clientsWithProjects = (clientsData || []).map(client => {
+        const departmentNames = client.assigned_departments?.map((deptId: string) => {
+          // Find department name from the joined data
+          const dept = client.departments?.find((d: any) => d.id === deptId);
+          return dept?.name || deptId;
+        }) || [];
+
+        return {
+          ...client,
+          status: client.status as 'active' | 'inactive',
+          assigned_departments: departmentNames,
+          projects: (projectsData || []).filter(project => project.client_id === client.id).map(project => ({
+            ...project,
+            status: project.status as 'active' | 'stopped' | 'completed'
+          }))
+        };
+      });
 
       setClients(clientsWithProjects);
       setError(null);

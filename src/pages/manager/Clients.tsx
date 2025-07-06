@@ -99,19 +99,21 @@ const ManagerClients = () => {
     mergeClientsData();
   }, [realClients]);
 
-  // Set up real-time subscription for clients data
+  // Set up real-time subscription for clients data  
   useEffect(() => {
     const channel = supabase
       .channel(`manager-clients-updates-${Date.now()}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', 
           schema: 'public',
           table: 'clients'
         },
         (payload) => {
           console.log('Client change detected:', payload);
+          // Refresh the merged data when clients change
+          mergeClientsData();
           toast.info('Client data updated');
         }
       )
@@ -121,7 +123,7 @@ const ManagerClients = () => {
       console.log('Cleaning up client subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [realClients]);
   const [newClient, setNewClient] = useState({
     name: '',
     company: '',
