@@ -40,7 +40,7 @@ export const useSupabaseDepartments = () => {
 
     // Set up real-time subscription with proper cleanup
     const channel = supabase
-      .channel('departments-changes')
+      .channel(`departments-changes-${Date.now()}-${Math.random()}`)
       .on(
         'postgres_changes',
         {
