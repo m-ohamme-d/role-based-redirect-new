@@ -330,6 +330,7 @@ export type Database = {
       teams: {
         Row: {
           created_at: string
+          created_by: string | null
           department_id: string | null
           description: string | null
           id: string
@@ -339,6 +340,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           department_id?: string | null
           description?: string | null
           id?: string
@@ -348,6 +350,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           department_id?: string | null
           description?: string | null
           id?: string
@@ -356,6 +359,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teams_department_id_fkey"
             columns: ["department_id"]

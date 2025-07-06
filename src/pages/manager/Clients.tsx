@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Building2, Tag, FolderOpen, X } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useClients } from '@/hooks/useClients';
+import { supabase } from '@/integrations/supabase/client';
 
 const ManagerClients = () => {
   const { departments } = useDepartments();
@@ -20,6 +21,30 @@ const ManagerClients = () => {
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('all');
+
+  // Set up real-time subscription for clients data
+  useEffect(() => {
+    const channel = supabase
+      .channel(`manager-clients-updates-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clients'
+        },
+        (payload) => {
+          console.log('Client change detected:', payload);
+          toast.info('Client data updated');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up client subscription');
+      supabase.removeChannel(channel);
+    };
+  }, []);
   const [newClient, setNewClient] = useState({
     name: '',
     company: '',
