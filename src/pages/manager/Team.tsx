@@ -11,38 +11,6 @@ import TeamLeadDetailsDialog from '@/components/manager/TeamLeadDetailsDialog';
 import NotificationDialog from '@/components/manager/NotificationDialog';
 import { supabase } from '@/integrations/supabase/client';
 
-const teamsData = [
-  { 
-    id: 1, 
-    name: 'Development Team', 
-    lead: 'John Smith',
-    leadEmail: 'john.smith@company.com',
-    leadPhone: '+1 (555) 123-4567',
-    members: [
-      { id: 101, name: 'Alice Johnson', position: 'Senior Developer', ratings: { productivity: 92, collaboration: 88, timeliness: 90, overall: 90 }, avatar: null },
-      { id: 102, name: 'Bob Wilson', position: 'Frontend Developer', ratings: { productivity: 85, collaboration: 92, timeliness: 88, overall: 88 }, avatar: null },
-      { id: 103, name: 'Carol Brown', position: 'Backend Developer', ratings: { productivity: 90, collaboration: 85, timeliness: 92, overall: 89 }, avatar: null }
-    ],
-    department: 'IT', 
-    performance: 92 
-  },
-  { 
-    id: 2, 
-    name: 'Design Team', 
-    lead: 'Emily Wilson',
-    leadEmail: 'emily.wilson@company.com',
-    leadPhone: '+1 (555) 987-6543',
-    members: [
-      { id: 201, name: 'David Lee', position: 'UI Designer', ratings: { productivity: 89, collaboration: 91, timeliness: 87, overall: 89 }, avatar: null },
-      { id: 202, name: 'Emma Davis', position: 'UX Designer', ratings: { productivity: 93, collaboration: 89, timeliness: 91, overall: 91 }, avatar: null }
-    ],
-    department: 'IT', 
-    performance: 88 
-  },
-  { id: 3, name: 'HR Team', lead: 'Michael Brown', leadEmail: 'michael.brown@company.com', leadPhone: '+1 (555) 456-7890', members: [], department: 'HR', performance: 85 },
-  { id: 4, name: 'Sales Team', lead: 'Sarah Johnson', leadEmail: 'sarah.johnson@company.com', leadPhone: '+1 (555) 321-0987', members: [], department: 'Sales', performance: 90 },
-  { id: 5, name: 'Marketing Team', lead: 'David Lee', leadEmail: 'david.lee@company.com', leadPhone: '+1 (555) 111-2222', members: [], department: 'Marketing', performance: 87 },
-];
 
 const ManagerTeam = () => {
   const [teams, setTeams] = useState<any[]>([]);
@@ -56,7 +24,95 @@ const ManagerTeam = () => {
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
 
-  // Fetch teams from Supabase
+  // Mock data for teams
+  const mockTeams = [
+    { 
+      id: 'mock-1', 
+      name: 'Development Team', 
+      lead: 'John Smith',
+      leadEmail: 'john.smith@company.com',
+      leadPhone: '+1 (555) 123-4567',
+      members: [
+        { id: 101, name: 'Alice Johnson', position: 'Senior Developer', ratings: { productivity: 92, collaboration: 88, timeliness: 90, overall: 90 }, avatar: null },
+        { id: 102, name: 'Bob Wilson', position: 'Frontend Developer', ratings: { productivity: 85, collaboration: 92, timeliness: 88, overall: 88 }, avatar: null },
+        { id: 103, name: 'Carol Brown', position: 'Backend Developer', ratings: { productivity: 90, collaboration: 85, timeliness: 92, overall: 89 }, avatar: null }
+      ],
+      department: 'IT', 
+      performance: 92,
+      isMock: true
+    },
+    { 
+      id: 'mock-2', 
+      name: 'Design Team', 
+      lead: 'Emily Wilson',
+      leadEmail: 'emily.wilson@company.com',
+      leadPhone: '+1 (555) 987-6543',
+      members: [
+        { id: 201, name: 'David Lee', position: 'UI Designer', ratings: { productivity: 89, collaboration: 91, timeliness: 87, overall: 89 }, avatar: null },
+        { id: 202, name: 'Emma Davis', position: 'UX Designer', ratings: { productivity: 93, collaboration: 89, timeliness: 91, overall: 91 }, avatar: null }
+      ],
+      department: 'IT', 
+      performance: 88,
+      isMock: true
+    },
+    { 
+      id: 'mock-3', 
+      name: 'HR Team', 
+      lead: 'Michael Brown', 
+      leadEmail: 'michael.brown@company.com', 
+      leadPhone: '+1 (555) 456-7890', 
+      members: [
+        { id: 301, name: 'Sarah Miller', position: 'HR Specialist', ratings: { productivity: 88, collaboration: 94, timeliness: 86, overall: 89 }, avatar: null }
+      ], 
+      department: 'HR', 
+      performance: 85,
+      isMock: true
+    },
+    { 
+      id: 'mock-4', 
+      name: 'Sales Team', 
+      lead: 'Sarah Johnson', 
+      leadEmail: 'sarah.johnson@company.com', 
+      leadPhone: '+1 (555) 321-0987', 
+      members: [
+        { id: 401, name: 'Tom Anderson', position: 'Sales Representative', ratings: { productivity: 91, collaboration: 87, timeliness: 93, overall: 90 }, avatar: null },
+        { id: 402, name: 'Lisa Chen', position: 'Account Manager', ratings: { productivity: 87, collaboration: 90, timeliness: 89, overall: 89 }, avatar: null }
+      ], 
+      department: 'Sales', 
+      performance: 90,
+      isMock: true
+    },
+    { 
+      id: 'mock-5', 
+      name: 'Marketing Team', 
+      lead: 'David Lee', 
+      leadEmail: 'david.lee@company.com', 
+      leadPhone: '+1 (555) 111-2222', 
+      members: [
+        { id: 501, name: 'Rachel Green', position: 'Marketing Coordinator', ratings: { productivity: 85, collaboration: 88, timeliness: 90, overall: 88 }, avatar: null }
+      ], 
+      department: 'Marketing', 
+      performance: 87,
+      isMock: true
+    }
+  ];
+
+  // Get deleted mock IDs from localStorage
+  const getDeletedMockIds = () => {
+    const deleted = localStorage.getItem('deletedMockTeams');
+    return deleted ? JSON.parse(deleted) : [];
+  };
+
+  // Save deleted mock ID to localStorage
+  const saveDeletedMockId = (teamId: string) => {
+    const deletedIds = getDeletedMockIds();
+    if (!deletedIds.includes(teamId)) {
+      deletedIds.push(teamId);
+      localStorage.setItem('deletedMockTeams', JSON.stringify(deletedIds));
+    }
+  };
+
+  // Fetch teams from Supabase and merge with mock data
   const fetchTeams = async () => {
     try {
       const { data, error } = await supabase
@@ -65,10 +121,21 @@ const ManagerTeam = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTeams(data || []);
+      
+      // Get deleted mock IDs and filter them out
+      const deletedMockIds = getDeletedMockIds();
+      const activeMockTeams = mockTeams.filter(team => !deletedMockIds.includes(team.id));
+      
+      // Merge mock teams with real teams
+      const mergedTeams = [...activeMockTeams, ...(data || [])];
+      setTeams(mergedTeams);
     } catch (error) {
       console.error('Error fetching teams:', error);
       toast.error('Failed to load teams');
+      // On error, still show mock data
+      const deletedMockIds = getDeletedMockIds();
+      const activeMockTeams = mockTeams.filter(team => !deletedMockIds.includes(team.id));
+      setTeams(activeMockTeams);
     } finally {
       setLoading(false);
     }
@@ -129,7 +196,13 @@ const ManagerTeam = () => {
     const csvContent = [
       headers.join(','),
       ...selectedTeamData.map(team => 
-        [team.name, team.lead, team.department, Array.isArray(team.members) ? team.members.length : 0, `${team.performance}%`].join(',')
+        [
+          team.name, 
+          team.lead || team.team_lead_id || 'N/A', 
+          team.department || team.department_id || 'N/A', 
+          Array.isArray(team.members) ? team.members.length : 0, 
+          `${team.performance || 0}%`
+        ].join(',')
       )
     ].join('\n');
 
