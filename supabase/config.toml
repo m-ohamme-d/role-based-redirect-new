@@ -1,4 +1,5 @@
 project_id = "gikbgkqctnytvhoqlnbv"
+rate_limit = { enabled = true, max_requests_per_minute = 500 }
 
 # Rate limiting configuration
 [api]
