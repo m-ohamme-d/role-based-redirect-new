@@ -51,25 +51,34 @@ const ManagerReports = () => {
       return;
     }
 
+    console.log("[ManagerReports] Starting download for user:", profile);
     toast('Download started');
     
     try {
+      console.log("[ManagerReports] Calling fetch function...");
       let data = await fetch();
+      console.log("[ManagerReports] Fetch result:", data);
+      
       if (!data?.length) {
+        console.log("[ManagerReports] No real data found, using mock data");
         // fallback to mock if allowed
         data = getMockReportsForRole(profile?.role || 'manager') || [];
+        console.log("[ManagerReports] Mock data:", data);
       }
       if (!data.length) {
+        console.log("[ManagerReports] No data at all, showing error");
         toast.error('No records to download');
         return;
       }
 
+      console.log("[ManagerReports] Processing data for download, format:", format);
       const reportData = {
         reportType: `Manager ${reportType.replace('-', ' ').toUpperCase()} Report`,
         dateRange: selectedPeriod.replace('-', ' ').toUpperCase(),
         generatedBy: `${profile.name} (Manager)`,
         employees: data
       };
+      console.log("[ManagerReports] Report data:", reportData);
 
       let content: string;
       let filename: string;
@@ -88,6 +97,7 @@ const ManagerReports = () => {
         mimeType = 'text/csv';
       }
 
+      console.log("[ManagerReports] Generated content preview:", content.substring(0, 200));
       const success = downloadFile(content, filename, mimeType);
       if (success) {
         toast.success(`Report downloaded successfully`);
