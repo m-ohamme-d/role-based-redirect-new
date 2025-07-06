@@ -1,9 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function generatePerformanceReport(userRole: string, userId: string) {
-  // Admin: see all employees
-  if (userRole === "admin") {
-    const { data, error } = await supabase
+  console.log("🔍 generatePerformanceReport()", { userRole, userId });
+
+  let query;
+  if (userRole === "admin" || userRole === "manager") {
+    query = supabase
       .from("employees")
       .select(`
         id,
@@ -12,26 +14,19 @@ export async function generatePerformanceReport(userRole: string, userId: string
         position,
         performance_rating,
         hire_date,
-        phone,
-        skills,
-        profiles ( name, email, role ),
+        profiles ( name, email ),
         departments ( name )
       `);
-    if (error) throw error;
-    return data;
-  }
-
-  // Manager: see only your department's employees
-  if (userRole === "manager") {
-    // first fetch manager's dept
-    const { data: mgr, error: mgrErr } = await supabase
+  } else if (userRole === "teamlead") {
+    // grab the teamlead's department
+    const { data: prof, error: profErr } = await supabase
       .from("employees")
       .select("department_id")
       .eq("user_id", userId)
       .single();
-    if (mgrErr) throw mgrErr;
-
-    const { data, error } = await supabase
+    console.log("🔍 teamlead profile fetch", prof, profErr);
+    if (profErr) throw profErr;
+    query = supabase
       .from("employees")
       .select(`
         id,
@@ -40,44 +35,19 @@ export async function generatePerformanceReport(userRole: string, userId: string
         position,
         performance_rating,
         hire_date,
-        phone,
-        skills,
-        profiles ( name, email, role ),
+        profiles ( name, email ),
         departments ( name )
       `)
-      .eq("department_id", mgr.department_id);
-    if (error) throw error;
-    return data;
+      .eq("department_id", prof.department_id);
+  } else {
+    throw new Error("Unauthorized");
   }
 
-  // Team Lead: see only your team's department
-  if (userRole === "teamlead") {
-    const { data: tl, error: tlErr } = await supabase
-      .from("employees")
-      .select("department_id")
-      .eq("user_id", userId)
-      .single();
-    if (tlErr) throw tlErr;
-
-    const { data, error } = await supabase
-      .from("employees")
-      .select(`
-        id,
-        user_id,
-        department_id,
-        position,
-        performance_rating,
-        hire_date,
-        phone,
-        skills,
-        profiles ( name, email, role ),
-        departments ( name )
-      `)
-      .eq("department_id", tl.department_id);
-    if (error) throw error;
-    return data;
+  const { data, error } = await query;
+  console.log("🔍 supabase returned", { data, error });
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    console.warn("⚠️ No rows returned from employees table");
   }
-
-  // Other roles have no access
-  throw new Error("Unauthorized");
+  return data;
 }
