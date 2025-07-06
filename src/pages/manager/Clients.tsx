@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,15 +48,6 @@ const ManagerClients = () => {
     if (activeTab === 'all') return true;
     return client.status === activeTab;
   });
-
-  // Helper function to get department names from IDs
-  const getDepartmentNames = (departmentIds: string[] | null) => {
-    if (!departmentIds || departmentIds.length === 0) return [];
-    return departmentIds.map(id => {
-      const dept = departments.find(d => d === id);
-      return dept || id; // Fallback to ID if department name not found
-    });
-  };
 
   const handleCreateClient = async () => {
     if (!newClient.name || !newClient.company) {
@@ -145,45 +135,6 @@ const ManagerClients = () => {
       await updateClient(clientId, {
         tags: client.tags.filter(tag => tag !== tagToRemove)
       });
-    }
-  };
-
-  const addTagToClient = async (clientId: string, newTagValue: string) => {
-    if (!newTagValue.trim()) return;
-    
-    const client = clients.find(c => c.id === clientId);
-    if (client) {
-      const existingTags = client.tags || [];
-      if (existingTags.includes(newTagValue)) {
-        toast.error('Tag already exists');
-        return;
-      }
-      
-      await updateClient(clientId, {
-        tags: [...existingTags, newTagValue]
-      });
-      toast.success('Tag added successfully');
-    }
-  };
-
-  const updateClientDepartments = async (clientId: string, departmentId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    if (client) {
-      const currentDepts = client.assigned_departments || [];
-      let updatedDepts;
-      
-      if (currentDepts.includes(departmentId)) {
-        // Remove department if already assigned
-        updatedDepts = currentDepts.filter(id => id !== departmentId);
-      } else {
-        // Add department if not assigned
-        updatedDepts = [...currentDepts, departmentId];
-      }
-      
-      await updateClient(clientId, {
-        assigned_departments: updatedDepts
-      });
-      toast.success('Department assignment updated');
     }
   };
 
@@ -350,34 +301,13 @@ const ManagerClients = () => {
 
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-1">Departments:</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {getDepartmentNames(client.assigned_departments)?.map((dept, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="outline" 
-                          className="text-xs cursor-pointer hover:bg-red-100"
-                          onClick={() => {
-                            const deptId = client.assigned_departments?.[index];
-                            if (deptId) updateClientDepartments(client.id, deptId);
-                          }}
-                        >
-                          {dept} <X className="h-3 w-3 ml-1" />
+                    <div className="flex flex-wrap gap-1">
+                      {client.assigned_departments?.map((dept, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {dept}
                         </Badge>
                       ))}
                     </div>
-                    <Select
-                      value=""
-                      onValueChange={(value) => updateClientDepartments(client.id, value)}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Add department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.filter(dept => !client.assigned_departments?.includes(dept)).map(dept => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div>
@@ -396,33 +326,24 @@ const ManagerClients = () => {
                     </Button>
                   </div>
 
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Tags:</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {client.tags && client.tags.map((tag, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="secondary" 
-                          className="text-xs cursor-pointer hover:bg-red-100"
-                          onClick={() => removeTagFromClient(client.id, tag)}
-                        >
-                          <Tag className="h-3 w-3 mr-1" />
-                          {tag} <X className="h-3 w-3 ml-1" />
-                        </Badge>
-                      ))}
+                  {client.tags && client.tags.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Tags:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {client.tags.map((tag, index) => (
+                          <Badge 
+                            key={index} 
+                            variant="secondary" 
+                            className="text-xs cursor-pointer hover:bg-red-100"
+                            onClick={() => removeTagFromClient(client.id, tag)}
+                          >
+                            <Tag className="h-3 w-3 mr-1" />
+                            {tag} <X className="h-3 w-3 ml-1" />
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                    <Input
-                      placeholder="Add tag and press Enter"
-                      className="h-8 text-xs"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          const target = e.target as HTMLInputElement;
-                          addTagToClient(client.id, target.value);
-                          target.value = '';
-                        }
-                      }}
-                    />
-                  </div>
+                  )}
 
                   <div className="flex justify-end space-x-2 pt-2">
                     <Button
