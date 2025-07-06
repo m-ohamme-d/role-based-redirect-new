@@ -1,20 +1,15 @@
-import { useState } from 'react';
-import { generatePerformanceReport } from '@/utils/downloadReport';
+import { useState } from "react";
+import { generatePerformanceReport } from "@/utils/downloadReport";
 
-export function usePerformanceReport(role: string, userId: string) {
+export function usePerformanceReport(role: string, id: string) {
   const [loading, setLoading] = useState(false);
-
-  const fetch = async () => {
+  async function fetch() {
     setLoading(true);
-    try {
-      return await generatePerformanceReport(role, userId);
-    } catch (error) {
-      console.error('Error fetching performance report:', error);
-      throw error;
+    try { 
+      return await generatePerformanceReport(role, id);
     } finally {
       setLoading(false);
     }
-  };
-
+  }
   return { fetch, loading };
 }
