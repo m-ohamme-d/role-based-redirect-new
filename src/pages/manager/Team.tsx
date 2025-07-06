@@ -45,7 +45,8 @@ const teamsData = [
 ];
 
 const ManagerTeam = () => {
-  const [teams, setTeams] = useState(teamsData);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
@@ -55,8 +56,28 @@ const ManagerTeam = () => {
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
 
+  // Fetch teams from Supabase
+  const fetchTeams = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTeams(data || []);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+      toast.error('Failed to load teams');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Set up real-time subscription for teams data
   useEffect(() => {
+    fetchTeams();
+
     const channel = supabase
       .channel(`manager-teams-updates-${Date.now()}`)
       .on(
@@ -68,7 +89,7 @@ const ManagerTeam = () => {
         },
         (payload) => {
           console.log('Team change detected:', payload);
-          // In a real app, you'd refetch teams data here
+          fetchTeams(); // Refetch teams data
           toast.info('Team data updated');
         }
       )
@@ -154,6 +175,14 @@ const ManagerTeam = () => {
     setNotificationText(`Hi ${teamLead.lead}, I need an update on the current projects.`);
     setShowNotificationDialog(true);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

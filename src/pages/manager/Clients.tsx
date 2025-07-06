@@ -15,12 +15,89 @@ import { supabase } from '@/integrations/supabase/client';
 
 const ManagerClients = () => {
   const { departments } = useDepartments();
-  const { clients, loading: clientsLoading, createClient, updateClient, deleteClient, addProject, updateProject } = useClients();
+  const { clients: realClients, loading: clientsLoading, createClient, updateClient, deleteClient, addProject, updateProject } = useClients();
+  const [clients, setClients] = useState<any[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('all');
+
+  // Mock data to merge with real data
+  const mockClients = [
+    {
+      id: 'mock-1',
+      name: 'TechCorp Solutions',
+      company: 'TechCorp Inc.',
+      status: 'active',
+      assigned_departments: ['IT', 'Marketing'],
+      tags: ['Enterprise', 'Technology', 'Priority'],
+      contact_email: 'contact@techcorp.com',
+      contact_phone: '+1 (555) 123-4567',
+      projects: [
+        { id: 'proj-1', name: 'Enterprise Dashboard', status: 'active' },
+        { id: 'proj-2', name: 'Mobile App', status: 'active' }
+      ],
+      isMock: true
+    },
+    {
+      id: 'mock-2',
+      name: 'HealthCare Inc',
+      company: 'HealthCare Systems',
+      status: 'active',
+      assigned_departments: ['IT'],
+      tags: ['Healthcare', 'Compliance'],
+      contact_email: 'info@healthcare.com',
+      contact_phone: '+1 (555) 987-6543',
+      projects: [
+        { id: 'proj-3', name: 'Patient Portal', status: 'active' }
+      ],
+      isMock: true
+    },
+    {
+      id: 'mock-3',
+      name: 'Retail Masters',
+      company: 'Retail Solutions Ltd',
+      status: 'inactive',
+      assigned_departments: ['Sales', 'Marketing'],
+      tags: ['Retail', 'E-commerce'],
+      contact_email: 'support@retailmasters.com',
+      contact_phone: '+1 (555) 456-7890',
+      projects: [
+        { id: 'proj-4', name: 'E-commerce Platform', status: 'inactive' }
+      ],
+      isMock: true
+    }
+  ];
+
+  // Get deleted mock IDs from localStorage
+  const getDeletedMockIds = () => {
+    const deleted = localStorage.getItem('deletedMockClients');
+    return deleted ? JSON.parse(deleted) : [];
+  };
+
+  // Save deleted mock ID to localStorage
+  const saveDeletedMockId = (clientId: string) => {
+    const deletedIds = getDeletedMockIds();
+    if (!deletedIds.includes(clientId)) {
+      deletedIds.push(clientId);
+      localStorage.setItem('deletedMockClients', JSON.stringify(deletedIds));
+    }
+  };
+
+  // Filter and merge mock data with real data
+  const mergeClientsData = () => {
+    const deletedMockIds = getDeletedMockIds();
+    const activeMockClients = mockClients.filter(client => !deletedMockIds.includes(client.id));
+    
+    // Merge mock clients with real clients
+    const mergedClients = [...activeMockClients, ...realClients];
+    setClients(mergedClients);
+  };
+
+  useEffect(() => {
+    mergeClientsData();
+  }, [realClients]);
 
   // Set up real-time subscription for clients data
   useEffect(() => {
@@ -107,7 +184,18 @@ const ManagerClients = () => {
   };
 
   const handleDeleteClient = async (clientId: string) => {
-    await deleteClient(clientId);
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    if (client.isMock) {
+      // Handle mock client deletion by saving to localStorage
+      saveDeletedMockId(clientId);
+      setClients(clients.filter(c => c.id !== clientId));
+      toast.success('Mock client removed (will not reappear)');
+    } else {
+      // Handle real client deletion via Supabase
+      await deleteClient(clientId);
+    }
   };
 
   const toggleClientStatus = async (clientId: string) => {

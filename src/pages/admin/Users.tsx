@@ -54,7 +54,7 @@ const AdminUsers = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, role, created_at, name')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -418,7 +418,7 @@ const AdminUsers = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Login ID</TableHead>
+                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
@@ -445,7 +445,7 @@ const AdminUsers = () => {
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-mono text-sm">{user.id.slice(0, 8)}...</TableCell>
+                    <TableCell className="font-mono text-xs">{user.id}</TableCell>
                     <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
