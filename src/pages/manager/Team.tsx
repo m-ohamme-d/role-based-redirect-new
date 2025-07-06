@@ -10,6 +10,7 @@ import TeamDetailsDialog from '@/components/manager/TeamDetailsDialog';
 import TeamLeadDetailsDialog from '@/components/manager/TeamLeadDetailsDialog';
 import NotificationDialog from '@/components/manager/NotificationDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useDepartments } from '@/hooks/useDepartments';
 
 const teamsData = [
   { 
@@ -54,6 +55,15 @@ const ManagerTeam = () => {
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
+  
+  const { departments } = useDepartments();
+
+  // Helper function to get department name from ID
+  const getDepartmentName = (departmentId: string) => {
+    if (!departmentId) return 'Unassigned';
+    const dept = departments.find(d => d === departmentId);
+    return dept || departmentId; // Fallback to ID if department name not found
+  };
 
   // Set up real-time subscription for teams data
   useEffect(() => {
@@ -108,7 +118,7 @@ const ManagerTeam = () => {
     const csvContent = [
       headers.join(','),
       ...selectedTeamData.map(team => 
-        [team.name, team.lead, team.department, Array.isArray(team.members) ? team.members.length : 0, `${team.performance}%`].join(',')
+        [team.name, team.lead, getDepartmentName(team.department), Array.isArray(team.members) ? team.members.length : 0, `${team.performance}%`].join(',')
       )
     ].join('\n');
 
@@ -155,6 +165,12 @@ const ManagerTeam = () => {
     setShowNotificationDialog(true);
   };
 
+  // Enhanced teams data with proper department names
+  const enhancedTeams = teams.map(team => ({
+    ...team,
+    departmentName: getDepartmentName(team.department)
+  }));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -185,10 +201,10 @@ const ManagerTeam = () => {
         </div>
       </div>
 
-      <DepartmentManagementCard teams={teams} />
+      <DepartmentManagementCard teams={enhancedTeams} />
 
       <TeamsTable 
-        teams={teams}
+        teams={enhancedTeams}
         selectedTeams={selectedTeams}
         onSelectTeam={handleSelectTeam}
         onSelectAll={handleSelectAll}
