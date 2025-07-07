@@ -1,11 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Returns performance rows based on role:
+ * - admin: all employees
+ * - manager: employees in manager's department
+ * - teamlead: employees in teamlead's department
+ */
 export async function generatePerformanceReport(userRole: string, userId: string) {
-  console.log("🔍 generatePerformanceReport()", { userRole, userId });
-
-  let query;
-  if (userRole === "admin" || userRole === "manager") {
-    query = supabase
+  // Admin: all employees
+  if (userRole === "admin") {
+    const { data, error } = await supabase
       .from("employees")
       .select(`
         id,
@@ -17,16 +21,21 @@ export async function generatePerformanceReport(userRole: string, userId: string
         profiles ( name, email ),
         departments ( name )
       `);
-  } else if (userRole === "teamlead") {
-    // grab the teamlead's department
-    const { data: prof, error: profErr } = await supabase
+    if (error) throw error;
+    return data;
+  }
+
+  // Manager: only their department
+  if (userRole === "manager") {
+    // fetch manager's department from employees table
+    const { data: mgr, error: mgrErr } = await supabase
       .from("employees")
       .select("department_id")
       .eq("user_id", userId)
       .single();
-    console.log("🔍 teamlead profile fetch", prof, profErr);
-    if (profErr) throw profErr;
-    query = supabase
+    if (mgrErr) throw mgrErr;
+
+    const { data, error } = await supabase
       .from("employees")
       .select(`
         id,
@@ -38,16 +47,36 @@ export async function generatePerformanceReport(userRole: string, userId: string
         profiles ( name, email ),
         departments ( name )
       `)
-      .eq("department_id", prof.department_id);
-  } else {
-    throw new Error("Unauthorized");
+      .eq("department_id", mgr.department_id);
+    if (error) throw error;
+    return data;
   }
 
-  const { data, error } = await query;
-  console.log("🔍 supabase returned", { data, error });
-  if (error) throw error;
-  if (!data || data.length === 0) {
-    console.warn("⚠️ No rows returned from employees table");
+  // Team Lead: only their department
+  if (userRole === "teamlead") {
+    const { data: tl, error: tlErr } = await supabase
+      .from("employees")
+      .select("department_id")
+      .eq("user_id", userId)
+      .single();
+    if (tlErr) throw tlErr;
+
+    const { data, error } = await supabase
+      .from("employees")
+      .select(`
+        id,
+        user_id,
+        department_id,
+        position,
+        performance_rating,
+        hire_date,
+        profiles ( name, email ),
+        departments ( name )
+      `)
+      .eq("department_id", tl.department_id);
+    if (error) throw error;
+    return data;
   }
-  return data;
+
+  throw new Error("Unauthorized");
 }
