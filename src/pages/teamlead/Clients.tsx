@@ -1,16 +1,15 @@
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Edit2, Upload, Building, Tag, User, Shield } from "lucide-react";
+import { Plus, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { ClientCard } from '@/components/teamlead/ClientCard';
 
 interface Client {
   id: number;
@@ -83,7 +82,6 @@ const TeamLeadClients = () => {
     phone: '',
     address: ''
   });
-  const [newTag, setNewTag] = useState('');
   const [showManagerApprovalDialog, setShowManagerApprovalDialog] = useState(false);
   const [clientToDeactivate, setClientToDeactivate] = useState<Client | null>(null);
   const [approvalReason, setApprovalReason] = useState('');
@@ -138,36 +136,9 @@ const TeamLeadClients = () => {
     }
   };
 
-  const handleImageUpload = (clientId: number, file: File) => {
-    const updatedClients = clients.map(client => 
-      client.id === clientId ? { ...client, image: file } : client
-    );
+  const handleClientUpdate = (updatedClient: Client) => {
+    const updatedClients = clients.map(c => c.id === updatedClient.id ? updatedClient : c);
     setClients(updatedClients);
-    console.log('Client image uploaded for client:', clientId);
-    toast.success('Client image uploaded successfully');
-  };
-
-  const addTag = (clientId: number) => {
-    if (newTag.trim()) {
-      const updatedClients = clients.map(client => 
-        client.id === clientId 
-          ? { ...client, tags: [...client.tags, newTag.trim()] }
-          : client
-      );
-      setClients(updatedClients);
-      setNewTag('');
-      toast.success('Tag added successfully');
-    }
-  };
-
-  const removeTag = (clientId: number, tagToRemove: string) => {
-    const updatedClients = clients.map(client => 
-      client.id === clientId 
-        ? { ...client, tags: client.tags.filter(tag => tag !== tagToRemove) }
-        : client
-    );
-    setClients(updatedClients);
-    toast.success('Tag removed successfully');
   };
 
   const requestClientDeactivation = (client: Client) => {
@@ -297,83 +268,13 @@ const TeamLeadClients = () => {
         <TabsContent value="active">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeClients.map(client => (
-              <Card key={client.id} className="relative">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <Building className="h-6 w-6 text-gray-500" />
-                      </div>
-                      <span>{client.name}</span>
-                    </CardTitle>
-                    <Badge variant="default">Active</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
-                    <p className="text-sm text-gray-600">Email: {client.email}</p>
-                    <p className="text-sm text-gray-600">Phone: {client.phone}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium mb-2">Projects:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {client.projects.map((project, index) => (
-                        <Badge key={index} variant="outline">{project}</Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium mb-2">Tags:</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {client.tags.map((tag, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="secondary"
-                          className="cursor-pointer"
-                          onClick={() => removeTag(client.id, tag)}
-                        >
-                          {tag} ×
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        placeholder="Add tag"
-                        className="text-xs"
-                        onKeyPress={(e) => e.key === 'Enter' && addTag(client.id)}
-                      />
-                      <Button size="sm" onClick={() => addTag(client.id)}>
-                        <Tag className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingClient(client)}
-                    >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleClientStatus(client)}
-                      className="text-orange-600 hover:text-orange-700"
-                    >
-                      <Shield className="h-3 w-3 mr-1" />
-                      Mark Inactive
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <ClientCard
+                key={client.id}
+                client={client}
+                onUpdateClient={handleClientUpdate}
+                onToggleStatus={toggleClientStatus}
+                onEditClient={setEditingClient}
+              />
             ))}
           </div>
         </TabsContent>
@@ -381,36 +282,14 @@ const TeamLeadClients = () => {
         <TabsContent value="inactive">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {inactiveClients.map(client => (
-              <Card key={client.id} className="opacity-75">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <Building className="h-6 w-6 text-gray-500" />
-                      </div>
-                      <span>{client.name}</span>
-                    </CardTitle>
-                    <Badge variant="secondary">Inactive</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Contact: {client.contactPerson}</p>
-                    <p className="text-sm text-gray-600">Email: {client.email}</p>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleClientStatus(client)}
-                      className="text-green-600 hover:text-green-700"
-                    >
-                      Reactivate
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <div key={client.id} className="opacity-75">
+                <ClientCard
+                  client={client}
+                  onUpdateClient={handleClientUpdate}
+                  onToggleStatus={toggleClientStatus}
+                  onEditClient={setEditingClient}
+                />
+              </div>
             ))}
           </div>
         </TabsContent>
