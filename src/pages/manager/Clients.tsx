@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,10 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Building2, Tag, FolderOpen, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useClients } from '@/hooks/useClients';
 import { supabase } from '@/integrations/supabase/client';
+import { ManagerClientCard } from '@/components/manager/ManagerClientCard';
 
 const ManagerClients = () => {
   const { departments } = useDepartments();
@@ -288,6 +288,71 @@ const ManagerClients = () => {
     }
   };
 
+  const handleClientUpdate = (updatedClient: any) => {
+    if (updatedClient.isMock) {
+      // Update mock client in local state
+      setClients(clients.map(c => 
+        c.id === updatedClient.id ? updatedClient : c
+      ));
+      toast.success('Client updated successfully');
+    } else {
+      // Update real client via Supabase
+      updateClient(updatedClient.id, updatedClient);
+    }
+  };
+
+  const handleProjectAdd = async (clientId: string, projectData: any) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    if (client.isMock) {
+      // Add project to mock client
+      const newProject = {
+        id: `proj-${Date.now()}`,
+        name: projectData.name,
+        status: projectData.status,
+        assigned_department_id: projectData.assigned_department_id
+      };
+      
+      setClients(clients.map(c => 
+        c.id === clientId 
+          ? { ...c, projects: [...(c.projects || []), newProject] }
+          : c
+      ));
+      toast.success('Project added successfully');
+    } else {
+      // Add project via Supabase
+      await addProject(clientId, projectData);
+    }
+  };
+
+  const handleProjectUpdate = async (projectId: string, updates: any) => {
+    // Find the client that contains this project
+    const client = clients.find(c => 
+      c.projects?.some(p => p.id === projectId)
+    );
+    
+    if (!client) return;
+
+    if (client.isMock) {
+      // Update project in mock client
+      setClients(clients.map(c => 
+        c.id === client.id 
+          ? {
+              ...c, 
+              projects: c.projects?.map(p => 
+                p.id === projectId ? { ...p, ...updates } : p
+              )
+            }
+          : c
+      ));
+      toast.success('Project updated successfully');
+    } else {
+      // Update project via Supabase
+      await updateProject(projectId, updates);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -427,95 +492,20 @@ const ManagerClients = () => {
         <TabsContent value={activeTab} className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredClients.map((client) => (
-              <Card key={client.id} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5" />
-                      {client.name}
-                    </CardTitle>
-                    <Badge 
-                      variant={client.status === 'active' ? 'default' : 'destructive'}
-                      className={`cursor-pointer ${client.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}
-                      onClick={() => toggleClientStatus(client.id)}
-                    >
-                      {client.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600">{client.company}</p>
-                    <p className="text-xs text-gray-500">{client.contact_email}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Departments:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {client.assigned_departments?.map((dept, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {dept}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Projects: {client.projects?.length || 0}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      onClick={() => {
-                        setSelectedClient(client);
-                        setShowProjectDialog(true);
-                      }}
-                    >
-                      <FolderOpen className="h-4 w-4" />
-                      Manage Projects
-                    </Button>
-                  </div>
-
-                  {client.tags && client.tags.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 mb-1">Tags:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {client.tags.map((tag, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="secondary" 
-                            className="text-xs cursor-pointer hover:bg-red-100"
-                            onClick={() => removeTagFromClient(client.id, tag)}
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag} <X className="h-3 w-3 ml-1" />
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end space-x-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedClient({...client});
-                        setShowEditDialog(true);
-                      }}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteClient(client.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <ManagerClientCard
+                key={client.id}
+                client={client}
+                departments={departments}
+                onUpdateClient={handleClientUpdate}
+                onToggleStatus={toggleClientStatus}
+                onEditClient={(client) => {
+                  setSelectedClient({...client});
+                  setShowEditDialog(true);
+                }}
+                onRemoveTag={removeTagFromClient}
+                onAddProject={handleProjectAdd}
+                onUpdateProject={handleProjectUpdate}
+              />
             ))}
           </div>
         </TabsContent>
@@ -680,92 +670,6 @@ const ManagerClients = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Projects Dialog */}
-      <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedClient?.name} - Project Management
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                value={newProject.name}
-                onChange={(e) => setNewProject({...newProject, name: e.target.value})}
-                placeholder="Enter project name"
-              />
-              <Select 
-                value={newProject.assigned_department_id}
-                onValueChange={(value) => setNewProject({...newProject, assigned_department_id: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Assign to department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleAddProject} className="w-full">Add Project</Button>
-            
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {selectedClient?.projects?.map((project: any) => (
-                <Card key={project.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{project.name}</h3>
-                        <div className="flex gap-2 mt-1">
-                          <Badge 
-                            variant={project.status === 'active' ? 'default' : 'destructive'}
-                            className={project.status === 'active' ? 'bg-green-500' : 'bg-red-500'}
-                          >
-                            {project.status}
-                          </Badge>
-                          {project.assigned_department_id && (
-                            <Badge variant="outline">
-                              {project.assigned_department_id}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Select
-                          value={project.assigned_department_id || ''}
-                          onValueChange={(value) => assignProjectToDepartment(project.id, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Assign" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {departments.map(dept => (
-                              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            updateProject(project.id, {
-                              status: project.status === 'active' ? 'stopped' : 'active'
-                            });
-                          }}
-                        >
-                          Toggle Status
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
