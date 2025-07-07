@@ -39,7 +39,6 @@ const ManagerTeam = () => {
       ],
       department: 'IT', 
       performance: 92,
-      isMock: true
     },
     { 
       id: 'mock-2', 
@@ -53,7 +52,6 @@ const ManagerTeam = () => {
       ],
       department: 'IT', 
       performance: 88,
-      isMock: true
     },
     { 
       id: 'mock-3', 
@@ -66,7 +64,6 @@ const ManagerTeam = () => {
       ], 
       department: 'HR', 
       performance: 85,
-      isMock: true
     },
     { 
       id: 'mock-4', 
@@ -80,7 +77,6 @@ const ManagerTeam = () => {
       ], 
       department: 'Sales', 
       performance: 90,
-      isMock: true
     },
     { 
       id: 'mock-5', 
@@ -93,26 +89,11 @@ const ManagerTeam = () => {
       ], 
       department: 'Marketing', 
       performance: 87,
-      isMock: true
+      
     }
   ];
 
-  // Get deleted mock IDs from localStorage
-  const getDeletedMockIds = () => {
-    const deleted = localStorage.getItem('deletedMockTeams');
-    return deleted ? JSON.parse(deleted) : [];
-  };
-
-  // Save deleted mock ID to localStorage
-  const saveDeletedMockId = (teamId: string) => {
-    const deletedIds = getDeletedMockIds();
-    if (!deletedIds.includes(teamId)) {
-      deletedIds.push(teamId);
-      localStorage.setItem('deletedMockTeams', JSON.stringify(deletedIds));
-    }
-  };
-
-  // Fetch teams from Supabase and merge with mock data
+  // Fetch teams from Supabase and merge with local data
   const fetchTeams = async () => {
     try {
       const { data, error } = await supabase
@@ -122,20 +103,14 @@ const ManagerTeam = () => {
 
       if (error) throw error;
       
-      // Get deleted mock IDs and filter them out
-      const deletedMockIds = getDeletedMockIds();
-      const activeMockTeams = mockTeams.filter(team => !deletedMockIds.includes(team.id));
-      
-      // Merge mock teams with real teams
-      const mergedTeams = [...activeMockTeams, ...(data || [])];
+      // Merge local teams with real teams
+      const mergedTeams = [...mockTeams, ...(data || [])];
       setTeams(mergedTeams);
     } catch (error) {
       console.error('Error fetching teams:', error);
       toast.error('Failed to load teams');
-      // On error, still show mock data
-      const deletedMockIds = getDeletedMockIds();
-      const activeMockTeams = mockTeams.filter(team => !deletedMockIds.includes(team.id));
-      setTeams(activeMockTeams);
+      // On error, still show local data
+      setTeams(mockTeams);
     } finally {
       setLoading(false);
     }

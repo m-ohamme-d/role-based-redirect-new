@@ -25,7 +25,7 @@ interface Client {
   contact_email?: string;
   contact_phone?: string;
   projects?: Project[];
-  isMock?: boolean;
+  
 }
 
 interface ManagerClientCardProps {
