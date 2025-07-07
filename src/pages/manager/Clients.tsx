@@ -178,10 +178,23 @@ const ManagerClients = () => {
   const handleEditClient = async () => {
     if (!selectedClient) return;
 
-    const success = await updateClient(selectedClient.id, selectedClient);
-    if (success) {
+    if (selectedClient.isMock) {
+      // Update mock client in local state
+      setClients(clients.map(c => 
+        c.id === selectedClient.id 
+          ? { ...selectedClient }
+          : c
+      ));
+      toast.success('Client updated successfully');
       setShowEditDialog(false);
       setSelectedClient(null);
+    } else {
+      // Update real client via Supabase
+      const success = await updateClient(selectedClient.id, selectedClient);
+      if (success) {
+        setShowEditDialog(false);
+        setSelectedClient(null);
+      }
     }
   };
 
@@ -202,7 +215,18 @@ const ManagerClients = () => {
 
   const toggleClientStatus = async (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
-    if (client) {
+    if (!client) return;
+
+    if (client.isMock) {
+      // Update mock client in local state
+      setClients(clients.map(c => 
+        c.id === clientId 
+          ? { ...c, status: c.status === 'active' ? 'inactive' : 'active' }
+          : c
+      ));
+      toast.success('Client status updated');
+    } else {
+      // Update real client via Supabase
       await updateClient(clientId, {
         status: client.status === 'active' ? 'inactive' : 'active'
       });
@@ -246,7 +270,18 @@ const ManagerClients = () => {
 
   const removeTagFromClient = async (clientId: string, tagToRemove: string) => {
     const client = clients.find(c => c.id === clientId);
-    if (client) {
+    if (!client) return;
+
+    if (client.isMock) {
+      // Update mock client in local state
+      setClients(clients.map(c => 
+        c.id === clientId 
+          ? { ...c, tags: c.tags.filter(tag => tag !== tagToRemove) }
+          : c
+      ));
+      toast.success('Tag removed');
+    } else {
+      // Update real client via Supabase
       await updateClient(clientId, {
         tags: client.tags.filter(tag => tag !== tagToRemove)
       });
@@ -530,6 +565,89 @@ const ManagerClients = () => {
                     onChange={(e) => setSelectedClient({...selectedClient, contact_phone: e.target.value})}
                     placeholder="Enter contact phone"
                   />
+                </div>
+              </div>
+
+              <div>
+                <Label>Assigned Departments</Label>
+                <Select 
+                  onValueChange={(value) => {
+                    if (!selectedClient.assigned_departments?.includes(value)) {
+                      setSelectedClient({
+                        ...selectedClient, 
+                        assigned_departments: [...(selectedClient.assigned_departments || []), value]
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Add departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedClient.assigned_departments?.map((dept, index) => (
+                    <Badge key={index} variant="outline" className="cursor-pointer"
+                      onClick={() => setSelectedClient({
+                        ...selectedClient, 
+                        assigned_departments: selectedClient.assigned_departments?.filter((_, i) => i !== index) || []
+                      })}
+                    >
+                      {dept} <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Tags</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Add new tag"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        if (newTag && !selectedClient.tags?.includes(newTag)) {
+                          setSelectedClient({
+                            ...selectedClient,
+                            tags: [...(selectedClient.tags || []), newTag]
+                          });
+                          setNewTag('');
+                        }
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={() => {
+                      if (newTag && !selectedClient.tags?.includes(newTag)) {
+                        setSelectedClient({
+                          ...selectedClient,
+                          tags: [...(selectedClient.tags || []), newTag]
+                        });
+                        setNewTag('');
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedClient.tags?.map((tag, index) => (
+                    <Badge key={index} variant="outline" className="cursor-pointer"
+                      onClick={() => setSelectedClient({
+                        ...selectedClient,
+                        tags: selectedClient.tags?.filter((_, i) => i !== index) || []
+                      })}
+                    >
+                      {tag} <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ))}
                 </div>
               </div>
 
