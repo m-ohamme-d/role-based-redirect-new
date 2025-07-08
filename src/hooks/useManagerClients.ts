@@ -23,6 +23,26 @@ export const useManagerClients = () => {
     await deleteClient(clientId);
   };
 
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+
+      toast.success('Project deleted successfully');
+      return true;
+    } catch (err: any) {
+      toast.error(err.message);
+      return false;
+    }
+  };
+
   const toggleClientStatus = async (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
@@ -58,6 +78,7 @@ export const useManagerClients = () => {
     createClient,
     updateClient,
     handleDeleteClient,
+    handleDeleteProject,
     toggleClientStatus,
     removeTagFromClient,
     handleClientUpdate,

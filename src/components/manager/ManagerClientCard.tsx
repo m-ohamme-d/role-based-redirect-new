@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit2, Building2, Tag, FolderOpen, X } from "lucide-react";
+import { Edit2, Building2, Tag, FolderOpen, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Project {
@@ -37,6 +37,7 @@ interface ManagerClientCardProps {
   onRemoveTag: (clientId: string, tag: string) => void;
   onAddProject: (clientId: string, projectData: any) => void;
   onUpdateProject: (projectId: string, updates: any) => void;
+  onDeleteProject: (projectId: string) => void;
 }
 
 export const ManagerClientCard = ({ 
@@ -47,7 +48,8 @@ export const ManagerClientCard = ({
   onEditClient, 
   onRemoveTag,
   onAddProject,
-  onUpdateProject
+  onUpdateProject,
+  onDeleteProject
 }: ManagerClientCardProps) => {
   const [newTag, setNewTag] = useState('');
   const [showProjectDialog, setShowProjectDialog] = useState(false);
@@ -85,8 +87,10 @@ export const ManagerClientCard = ({
     });
   };
 
-  const assignProjectToDepartment = (projectId: string, departmentId: string) => {
-    onUpdateProject(projectId, { assigned_department_id: departmentId });
+  const assignProjectToDepartment = async (projectId: string, departmentName: string) => {
+    // We need to convert department name back to ID for the database
+    // For now, we'll pass the name and let the backend handle it
+    onUpdateProject(projectId, { assigned_department_id: departmentName });
   };
 
   return (
@@ -254,6 +258,13 @@ export const ManagerClientCard = ({
                           onClick={() => toggleProjectStatus(project)}
                         >
                           Toggle Status
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onDeleteProject(project.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

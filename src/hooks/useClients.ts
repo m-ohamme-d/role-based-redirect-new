@@ -76,7 +76,11 @@ export const useClients = () => {
           assigned_departments: departmentNames,
           projects: (projectsData || []).filter(project => project.client_id === client.id).map(project => ({
             ...project,
-            status: project.status as 'active' | 'stopped' | 'completed'
+            status: project.status as 'active' | 'stopped' | 'completed',
+            // Convert department ID to name for projects too
+            assigned_department_id: project.assigned_department_id ? 
+              (departmentMap[project.assigned_department_id] || project.assigned_department_id) : 
+              undefined
           }))
         };
       });

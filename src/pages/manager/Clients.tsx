@@ -18,7 +18,8 @@ const ManagerClients = () => {
     removeTagFromClient,
     handleClientUpdate,
     handleProjectAdd,
-    handleProjectUpdate
+    handleProjectUpdate,
+    handleDeleteProject
   } = useManagerClients();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -75,6 +76,7 @@ const ManagerClients = () => {
                 onRemoveTag={removeTagFromClient}
                 onAddProject={handleProjectAdd}
                 onUpdateProject={handleProjectUpdate}
+                onDeleteProject={handleDeleteProject}
               />
             ))}
           </div>
