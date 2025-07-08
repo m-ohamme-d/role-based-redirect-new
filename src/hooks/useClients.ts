@@ -36,16 +36,20 @@ export const useClients = () => {
     try {
       setLoading(true);
       
-      // Fetch clients with department names
+      // Fetch clients and departments separately since there's no direct relationship
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select(`
-          *,
-          departments!inner(id, name)
-        `)
+        .select('*')
         .order('name');
 
       if (clientsError) throw clientsError;
+
+      // Fetch departments separately
+      const { data: departmentsData, error: departmentsError } = await supabase
+        .from('departments')
+        .select('id, name');
+
+      if (departmentsError) throw departmentsError;
 
       // Fetch projects for each client
       const { data: projectsData, error: projectsError } = await supabase
@@ -54,12 +58,16 @@ export const useClients = () => {
 
       if (projectsError) throw projectsError;
 
+      // Create a map of department IDs to names
+      const departmentMap = (departmentsData || []).reduce((acc, dept) => {
+        acc[dept.id] = dept.name;
+        return acc;
+      }, {} as Record<string, string>);
+
       // Process clients data - convert department IDs to names where available
       const clientsWithProjects = (clientsData || []).map(client => {
         const departmentNames = client.assigned_departments?.map((deptId: string) => {
-          // Find department name from the joined data
-          const dept = client.departments?.find((d: any) => d.id === deptId);
-          return dept?.name || deptId;
+          return departmentMap[deptId] || deptId;
         }) || [];
 
         return {
@@ -86,9 +94,9 @@ export const useClients = () => {
   useEffect(() => {
     fetchClients();
 
-    // Set up real-time subscriptions
+    // Set up real-time subscriptions with unique channel names
     const clientsChannel = supabase
-      .channel('clients-changes')
+      .channel(`clients-changes-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -103,7 +111,7 @@ export const useClients = () => {
       .subscribe();
 
     const projectsChannel = supabase
-      .channel('projects-changes')
+      .channel(`projects-changes-${Date.now()}`)
       .on(
         'postgres_changes',
         {
