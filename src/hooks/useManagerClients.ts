@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useClients } from '@/hooks/useClients';
@@ -54,15 +54,15 @@ export const useManagerClients = () => {
   ];
 
   // Filter and merge client data
-  const mergeClientsData = () => {
+  const mergeClientsData = useCallback(() => {
     // Merge all clients together (no distinction between sources)
     const mergedClients = [...mockClients, ...realClients];
     setClients(mergedClients);
-  };
+  }, [realClients]);
 
   useEffect(() => {
     mergeClientsData();
-  }, [realClients]);
+  }, [mergeClientsData]);
 
   // Set up real-time subscription for clients data  
   useEffect(() => {
@@ -77,8 +77,6 @@ export const useManagerClients = () => {
         },
         (payload) => {
           console.log('Client change detected:', payload);
-          // Refresh the merged data when clients change
-          mergeClientsData();
           toast.info('Client data updated');
         }
       )
@@ -88,7 +86,7 @@ export const useManagerClients = () => {
       console.log('Cleaning up client subscription');
       supabase.removeChannel(channel);
     };
-  }, [realClients]);
+  }, []); // Empty dependency array to avoid re-subscribing
 
   const handleDeleteClient = async (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
