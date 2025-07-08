@@ -94,9 +94,11 @@ export const useClients = () => {
   useEffect(() => {
     fetchClients();
 
-    // Set up real-time subscriptions with unique channel names
+    // Create truly unique channel names to prevent subscription conflicts
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const clientsChannel = supabase
-      .channel(`clients-changes-${Date.now()}`)
+      .channel(`clients-changes-${uniqueId}`)
       .on(
         'postgres_changes',
         {
@@ -111,7 +113,7 @@ export const useClients = () => {
       .subscribe();
 
     const projectsChannel = supabase
-      .channel(`projects-changes-${Date.now()}`)
+      .channel(`projects-changes-${uniqueId}-projects`)
       .on(
         'postgres_changes',
         {
