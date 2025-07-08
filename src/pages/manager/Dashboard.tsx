@@ -34,41 +34,57 @@ const employeeProgressData = [
 // Mock clients data with enhanced structure
 const clientsData = [
   { 
-    id: 1, 
+    id: 'dash-1', 
     name: 'TechCorp Solutions', 
     company: 'TechCorp Inc.', 
-    status: 'working',
+    status: 'active',
+    contact_email: 'contact@techcorp.com',
+    contact_phone: '+1 (555) 123-4567',
+    assigned_departments: ['IT', 'Marketing'],
+    tags: ['Enterprise', 'Technology'],
     projects: [
-      { id: 1, name: 'Mobile App Development', status: 'working' },
-      { id: 2, name: 'Web Platform Redesign', status: 'working' }
+      { id: 'proj-1', name: 'Mobile App Development', status: 'active' },
+      { id: 'proj-2', name: 'Web Platform Redesign', status: 'active' }
     ]
   },
   { 
-    id: 2, 
+    id: 'dash-2', 
     name: 'HealthCare Inc', 
     company: 'HealthCare Systems', 
-    status: 'working',
+    status: 'active',
+    contact_email: 'info@healthcare.com', 
+    contact_phone: '+1 (555) 987-6543',
+    assigned_departments: ['IT'],
+    tags: ['Healthcare', 'Compliance'],
     projects: [
-      { id: 3, name: 'Patient Management System', status: 'working' },
-      { id: 4, name: 'Telemedicine Platform', status: 'stopped' }
+      { id: 'proj-3', name: 'Patient Management System', status: 'active' },
+      { id: 'proj-4', name: 'Telemedicine Platform', status: 'stopped' }
     ]
   },
   { 
-    id: 3, 
+    id: 'dash-3', 
     name: 'Finance Plus', 
     company: 'Financial Services Ltd', 
-    status: 'stopped',
+    status: 'inactive',
+    contact_email: 'contact@financeplus.com',
+    contact_phone: '+1 (555) 456-7890',
+    assigned_departments: ['Finance'],
+    tags: ['Finance', 'Trading'],
     projects: [
-      { id: 5, name: 'Trading Platform', status: 'stopped' }
+      { id: 'proj-5', name: 'Trading Platform', status: 'stopped' }
     ]
   },
   { 
-    id: 4, 
+    id: 'dash-4', 
     name: 'Retail Masters', 
     company: 'Retail Solutions', 
-    status: 'working',
+    status: 'active',
+    contact_email: 'support@retailmasters.com',
+    contact_phone: '+1 (555) 321-0987',
+    assigned_departments: ['Sales', 'Marketing'],
+    tags: ['Retail', 'E-commerce'],
     projects: [
-      { id: 6, name: 'E-commerce Migration', status: 'working' }
+      { id: 'proj-6', name: 'E-commerce Migration', status: 'active' }
     ]
   },
 ];
@@ -97,11 +113,11 @@ const ManagerDashboard = () => {
     console.log('Navigating to full client portfolio');
   };
 
-  const toggleProjectStatus = (projectId: number) => {
+  const toggleProjectStatus = (projectId: string) => {
     if (selectedClient) {
       const updatedProjects = selectedClient.projects.map((project: any) => 
         project.id === projectId 
-          ? { ...project, status: project.status === 'working' ? 'stopped' : 'working' }
+          ? { ...project, status: project.status === 'active' ? 'stopped' : 'active' }
           : project
       );
       setSelectedClient({ ...selectedClient, projects: updatedProjects });
@@ -216,10 +232,10 @@ const ManagerDashboard = () => {
                     <h3 className="font-semibold text-lg">{client.name}</h3>
                     <p className="text-sm text-gray-600">{client.company}</p>
                     <Badge 
-                      variant={client.status === 'working' ? 'default' : 'destructive'}
-                      className={client.status === 'working' ? 'bg-green-500' : 'bg-red-500'}
+                      variant={client.status === 'active' ? 'default' : 'destructive'}
+                      className={client.status === 'active' ? 'bg-green-500' : 'bg-red-500'}
                     >
-                      {client.status === 'working' ? 'Working' : 'Stopped'}
+                      {client.status === 'active' ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </CardContent>
@@ -277,10 +293,10 @@ const ManagerDashboard = () => {
                       <h3 className="font-semibold">{project.name}</h3>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge 
-                          variant={project.status === 'working' ? 'default' : 'destructive'}
-                          className={`${project.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}
+                          variant={project.status === 'active' ? 'default' : 'destructive'}
+                          className={`${project.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}
                         >
-                          {project.status === 'working' ? 'Working' : 'Stopped'}
+                          {project.status === 'active' ? 'Active' : 'Stopped'}
                         </Badge>
                       </div>
                     </div>
@@ -290,7 +306,7 @@ const ManagerDashboard = () => {
                         size="sm"
                         onClick={() => toggleProjectStatus(project.id)}
                       >
-                        Mark as {project.status === 'working' ? 'Stopped' : 'Working'}
+                        Mark as {project.status === 'active' ? 'Stopped' : 'Active'}
                       </Button>
                     </div>
                   </div>
