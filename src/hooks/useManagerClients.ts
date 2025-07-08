@@ -64,29 +64,7 @@ export const useManagerClients = () => {
     mergeClientsData();
   }, [mergeClientsData]);
 
-  // Set up real-time subscription for clients data  
-  useEffect(() => {
-    const channel = supabase
-      .channel(`manager-clients-updates-${Date.now()}-${Math.random()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*', 
-          schema: 'public',
-          table: 'clients'
-        },
-        (payload) => {
-          console.log('Client change detected:', payload);
-          toast.info('Client data updated');
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('Cleaning up client subscription');
-      supabase.removeChannel(channel);
-    };
-  }, []); // Empty dependency array to avoid re-subscribing
+  // No need for separate subscription since useClients already handles real-time updates
 
   const handleDeleteClient = async (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
