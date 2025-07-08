@@ -67,7 +67,7 @@ export const useManagerClients = () => {
   // Set up real-time subscription for clients data  
   useEffect(() => {
     const channel = supabase
-      .channel(`manager-clients-updates-${Date.now()}`)
+      .channel(`manager-clients-updates-${Date.now()}-${Math.random()}`)
       .on(
         'postgres_changes',
         {
