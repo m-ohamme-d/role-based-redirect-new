@@ -80,14 +80,16 @@ const ManagerReports = () => {
       };
       console.log("[ManagerReports] Report data:", reportData);
 
-      let content: string;
-      let filename: string;
-      let mimeType: string;
+      let content: string = '';
+      let filename: string = '';
+      let mimeType: string = '';
 
       if (format === 'pdf') {
-        content = generatePDFContent(reportData);
-        filename = `manager-report-${reportType}-${selectedPeriod}.txt`;
-        mimeType = 'text/plain';
+        // Use the proper PDF generation function
+        const { exportPerformanceReportPDF } = await import('@/utils/pdfReport');
+        exportPerformanceReportPDF(data, `Manager ${reportType.replace('-', ' ').toUpperCase()} Report`);
+        toast.success('PDF report generated successfully');
+        return;
       } else {
         content = 'Name,Position,Performance,Email,Department\n';
         data.forEach((emp: any) => {
@@ -97,12 +99,16 @@ const ManagerReports = () => {
         mimeType = 'text/csv';
       }
 
-      console.log("[ManagerReports] Generated content preview:", content.substring(0, 200));
-      const success = downloadFile(content, filename, mimeType);
-      if (success) {
-        toast.success(`Report downloaded successfully`);
-      } else {
-        toast.error('Failed to download report');
+      
+      // Only download CSV if not PDF
+      if (format === 'csv') {
+        console.log("[ManagerReports] Generated content preview:", content.substring(0, 200));
+        const success = downloadFile(content, filename, mimeType);
+        if (success) {
+          toast.success(`Report downloaded successfully`);
+        } else {
+          toast.error('Failed to download report');
+        }
       }
     } catch (error) {
       console.error('Report generation failed:', error);
