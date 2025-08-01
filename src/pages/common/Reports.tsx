@@ -26,6 +26,7 @@ import {
 import { FileText, Download, Calendar, CheckCircle, Bell, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { generatePDFContent, generateExcelContent, downloadFile } from '@/utils/reportGenerator';
+import { exportPerformanceReportPDF } from '@/utils/pdfReport';
 
 const Reports = () => {
   const [reportType, setReportType] = useState('performance');
@@ -157,7 +158,6 @@ const Reports = () => {
 
       if (format === 'pdf') {
         // Use the actual PDF generation function directly
-        const { exportPerformanceReportPDF } = require('@/utils/pdfReport');
         const title = `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${departmentName ? ` - ${departmentName}` : ''}`;
         exportPerformanceReportPDF(employees, title);
         // Skip the downloadFile call since PDF is already downloaded
@@ -274,7 +274,6 @@ const Reports = () => {
 
     if (reportFormat === 'PDF') {
       // Use the actual PDF generation function directly
-      const { exportPerformanceReportPDF } = require('@/utils/pdfReport');
       exportPerformanceReportPDF(employees, reportName);
       // Skip the downloadFile call since PDF is already downloaded
       toast.success('Download completed', {
