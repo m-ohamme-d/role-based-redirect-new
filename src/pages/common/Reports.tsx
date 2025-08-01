@@ -156,9 +156,11 @@ const Reports = () => {
       let mimeType = '';
 
       if (format === 'pdf') {
-        content = generatePDFContent(reportData);
-        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
-        mimeType = 'application/pdf';
+        // Use the actual PDF generation function directly
+        const { exportPerformanceReportPDF } = require('@/utils/pdfReport');
+        const title = `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${departmentName ? ` - ${departmentName}` : ''}`;
+        exportPerformanceReportPDF(employees, title);
+        // Skip the downloadFile call since PDF is already downloaded
       } else if (format === 'xlsx') {
         content = generateExcelContent(reportData);
         filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
@@ -169,7 +171,12 @@ const Reports = () => {
         mimeType = 'text/csv';
       }
 
-      const success = downloadFile(content, filename, mimeType);
+      let success = false;
+      if (format !== 'pdf') {
+        success = downloadFile(content, filename, mimeType);
+      } else {
+        success = true; // PDF was already downloaded above
+      }
       
       if (success) {
         const newReport = {
@@ -266,9 +273,14 @@ const Reports = () => {
     let mimeType = '';
 
     if (reportFormat === 'PDF') {
-      content = generatePDFContent(reportData);
-      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
-      mimeType = 'application/pdf';
+      // Use the actual PDF generation function directly
+      const { exportPerformanceReportPDF } = require('@/utils/pdfReport');
+      exportPerformanceReportPDF(employees, reportName);
+      // Skip the downloadFile call since PDF is already downloaded
+      toast.success('Download completed', {
+        description: `${reportName} has been downloaded successfully.`
+      });
+      return;
     } else if (reportFormat === 'XLSX') {
       content = generateExcelContent(reportData);
       filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;

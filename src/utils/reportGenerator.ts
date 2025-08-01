@@ -111,18 +111,43 @@ export function formatTableData(data: any[], columns: string[]): { headers: stri
   };
 }
 
-// Generate PDF content as text (for the Reports components)
+// Generate PDF content using jsPDF for proper PDF format
 export function generatePDFContent(reportData: any): string {
   const { employees, department, teamLead, reportType, dateRange } = reportData;
   
-  let content = `${reportType} Report\n`;
-  content += `Generated: ${new Date().toLocaleDateString()}\n`;
-  content += `Period: ${dateRange}\n`;
-  if (department) content += `Department: ${department}\n`;
-  if (teamLead) content += `Team Lead: ${teamLead}\n`;
-  content += `\n`;
+  if (!employees || employees.length === 0) {
+    console.warn('No employee data available for PDF generation');
+    return '';
+  }
+
+  // Use the actual PDF generation instead of text content
+  const title = `${reportType || 'Performance'} Report${department ? ` - ${department}` : ''}`;
   
-  if (employees && employees.length > 0) {
+  try {
+    // Import and use the proper PDF generation
+    const { exportPerformanceReportPDF } = require('./pdfReport');
+    
+    // Convert the data to the format expected by exportPerformanceReportPDF
+    const formattedData = employees.map((emp: any) => ({
+      profiles: { name: emp.name, email: emp.email },
+      position: emp.position,
+      departments: { name: emp.department },
+      performance_rating: emp.performance,
+      hire_date: emp.hire_date
+    }));
+    
+    exportPerformanceReportPDF(formattedData, title);
+    return 'PDF generated successfully';
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    // Fallback to text content
+    let content = `${reportType} Report\n`;
+    content += `Generated: ${new Date().toLocaleDateString()}\n`;
+    content += `Period: ${dateRange}\n`;
+    if (department) content += `Department: ${department}\n`;
+    if (teamLead) content += `Team Lead: ${teamLead}\n`;
+    content += `\n`;
+    
     content += `Employee Performance:\n`;
     content += `${'='.repeat(50)}\n`;
     employees.forEach((emp: any) => {
@@ -132,9 +157,9 @@ export function generatePDFContent(reportData: any): string {
       content += `Email: ${emp.email}\n`;
       content += `\n`;
     });
+    
+    return content;
   }
-  
-  return content;
 }
 
 // Generate Excel/CSV content (for the Reports components)

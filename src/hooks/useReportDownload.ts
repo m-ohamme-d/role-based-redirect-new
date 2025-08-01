@@ -47,7 +47,14 @@ export const useReportDownload = () => {
       };
 
       if (format === 'pdf') {
-        exportPerformanceReportPDF(data, `Performance Report - ${profile.role} - ${profile.name}`);
+        // Ensure data is properly formatted for PDF generation
+        console.log('PDF data:', data); // Debug log
+        if (data && data.length > 0) {
+          exportPerformanceReportPDF(data, `Performance Report - ${profile.role} - ${profile.name}`);
+        } else {
+          toast.error("No data available for PDF generation");
+          return false;
+        }
       } else {
         const content = generateExcelContent(reportData);
         const filename = `performance-report-${profile.role}-${new Date().toISOString().split('T')[0]}.csv`;
