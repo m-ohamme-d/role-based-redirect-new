@@ -46,18 +46,22 @@ const ManagerReports = () => {
   const { fetch, loading } = usePerformanceReport(profile?.role || 'manager', profile?.id || '');
 
   const handleDownloadReport = async (format: 'pdf' | 'csv') => {
+    console.log("[ManagerReports] handleDownloadReport called with format:", format);
+    
     if (!profile) {
+      console.error("[ManagerReports] No profile found");
       toast.error('Authentication required');
       return;
     }
 
-    console.log("[ManagerReports] Starting download for user:", profile);
+    console.log("[ManagerReports] Profile found:", { id: profile.id, role: profile.role, name: profile.name });
     toast('Download started');
     
     try {
-      console.log("[ManagerReports] Calling fetch function...");
+      console.log("[ManagerReports] About to call fetch function...");
       let data = await fetch();
-      console.log("[ManagerReports] Fetch result:", data);
+      console.log("[ManagerReports] Raw fetch result:", data);
+      console.log("[ManagerReports] Data type:", typeof data, "Array?", Array.isArray(data), "Length:", data?.length);
       
       if (!data?.length) {
         console.log("[ManagerReports] No real data found, using mock data");
