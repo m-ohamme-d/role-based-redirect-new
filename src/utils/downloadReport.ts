@@ -27,29 +27,14 @@ export async function generatePerformanceReport(userRole: string, userId: string
 
   // Manager: only their department
   if (userRole === "manager") {
-    console.log("[generatePerformanceReport] Manager role detected, userId:", userId);
-    
     // fetch manager's department from employees table
-    console.log("[generatePerformanceReport] Querying for manager's department...");
     const { data: mgr, error: mgrErr } = await supabase
       .from("employees")
       .select("department_id")
       .eq("user_id", userId)
       .single();
-    
-    console.log("[generatePerformanceReport] Manager query result:", { mgr, mgrErr });
-    
-    if (mgrErr) {
-      console.error("[generatePerformanceReport] Manager query error:", mgrErr);
-      throw mgrErr;
-    }
+    if (mgrErr) throw mgrErr;
 
-    if (!mgr?.department_id) {
-      console.warn("[generatePerformanceReport] Manager has no department_id");
-      return [];
-    }
-
-    console.log("[generatePerformanceReport] Querying employees for department:", mgr.department_id);
     const { data, error } = await supabase
       .from("employees")
       .select(`
@@ -63,15 +48,7 @@ export async function generatePerformanceReport(userRole: string, userId: string
         departments ( name )
       `)
       .eq("department_id", mgr.department_id);
-    
-    console.log("[generatePerformanceReport] Employees query result:", { data, error });
-    
-    if (error) {
-      console.error("[generatePerformanceReport] Employees query error:", error);
-      throw error;
-    }
-    
-    console.log("[generatePerformanceReport] Returning data for manager:", data);
+    if (error) throw error;
     return data;
   }
 

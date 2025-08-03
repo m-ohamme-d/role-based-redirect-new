@@ -46,22 +46,18 @@ const ManagerReports = () => {
   const { fetch, loading } = usePerformanceReport(profile?.role || 'manager', profile?.id || '');
 
   const handleDownloadReport = async (format: 'pdf' | 'csv') => {
-    console.log("[ManagerReports] handleDownloadReport called with format:", format);
-    
     if (!profile) {
-      console.error("[ManagerReports] No profile found");
       toast.error('Authentication required');
       return;
     }
 
-    console.log("[ManagerReports] Profile found:", { id: profile.id, role: profile.role, name: profile.name });
+    console.log("[ManagerReports] Starting download for user:", profile);
     toast('Download started');
     
     try {
-      console.log("[ManagerReports] About to call fetch function...");
+      console.log("[ManagerReports] Calling fetch function...");
       let data = await fetch();
-      console.log("[ManagerReports] Raw fetch result:", data);
-      console.log("[ManagerReports] Data type:", typeof data, "Array?", Array.isArray(data), "Length:", data?.length);
+      console.log("[ManagerReports] Fetch result:", data);
       
       if (!data?.length) {
         console.log("[ManagerReports] No real data found, using mock data");
@@ -84,16 +80,14 @@ const ManagerReports = () => {
       };
       console.log("[ManagerReports] Report data:", reportData);
 
-      let content: string = '';
-      let filename: string = '';
-      let mimeType: string = '';
+      let content: string;
+      let filename: string;
+      let mimeType: string;
 
       if (format === 'pdf') {
-        // Use the proper PDF generation function
-        const { exportPerformanceReportPDF } = await import('@/utils/pdfReport');
-        exportPerformanceReportPDF(data, `Manager ${reportType.replace('-', ' ').toUpperCase()} Report`);
-        toast.success('PDF report generated successfully');
-        return;
+        content = generatePDFContent(reportData);
+        filename = `manager-report-${reportType}-${selectedPeriod}.txt`;
+        mimeType = 'text/plain';
       } else {
         content = 'Name,Position,Performance,Email,Department\n';
         data.forEach((emp: any) => {
@@ -103,16 +97,12 @@ const ManagerReports = () => {
         mimeType = 'text/csv';
       }
 
-      
-      // Only download CSV if not PDF
-      if (format === 'csv') {
-        console.log("[ManagerReports] Generated content preview:", content.substring(0, 200));
-        const success = downloadFile(content, filename, mimeType);
-        if (success) {
-          toast.success(`Report downloaded successfully`);
-        } else {
-          toast.error('Failed to download report');
-        }
+      console.log("[ManagerReports] Generated content preview:", content.substring(0, 200));
+      const success = downloadFile(content, filename, mimeType);
+      if (success) {
+        toast.success(`Report downloaded successfully`);
+      } else {
+        toast.error('Failed to download report');
       }
     } catch (error) {
       console.error('Report generation failed:', error);

@@ -111,16 +111,10 @@ export function formatTableData(data: any[], columns: string[]): { headers: stri
   };
 }
 
-// Generate PDF content using jsPDF for proper PDF format
+// Generate PDF content as text (for the Reports components)
 export function generatePDFContent(reportData: any): string {
   const { employees, department, teamLead, reportType, dateRange } = reportData;
   
-  if (!employees || employees.length === 0) {
-    console.warn('No employee data available for PDF generation');
-    return '';
-  }
-
-  // Fallback to text content since we can't import jsPDF here
   let content = `${reportType} Report\n`;
   content += `Generated: ${new Date().toLocaleDateString()}\n`;
   content += `Period: ${dateRange}\n`;
@@ -128,15 +122,17 @@ export function generatePDFContent(reportData: any): string {
   if (teamLead) content += `Team Lead: ${teamLead}\n`;
   content += `\n`;
   
-  content += `Employee Performance:\n`;
-  content += `${'='.repeat(50)}\n`;
-  employees.forEach((emp: any) => {
-    content += `Name: ${emp.name}\n`;
-    content += `Position: ${emp.position}\n`;
-    content += `Performance: ${emp.performance}%\n`;
-    content += `Email: ${emp.email}\n`;
-    content += `\n`;
-  });
+  if (employees && employees.length > 0) {
+    content += `Employee Performance:\n`;
+    content += `${'='.repeat(50)}\n`;
+    employees.forEach((emp: any) => {
+      content += `Name: ${emp.name}\n`;
+      content += `Position: ${emp.position}\n`;
+      content += `Performance: ${emp.performance}%\n`;
+      content += `Email: ${emp.email}\n`;
+      content += `\n`;
+    });
+  }
   
   return content;
 }
