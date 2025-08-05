@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { generatePerformanceReport } from '@/utils/downloadReport';
-import { exportPerformanceReportPDF } from '@/utils/pdfReport';
+import { exportPerformanceReportPDF, generatePDF } from '@/utils/pdfReport';
 import { generatePDFContent, generateExcelContent, downloadFile } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
 
@@ -70,8 +70,33 @@ export const useReportDownload = () => {
     }
   };
 
+  const downloadHTMLReport = async (elementId: string, fileName?: string) => {
+    if (!profile) {
+      toast.error("Unauthorized - Please log in");
+      return false;
+    }
+
+    setLoading(true);
+    toast.info("Capturing HTML report...", { description: "Please wait while we generate your PDF" });
+    
+    try {
+      await generatePDF(elementId, fileName);
+      toast.success("HTML report downloaded successfully");
+      return true;
+    } catch (err) {
+      console.error("HTML report generation failed:", err);
+      toast.error("Failed to generate HTML report", {
+        description: err instanceof Error ? err.message : "Unknown error occurred"
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     downloadPerformanceReport,
+    downloadHTMLReport,
     loading
   };
 };

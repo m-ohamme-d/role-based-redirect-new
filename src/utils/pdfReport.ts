@@ -1,12 +1,52 @@
 import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import "jspdf-autotable";
 
 /**
- * PDF Export:
- * - uses autoTable for tabular data
- * - title header included
+ * HTML-capture PDF with pagination and scale improvements
  */
-export function exportPerformanceReportPDF(data: any[], title: string) {
+export async function generatePDF(
+  elementId: string,
+  fileName = "report.pdf"
+) {
+  const container = document.getElementById(elementId);
+  if (!container) throw new Error(`Element #${elementId} not found.`);
+  container.style.display = "block";
+  await new Promise(res => setTimeout(res, 500));
+  const canvas = await html2canvas(container, {
+    useCORS: true,
+    allowTaint: true,
+    logging: true,
+    scrollY: -window.scrollY,
+    scale: 2, // Higher quality
+  });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p","mm","a4");
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  
+  // Multi-page logic
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  let heightLeft = pdfHeight;
+  let position = 0;
+  
+  pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+  heightLeft -= pageHeight;
+  
+  while (heightLeft >= 0) {
+    position = heightLeft - pdfHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+    heightLeft -= pageHeight;
+  }
+  
+  pdf.save(fileName);
+}
+
+/**
+ * Enhanced data-only PDF with improved pagination and quality
+ */
+export function exportPerformanceReportPDF(data: any[], title: string, scale = 1.2) {
   const doc = new jsPDF();
   doc.setFontSize(18);
   doc.text(title, 14, 20);
@@ -28,9 +68,20 @@ export function exportPerformanceReportPDF(data: any[], title: string) {
     head: [["Name", "Position", "Department", "Rating", "Hire Date", "Email"]],
     body: tableData,
     startY: 50,
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [59, 130, 246] }, // Blue color
-    alternateRowStyles: { fillColor: [248, 250, 252] }, // Light gray
+    styles: { 
+      fontSize: 8 * scale,
+      cellPadding: 3,
+    },
+    headStyles: { 
+      fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    margin: { top: 10, right: 10, bottom: 10, left: 10 },
+    theme: 'striped',
+    pageBreak: 'auto',
+    showHead: 'everyPage'
   });
 
   doc.save(`${title.replace(/\s/g, "-").toLowerCase()}.pdf`);

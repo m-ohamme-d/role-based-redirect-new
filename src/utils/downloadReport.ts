@@ -22,18 +22,20 @@ export async function generatePerformanceReport(userRole: string, userId: string
         departments ( name )
       `);
     if (error) throw error;
-    return data;
+    return data || [];
   }
 
   // Manager: only their department
   if (userRole === "manager") {
-    // fetch manager's department from employees table
+    // fetch manager's department from employees table using maybeSingle()
     const { data: mgr, error: mgrErr } = await supabase
       .from("employees")
       .select("department_id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
+    
     if (mgrErr) throw mgrErr;
+    if (!mgr || !mgr.department_id) return [];
 
     const { data, error } = await supabase
       .from("employees")
@@ -49,7 +51,7 @@ export async function generatePerformanceReport(userRole: string, userId: string
       `)
       .eq("department_id", mgr.department_id);
     if (error) throw error;
-    return data;
+    return data || [];
   }
 
   // Team Lead: only their department
@@ -58,8 +60,10 @@ export async function generatePerformanceReport(userRole: string, userId: string
       .from("employees")
       .select("department_id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
+    
     if (tlErr) throw tlErr;
+    if (!tl || !tl.department_id) return [];
 
     const { data, error } = await supabase
       .from("employees")
@@ -75,7 +79,7 @@ export async function generatePerformanceReport(userRole: string, userId: string
       `)
       .eq("department_id", tl.department_id);
     if (error) throw error;
-    return data;
+    return data || [];
   }
 
   throw new Error("Unauthorized");
