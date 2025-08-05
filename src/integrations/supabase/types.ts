@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           action: string
           changes: Json | null
+          created_by: string | null
           id: string
           record_id: string | null
           table_name: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           action: string
           changes?: Json | null
+          created_by?: string | null
           id?: string
           record_id?: string | null
           table_name: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           action?: string
           changes?: Json | null
+          created_by?: string | null
           id?: string
           record_id?: string | null
           table_name?: string
