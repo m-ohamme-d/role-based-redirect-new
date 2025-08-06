@@ -6,8 +6,8 @@ import { Download, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePerformanceReport } from '@/hooks/usePerformanceReport';
-import { generatePDFContent } from '@/utils/reportGenerator';
-import { downloadFile } from '@/utils/reportGenerator';
+import { generateExcelContent, downloadFile } from '@/utils/reportGenerator';
+import { exportPerformanceReportPDF } from '@/utils/pdfReport';
 
 // Mock fallback data for when real data is empty
 const getMockReportsForRole = (role: string) => {
@@ -64,35 +64,28 @@ const AdminReports = () => {
         return;
       }
 
-      const reportData = {
-        reportType: `Admin ${reportType.replace('-', ' ').toUpperCase()} Report`,
-        dateRange: selectedPeriod.replace('-', ' ').toUpperCase(),
-        generatedBy: `${profile.name} (Admin)`,
-        employees: data
-      };
-
-      let content: string;
-      let filename: string;
-      let mimeType: string;
-
       if (format === 'pdf') {
-        content = generatePDFContent(reportData);
-        filename = `admin-report-${reportType}-${selectedPeriod}.txt`;
-        mimeType = 'text/plain';
+        const title = `Admin ${reportType.replace('-', ' ')} Report - ${selectedPeriod.replace('-', ' ')}`;
+        exportPerformanceReportPDF(data, title);
+        toast.success('PDF report downloaded successfully');
       } else {
-        content = 'Name,Position,Performance,Email,Department\n';
-        data.forEach((emp: any) => {
-          content += `"${emp.profiles?.name || 'N/A'}","${emp.position || 'N/A'}",${emp.performance_rating || 0},"${emp.profiles?.email || 'N/A'}","${emp.departments?.name || 'N/A'}"\n`;
-        });
-        filename = `admin-report-${reportType}-${selectedPeriod}.csv`;
-        mimeType = 'text/csv';
-      }
-
-      const success = downloadFile(content, filename, mimeType);
-      if (success) {
-        toast.success(`Report downloaded successfully`);
-      } else {
-        toast.error('Failed to download report');
+        const reportData = {
+          employees: data.map(emp => ({
+            name: emp.profiles?.name || 'N/A',
+            position: emp.position || 'N/A', 
+            performance: emp.performance_rating || 0,
+            email: emp.profiles?.email || 'N/A',
+            department: emp.departments?.name || 'N/A'
+          }))
+        };
+        const content = generateExcelContent(reportData);
+        const filename = `admin-report-${reportType}-${selectedPeriod}.csv`;
+        const success = downloadFile(content, filename, 'text/csv');
+        if (success) {
+          toast.success('CSV report downloaded successfully');
+        } else {
+          toast.error('Failed to download CSV report');
+        }
       }
     } catch (error) {
       console.error('Report generation failed:', error);
