@@ -47,6 +47,15 @@ export async function generatePDF(
  * Enhanced data-only PDF with improved pagination and quality
  */
 export function exportPerformanceReportPDF(data: any[], title: string, scale = 1.2) {
+  console.log('🔍 PDF Generation Debug - Title:', title);
+  console.log('🔍 PDF Generation Debug - Data length:', data?.length);
+  console.log('🔍 PDF Generation Debug - Sample data:', data?.[0]);
+  
+  if (!data || data.length === 0) {
+    console.error('❌ No data provided for PDF generation');
+    return;
+  }
+
   const doc = new jsPDF();
   doc.setFontSize(18);
   doc.text(title, 14, 20);
@@ -55,14 +64,19 @@ export function exportPerformanceReportPDF(data: any[], title: string, scale = 1
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
   doc.text(`Total Records: ${data.length}`, 14, 40);
 
-  const tableData = data.map(emp => [
-    emp.profiles?.name || 'N/A',
-    emp.position || 'N/A',
-    emp.departments?.name || 'N/A',
-    emp.performance_rating || 0,
-    emp.hire_date || 'N/A',
-    emp.profiles?.email || 'N/A'
-  ]);
+  const tableData = data.map(emp => {
+    console.log('🔍 Processing employee:', emp);
+    return [
+      emp.profiles?.name || 'N/A',
+      emp.position || 'N/A',
+      emp.departments?.name || 'N/A',
+      emp.performance_rating || 0,
+      emp.hire_date || 'N/A',
+      emp.profiles?.email || 'N/A'
+    ];
+  });
+
+  console.log('🔍 Table data prepared:', tableData);
 
   (doc as any).autoTable({
     head: [["Name", "Position", "Department", "Rating", "Hire Date", "Email"]],
@@ -84,5 +98,8 @@ export function exportPerformanceReportPDF(data: any[], title: string, scale = 1
     showHead: 'everyPage'
   });
 
-  doc.save(`${title.replace(/\s/g, "-").toLowerCase()}.pdf`);
+  const filename = `${title.replace(/\s/g, "-").toLowerCase()}.pdf`;
+  console.log('🔍 Saving PDF with filename:', filename);
+  doc.save(filename);
+  console.log('✅ PDF saved successfully');
 }
