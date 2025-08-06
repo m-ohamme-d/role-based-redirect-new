@@ -46,11 +46,15 @@ const ManagerReports = () => {
   const { fetch, loading } = usePerformanceReport(profile?.role || 'manager', profile?.id || '');
 
   const handleDownloadReport = async (format: 'pdf' | 'csv') => {
+    console.log("🚀 [ManagerReports] Download button clicked, format:", format);
+    
     if (!profile) {
+      console.log("❌ [ManagerReports] No profile found");
       toast.error('Authentication required');
       return;
     }
 
+    console.log("✅ [ManagerReports] Profile found:", profile);
     console.log("[ManagerReports] Starting download for user:", profile);
     toast('Download started');
     
