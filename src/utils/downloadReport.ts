@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function generatePerformanceReport(userRole: string, userId: string) {
   console.log("🔍 [downloadReport] Called with role:", userRole, "userId:", userId);
+  console.log("🔍 [downloadReport] Supabase client:", !!supabase);
   // Admin: all employees
   if (userRole === "admin") {
     console.log("🔍 [downloadReport] Processing admin request");
