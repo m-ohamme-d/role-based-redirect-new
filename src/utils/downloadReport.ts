@@ -10,6 +10,7 @@ export async function generatePerformanceReport(userRole: string, userId: string
   console.log("🔍 [downloadReport] Called with role:", userRole, "userId:", userId);
   // Admin: all employees
   if (userRole === "admin") {
+    console.log("🔍 [downloadReport] Processing admin request");
     const { data, error } = await supabase
       .from("employees")
       .select(`
@@ -19,9 +20,10 @@ export async function generatePerformanceReport(userRole: string, userId: string
         position,
         performance_rating,
         hire_date,
-        profiles ( name, email ),
-        departments ( name )
+        profiles:user_id ( name, email ),
+        departments:department_id ( name )
       `);
+    console.log("🔍 [downloadReport] Admin query result:", data, "error:", error);
     if (error) throw error;
     return data || [];
   }
@@ -52,10 +54,11 @@ export async function generatePerformanceReport(userRole: string, userId: string
         position,
         performance_rating,
         hire_date,
-        profiles ( name, email ),
-        departments ( name )
+        profiles:user_id ( name, email ),
+        departments:department_id ( name )
       `)
       .eq("department_id", mgr.department_id);
+    console.log("🔍 [downloadReport] Manager employees query result:", data, "error:", error);
     if (error) throw error;
     return data || [];
   }
@@ -80,10 +83,11 @@ export async function generatePerformanceReport(userRole: string, userId: string
         position,
         performance_rating,
         hire_date,
-        profiles ( name, email ),
-        departments ( name )
+        profiles:user_id ( name, email ),
+        departments:department_id ( name )
       `)
       .eq("department_id", tl.department_id);
+    console.log("🔍 [downloadReport] Teamlead employees query result:", data, "error:", error);
     if (error) throw error;
     return data || [];
   }
