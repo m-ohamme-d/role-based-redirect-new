@@ -41,17 +41,39 @@ export default function Reports() {
   const { fetch, loading } = usePerformanceReport(profile?.role || 'teamlead', profile?.id || '');
 
   const handleDownload = async () => {
+    console.log("🚀 [TeamLeadReports] Download button clicked");
+    console.log("✅ [TeamLeadReports] Profile:", profile);
+    
     toast("Download started");
-    let data = await fetch();
-    if (!data?.length) {
-      // fallback to mock if allowed
-      data = getMockReportsForRole(profile?.role || 'teamlead') || [];
+    
+    try {
+      console.log("[TeamLeadReports] Calling fetch function...");
+      let data = await fetch();
+      console.log("[TeamLeadReports] Fetch result:", data);
+      
+      if (!data?.length) {
+        console.log("[TeamLeadReports] No real data found, using mock data");
+        // fallback to mock if allowed
+        data = getMockReportsForRole(profile?.role || 'teamlead') || [];
+        console.log("[TeamLeadReports] Mock data:", data);
+      }
+      
+      if (!data.length) {
+        console.log("[TeamLeadReports] No data at all, showing error");
+        toast.error("No records to download");
+        return;
+      }
+
+      console.log("[TeamLeadReports] About to generate PDF with data:", data);
+      const title = `TeamLead Report - ${profile?.name || 'Unknown'}`;
+      console.log("[TeamLeadReports] PDF title:", title);
+      
+      exportPerformanceReportPDF(data, title);
+      toast.success("PDF report generated successfully");
+    } catch (error) {
+      console.error("[TeamLeadReports] Error generating report:", error);
+      toast.error("Failed to generate report: " + (error instanceof Error ? error.message : "Unknown error"));
     }
-    if (!data.length) {
-      toast.error("No records to download");
-      return;
-    }
-    exportPerformanceReportPDF(data, `Report-${profile?.role || 'teamlead'}`);
   };
 
   return (
