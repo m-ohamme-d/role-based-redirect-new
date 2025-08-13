@@ -1,9 +1,13 @@
+// @deprecated Use /export route instead
+// This file is kept for reference but should not be used in new code
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { generatePerformanceReport } from '@/utils/downloadReport';
 import { exportPerformanceReportPDF, generatePDF } from '@/utils/pdfReport';
 import { generatePDFContent, generateExcelContent, downloadFile } from '@/utils/reportGenerator';
 import { toast } from 'sonner';
+
+/** @deprecated Use /export route instead */
 
 export const useReportDownload = () => {
   const { profile } = useAuth();

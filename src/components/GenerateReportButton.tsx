@@ -1,59 +1,36 @@
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useReportDownload } from "@/hooks/useReportDownload";
-import { Download, Loader2, FileText } from "lucide-react";
+import { goToExport } from "@/lib/downloads";
 
-/**
- * Enhanced report button with PDF/CSV options
- */
-export function GenerateReportButton() {
-  const { downloadPerformanceReport, downloadHTMLReport, loading } = useReportDownload();
+type Filters = Record<string, any>;
+type Meta = { type?: string; role?: string; filters?: Filters };
 
-  const handleDownloadPDF = async () => {
-    await downloadPerformanceReport('pdf');
-  };
+type Props =
+  | { rows: any[]; meta?: Meta; label?: string; disabled?: boolean }
+  | { getRows: () => any[]; meta?: Meta; label?: string; disabled?: boolean };
 
-  const handleDownloadCSV = async () => {
-    await downloadPerformanceReport('csv');
-  };
+export default function GenerateReportButton(props: Props) {
+  const navigate = useNavigate();
 
-  const handleDownloadHTML = async () => {
-    await downloadHTMLReport('report-container', 'dashboard-report.pdf');
+  // Support either {rows} or {getRows}
+  const rows: any[] = useMemo(() => {
+    // @ts-ignore – runtime guard
+    return "getRows" in props ? props.getRows()?.slice?.() ?? [] : (props as any).rows ?? [];
+  }, [props]);
+
+  const label = (props as any).label ?? "Export";
+  const disabled = (props as any).disabled ?? rows.length === 0;
+
+  const onClick = () => {
+    // sanity log (remove later)
+    console.log("rows ->", rows?.length, rows?.slice(0, 2));
+    goToExport(navigate, rows, (props as any).meta);
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        className="flex items-center gap-2"
-        onClick={handleDownloadPDF}
-        disabled={loading}
-      >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Download className="h-4 w-4" />
-        )}
-        {loading ? "Generating..." : "Download PDF"}
-      </Button>
-      
-      <Button
-        variant="outline"
-        className="flex items-center gap-2"
-        onClick={handleDownloadCSV}
-        disabled={loading}
-      >
-        <FileText className="h-4 w-4" />
-        Download CSV
-      </Button>
-      
-      <Button
-        variant="secondary"
-        className="flex items-center gap-2"
-        onClick={handleDownloadHTML}
-        disabled={loading}
-      >
-        <Download className="h-4 w-4" />
-        Capture HTML
-      </Button>
-    </div>
+    <Button type="button" onClick={onClick} disabled={disabled} title={disabled ? "No rows to export" : ""}>
+      {label}
+    </Button>
   );
 }

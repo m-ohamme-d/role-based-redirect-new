@@ -5,6 +5,7 @@ import LineChart from "@/components/charts/LineChart";
 import BarChart from "@/components/charts/BarChart";
 import StatCard from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -56,6 +57,7 @@ const availableDesignations = [
 ];
 
 const TeamLeadDashboard = () => {
+  const navigate = useNavigate();
   const [teamMembers, setTeamMembers] = useState([
     { id: 'TL001', name: 'John Smith', designation: 'Developer', rating: 85, notes: 'Excellent performance', photo: null, department: 'IT', originalOrder: 1 },
     { id: 'TL002', name: 'Sarah Johnson', designation: 'Designer', rating: 92, notes: 'Consistent high quality work', photo: null, department: 'IT', originalOrder: 2 },
@@ -254,16 +256,16 @@ const TeamLeadDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Team Lead Dashboard - {currentUserDepartment}</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowCriteria(true)}>
-            Rating Criteria
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowCriteria(true)}>
+              Rating Criteria
+            </Button>
+          </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      </div>      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Team Members"
           value={filteredMembers.length.toString()}

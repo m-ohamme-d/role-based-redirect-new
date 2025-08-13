@@ -6,8 +6,8 @@ import { Download, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePerformanceReport } from '@/hooks/usePerformanceReport';
-import { generateExcelContent, downloadFile } from '@/utils/reportGenerator';
-import { exportPerformanceReportPDF } from '@/utils/pdfReport';
+import { useNavigate } from "react-router-dom";
+import { goToExport } from "@/lib/downloads";
 
 // Mock fallback data for when real data is empty
 const getMockReportsForRole = (role: string) => {
@@ -40,70 +40,35 @@ const getMockReportsForRole = (role: string) => {
 };
 
 const ManagerReports = () => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [reportType, setReportType] = useState('team-performance');
   const { fetch, loading } = usePerformanceReport(profile?.role || 'manager', profile?.id || '');
 
-  const handleDownloadReport = async (format: 'pdf' | 'csv') => {
-    console.log("🚀 [ManagerReports] Download button clicked, format:", format);
-    
-    if (!profile) {
-      console.log("❌ [ManagerReports] No profile found");
-      toast.error('Authentication required');
-      return;
-    }
+  const handleDownloadReport = async (e?: React.MouseEvent | React.FormEvent) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
 
-    console.log("✅ [ManagerReports] Profile found:", profile);
-    console.log("[ManagerReports] Starting download for user:", profile);
-    toast('Download started');
-    
+    // Use your existing builder; but NEVER throw or toast error here
+    let rows: any[] = [];
     try {
-      console.log("[ManagerReports] Calling fetch function...");
-      let data = await fetch();
-      console.log("[ManagerReports] Fetch result:", data);
-      
-      if (!data?.length) {
-        console.log("[ManagerReports] No real data found, using mock data");
-        // fallback to mock if allowed
-        data = getMockReportsForRole(profile?.role || 'manager') || [];
-        console.log("[ManagerReports] Mock data:", data);
-      }
-      if (!data.length) {
-        console.log("[ManagerReports] No data at all, showing error");
-        toast.error('No records to download');
-        return;
-      }
-
-      console.log("[ManagerReports] Processing data for download, format:", format);
-
-      if (format === 'pdf') {
-        const title = `Manager ${reportType.replace('-', ' ')} Report - ${selectedPeriod.replace('-', ' ')}`;
-        exportPerformanceReportPDF(data, title);
-        toast.success('PDF report downloaded successfully');
-      } else {
-        const reportData = {
-          employees: data.map(emp => ({
-            name: emp.profiles?.name || 'N/A',
-            position: emp.position || 'N/A', 
-            performance: emp.performance_rating || 0,
-            email: emp.profiles?.email || 'N/A',
-            department: emp.departments?.name || 'N/A'
-          }))
-        };
-        const content = generateExcelContent(reportData);
-        const filename = `manager-report-${reportType}-${selectedPeriod}.csv`;
-        const success = downloadFile(content, filename, 'text/csv');
-        if (success) {
-          toast.success('CSV report downloaded successfully');
-        } else {
-          toast.error('Failed to download CSV report');
-        }
-      }
-    } catch (error) {
-      console.error('Report generation failed:', error);
-      toast.error('Failed to generate report');
+      rows = await fetch();                 // <-- your existing code
+      if (!Array.isArray(rows)) rows = [];
+    } catch {
+      // swallow errors; still navigate with empty rows
+      rows = [];
     }
+
+    goToExport(navigate, rows, {
+      type: reportType,
+      role: "manager",
+      filters: {
+        departmentId: profile?.id || "",
+        dateFrom: "",     // Add date controls if needed
+        dateTo: "",       // Add date controls if needed
+      },
+    });
   };
 
   return (
@@ -153,7 +118,7 @@ const ManagerReports = () => {
 
           <div className="flex gap-4">
             <Button 
-              onClick={() => handleDownloadReport('pdf')}
+              onClick={(e) => handleDownloadReport(e)}
               disabled={loading}
               className="flex items-center gap-2"
             >
@@ -161,7 +126,7 @@ const ManagerReports = () => {
               Generate PDF
             </Button>
             <Button 
-              onClick={() => handleDownloadReport('csv')}
+              onClick={(e) => handleDownloadReport(e)}
               disabled={loading}
               variant="outline"
               className="flex items-center gap-2"

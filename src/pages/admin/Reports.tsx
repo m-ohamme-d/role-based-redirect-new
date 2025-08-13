@@ -6,8 +6,8 @@ import { Download, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePerformanceReport } from '@/hooks/usePerformanceReport';
-import { generateExcelContent, downloadFile } from '@/utils/reportGenerator';
-import { exportPerformanceReportPDF } from '@/utils/pdfReport';
+import { useNavigate } from "react-router-dom";
+import { goToExport } from "@/lib/downloads";
 
 // Mock fallback data for when real data is empty
 const getMockReportsForRole = (role: string) => {
@@ -40,57 +40,35 @@ const getMockReportsForRole = (role: string) => {
 };
 
 const AdminReports = () => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [reportType, setReportType] = useState('all-users');
   const { fetch, loading } = usePerformanceReport(profile?.role || 'admin', profile?.id || '');
 
-  const handleDownloadReport = async (format: 'pdf' | 'csv') => {
-    if (!profile) {
-      toast.error('Authentication required');
-      return;
-    }
+  const handleDownloadReport = async (e?: React.MouseEvent | React.FormEvent) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
 
-    toast('Download started');
-    
+    // Use your existing builder; but NEVER throw or toast error here
+    let rows: any[] = [];
     try {
-      let data = await fetch();
-      if (!data?.length) {
-        // fallback to mock if allowed
-        data = getMockReportsForRole(profile?.role || 'admin') || [];
-      }
-      if (!data.length) {
-        toast.error('No records to download');
-        return;
-      }
-
-      if (format === 'pdf') {
-        const title = `Admin ${reportType.replace('-', ' ')} Report - ${selectedPeriod.replace('-', ' ')}`;
-        exportPerformanceReportPDF(data, title);
-        toast.success('PDF report downloaded successfully');
-      } else {
-        const reportData = {
-          employees: data.map(emp => ({
-            name: emp.profiles?.name || 'N/A',
-            position: emp.position || 'N/A', 
-            performance: emp.performance_rating || 0,
-            email: emp.profiles?.email || 'N/A',
-            department: emp.departments?.name || 'N/A'
-          }))
-        };
-        const content = generateExcelContent(reportData);
-        const filename = `admin-report-${reportType}-${selectedPeriod}.csv`;
-        const success = downloadFile(content, filename, 'text/csv');
-        if (success) {
-          toast.success('CSV report downloaded successfully');
-        } else {
-          toast.error('Failed to download CSV report');
-        }
-      }
-    } catch (error) {
-      console.error('Report generation failed:', error);
-      toast.error('Failed to generate report');
+      rows = await fetch();                 // <-- your existing code
+      if (!Array.isArray(rows)) rows = [];
+    } catch {
+      // swallow errors; still navigate with empty rows
+      rows = [];
     }
+
+    goToExport(navigate, rows, {
+      type: reportType,
+      role: "admin",
+      filters: {
+        departmentId: "", // Add department selection if needed
+        dateFrom: "",     // Add date controls if needed
+        dateTo: "",       // Add date controls if needed
+      },
+    });
   };
 
   return (
@@ -140,21 +118,13 @@ const AdminReports = () => {
 
           <div className="flex gap-4">
             <Button 
-              onClick={() => handleDownloadReport('pdf')}
+              type="button"
+              onClick={handleDownloadReport}
               disabled={loading}
               className="flex items-center gap-2"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-              Generate PDF
-            </Button>
-            <Button 
-              onClick={() => handleDownloadReport('csv')}
-              disabled={loading}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Generate CSV
+              Generate Report
             </Button>
           </div>
         </CardContent>
