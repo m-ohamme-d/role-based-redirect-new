@@ -1,21 +1,23 @@
 import { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from '@/components/ui/card';
+import { format as formatDate } from 'date-fns';
+import { downloadTeamReportPDF } from "@/utils/downloadTeamReport"; // teamlead direct PDF
 import { Button } from '@/components/ui/button';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,12 +29,36 @@ import { FileText, Download, Calendar, CheckCircle, Bell, Star } from 'lucide-re
 import { toast } from 'sonner';
 import { generatePDFContent, generateExcelContent, downloadFile } from '@/utils/reportGenerator';
 
-const Reports = () => {
+// Types (optional / for clarity)
+interface TeamMember {
+  id: string | number;
+  name: string;
+  designation?: string;
+  position?: string;
+  photo?: string;
+  rating?: number;
+  performance?: number;
+  notes?: string;
+  comment?: string;
+  comments?: string;
+}
+
+function Reports(props: { role?: string }) {
+  const { role = "" } = props;
+
+  // Report options / state
+  const [departmentId, setDepartmentId] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+
+  const isTeamLead = role?.toLowerCase?.() === "teamlead";
+
   const [reportType, setReportType] = useState('performance');
   const [dateRange, setDateRange] = useState('month');
   const [format, setFormat] = useState('pdf');
   const [generating, setGenerating] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState<'all' | 'engineering' | 'marketing' | 'sales' | 'hr'>('all');
+
   const [generatedReports, setGeneratedReports] = useState<Array<{
     id: string;
     name: string;
@@ -44,7 +70,6 @@ const Reports = () => {
     department?: string;
   }>>([]);
 
-  // Add missing state variables
   const [recentReports, setRecentReports] = useState<Array<{
     id: number;
     name: string;
@@ -52,27 +77,9 @@ const Reports = () => {
     type: string;
     isFavorite: boolean;
   }>>([
-    {
-      id: 1,
-      name: 'Performance Report - Q4',
-      date: 'December 15, 2024',
-      type: 'PDF',
-      isFavorite: false
-    },
-    {
-      id: 2,
-      name: 'Financial Report - November',
-      date: 'December 1, 2024',
-      type: 'XLSX',
-      isFavorite: true
-    },
-    {
-      id: 3,
-      name: 'Attendance Report - Monthly',
-      date: 'November 30, 2024',
-      type: 'CSV',
-      isFavorite: false
-    }
+    { id: 1, name: 'Performance Report - Q4', date: 'December 15, 2024', type: 'PDF', isFavorite: false },
+    { id: 2, name: 'Financial Report - November', date: 'December 1, 2024', type: 'XLSX', isFavorite: true },
+    { id: 3, name: 'Attendance Report - Monthly', date: 'November 30, 2024', type: 'CSV', isFavorite: false }
   ]);
 
   const [favoriteReports, setFavoriteReports] = useState<Array<{
@@ -82,141 +89,91 @@ const Reports = () => {
     type: string;
     isFavorite: boolean;
   }>>([
-    {
-      id: 2,
-      name: 'Financial Report - November',
-      date: 'December 1, 2024',
-      type: 'XLSX',
-      isFavorite: true
-    }
+    { id: 2, name: 'Financial Report - November', date: 'December 1, 2024', type: 'XLSX', isFavorite: true }
   ]);
 
-  // Get current user and department context
-  const userData = localStorage.getItem('user');
-  const user = userData ? JSON.parse(userData) : null;
-
-  const getDepartmentEmployees = (department: string) => {
-    // Mock data for different departments
-    const departmentEmployees = {
-      'engineering': [
-        { id: 'EMP001', name: 'John Smith', position: 'Senior Developer', performance: 92, email: 'john@example.com' },
-        { id: 'EMP002', name: 'Sarah Johnson', position: 'Frontend Developer', performance: 88, email: 'sarah@example.com' },
-        { id: 'EMP003', name: 'Mike Davis', position: 'Backend Developer', performance: 95, email: 'mike@example.com' }
+  // Mock data source used by the page (same as before)
+  const getDepartmentEmployees = (department: string): TeamMember[] => {
+    const departmentEmployees: Record<string, TeamMember[]> = {
+      engineering: [
+        { id: 'TL001', name: 'John Smith', position: 'Developer', performance: 85, notes: 'Excellent performance' },
+        { id: 'TL002', name: 'Sarah Johnson', position: 'Designer', performance: 92, notes: 'Consistent high quality work' },
+        { id: 'TL003', name: 'Michael Brown', position: 'QA Tester', performance: 78, notes: 'Good attention to detail' },
+        { id: 'TL004', name: 'Emily Davis', position: 'Developer', performance: 88, notes: 'Fast learner' },
+        { id: 'TL005', name: 'Robert Wilson', position: 'Developer', performance: 75, notes: 'Needs mentoring' },
       ],
-      'marketing': [
-        { id: 'EMP004', name: 'Lisa Chen', position: 'Marketing Manager', performance: 90, email: 'lisa@example.com' },
-        { id: 'EMP005', name: 'David Wilson', position: 'Content Specialist', performance: 85, email: 'david@example.com' }
+      marketing: [
+        { id: 'EMP004', name: 'Lisa Chen', position: 'Marketing Manager', performance: 90 },
+        { id: 'EMP005', name: 'David Wilson', position: 'Content Specialist', performance: 85 }
       ],
-      'sales': [
-        { id: 'EMP006', name: 'Emily Brown', position: 'Sales Manager', performance: 94, email: 'emily@example.com' },
-        { id: 'EMP007', name: 'Robert Lee', position: 'Sales Representative', performance: 87, email: 'robert@example.com' }
+      sales: [
+        { id: 'EMP006', name: 'Emily Brown', position: 'Sales Manager', performance: 94 },
+        { id: 'EMP007', name: 'Robert Lee', position: 'Sales Representative', performance: 87 }
       ],
-      'hr': [
-        { id: 'EMP008', name: 'Jennifer White', position: 'HR Manager', performance: 89, email: 'jennifer@example.com' }
+      hr: [
+        { id: 'EMP008', name: 'Jennifer White', position: 'HR Manager', performance: 89 }
       ]
     };
 
     if (department === 'all') {
       return Object.values(departmentEmployees).flat();
     }
-    
-    return departmentEmployees[department as keyof typeof departmentEmployees] || [];
+    return departmentEmployees[department] || [];
   };
 
-  const getTeamLead = (department: string) => {
-    const teamLeads = {
-      'engineering': 'John Smith',
-      'marketing': 'Lisa Chen', 
-      'sales': 'Emily Brown',
-      'hr': 'Jennifer White'
-    };
-    
-    return teamLeads[department as keyof typeof teamLeads] || null;
-  };
+  // TeamLead: direct PDF from this page’s dataset (no /export, no mock fallback elsewhere)
+  const handleGenerateReport = async () => {
+    if (isTeamLead) {
+      try {
+        setGenerating(true);
 
-  const handleGenerateReport = () => {
-    setGenerating(true);
-    
-    setTimeout(() => {
-      const employees = getDepartmentEmployees(selectedDepartment);
-      const teamLead = selectedDepartment !== 'all' ? getTeamLead(selectedDepartment) : null;
-      const departmentName = selectedDepartment === 'all' ? undefined : selectedDepartment.charAt(0).toUpperCase() + selectedDepartment.slice(1);
-      
-      const reportData = {
-        employees,
-        department: departmentName,
-        teamLead,
-        reportType: reportType.charAt(0).toUpperCase() + reportType.slice(1),
-        dateRange: dateRange.charAt(0).toUpperCase() + dateRange.slice(1)
-      };
+        // Build rows from the same dataset the page shows
+        const source = getDepartmentEmployees(selectedDepartment);
+        const rows = (source || []).map((e) => ({
+          photo: e.photo ?? "", // left blank unless you provide a data URL
+          id: e.id ?? "",
+          name: e.name ?? "",
+          designation: e.position ?? e.designation ?? "—",
+          rating:
+            typeof e.performance === "number"
+              ? `${e.performance}%`
+              : (typeof e.rating === "number" ? `${e.rating}%` : "—"),
+          notes: e.notes ?? e.comment ?? e.comments ?? "—",
+        }));
 
-      const now = new Date();
-      let content = '';
-      let filename = '';
-      let mimeType = '';
+        console.log("TL export rows ->", rows.length, rows[0]);
 
-      if (format === 'pdf') {
-        content = generatePDFContent(reportData);
-        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
-        mimeType = 'application/pdf';
-      } else if (format === 'xlsx') {
-        content = generateExcelContent(reportData);
-        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
-        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      } else {
-        content = generateExcelContent(reportData);
-        filename = `${reportType}_report_${departmentName || 'all'}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
-        mimeType = 'text/csv';
-      }
-
-      const success = downloadFile(content, filename, mimeType);
-      
-      if (success) {
-        const newReport = {
-          id: Date.now().toString(),
-          name: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${departmentName ? ` - ${departmentName}` : ''}`,
-          type: reportType,
-          format: format.toUpperCase(),
-          dateGenerated: new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }),
-          status: 'Ready',
-          isFavorite: false,
-          department: departmentName
-        };
-        
-        setGeneratedReports(prev => [newReport, ...prev]);
-        
-        toast.success('Report generated and downloaded successfully', {
-          description: `Your ${reportType} report${departmentName ? ` for ${departmentName} department` : ''} has been downloaded.`
+        await downloadTeamReportPDF(rows, {
+          title: "Team Performance Report",
+          departmentId: selectedDepartment,
+          dateFrom,
+          dateTo,
         });
-      } else {
-        toast.error('Failed to generate report', {
-          description: 'There was an error generating the report. Please try again.'
-        });
+      } finally {
+        setGenerating(false);
       }
-      
-      setGenerating(false);
-    }, 1500);
+      return;
+    }
+
+    // Keep non-TeamLead roles disabled (as before)
+    console.log("Saved report generation disabled");
+    setGenerating(false);
   };
 
   const handleToggleFavorite = (reportId: number, isGenerated: boolean = false) => {
     if (isGenerated) {
-      setGeneratedReports(prev => prev.map(report => 
-        report.id === reportId.toString() 
+      setGeneratedReports(prev => prev.map(report =>
+        report.id === reportId.toString()
           ? { ...report, isFavorite: !report.isFavorite }
           : report
       ));
     } else {
-      setRecentReports(prev => prev.map(report => 
-        report.id === reportId 
+      setRecentReports(prev => prev.map(report =>
+        report.id === reportId
           ? { ...report, isFavorite: !report.isFavorite }
           : report
       ));
-      
-      // Also update favorites list
+
       const report = recentReports.find(r => r.id === reportId);
       if (report) {
         if (!report.isFavorite) {
@@ -226,7 +183,6 @@ const Reports = () => {
         }
       }
     }
-    
     toast.success('Favorite status updated');
   };
 
@@ -242,54 +198,18 @@ const Reports = () => {
       type: reportFormat,
       isFavorite: false
     };
-    
+
     setRecentReports(prev => [savedReport, ...prev]);
     toast.success('Report saved successfully');
   };
 
+  // Saved report download remains disabled for Team Lead
   const handleDownloadReport = (reportName: string, reportFormat: string, reportTypeData?: string) => {
-    const employees = getDepartmentEmployees(selectedDepartment);
-    const teamLead = selectedDepartment !== 'all' ? getTeamLead(selectedDepartment) : null;
-    const departmentName = selectedDepartment === 'all' ? undefined : selectedDepartment.charAt(0).toUpperCase() + selectedDepartment.slice(1);
-    
-    const reportData = {
-      employees,
-      department: departmentName,
-      teamLead,
-      reportType: reportTypeData || reportType,
-      dateRange: dateRange
-    };
-
-    const now = new Date();
-    let content = '';
-    let filename = '';
-    let mimeType = '';
-
-    if (reportFormat === 'PDF') {
-      content = generatePDFContent(reportData);
-      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.pdf`;
-      mimeType = 'application/pdf';
-    } else if (reportFormat === 'XLSX') {
-      content = generateExcelContent(reportData);
-      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.xlsx`;
-      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    } else {
-      content = generateExcelContent(reportData);
-      filename = `${reportName.replace(/\s+/g, '_')}_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}.csv`;
-      mimeType = 'text/csv';
+    if (isTeamLead) {
+      console.log("Saved report download is intentionally disabled for TeamLead (use Generate Report)");
+      return;
     }
-
-    const success = downloadFile(content, filename, mimeType);
-    
-    if (success) {
-      toast.success('Download completed', {
-        description: `${reportName} has been downloaded successfully.`
-      });
-    } else {
-      toast.error('Download failed', {
-        description: 'There was an error downloading the report. Please try again.'
-      });
-    }
+    console.log("Saved report download disabled");
   };
 
   return (
@@ -323,7 +243,7 @@ const Reports = () => {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Department</label>
-                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <Select value={selectedDepartment} onValueChange={(v) => setSelectedDepartment(v as any)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
@@ -368,16 +288,22 @@ const Reports = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  className="flex-1" 
-                  onClick={handleGenerateReport} 
+                <Button
+                  type="button"
+                  className="flex-1"
+                  onClick={handleGenerateReport}
                   disabled={generating}
                 >
                   {generating ? 'Generating...' : 'Generate Report'}
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
-                  onClick={() => handleSaveReport(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`, format.toUpperCase())}
+                  onClick={() =>
+                    handleSaveReport(
+                      `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`,
+                      format.toUpperCase()
+                    )
+                  }
                 >
                   Save Config
                 </Button>
@@ -396,10 +322,10 @@ const Reports = () => {
                 <TabsTrigger value="recent" className="flex-1">Recent</TabsTrigger>
                 <TabsTrigger value="favorites" className="flex-1">Favorites</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="recent" className="space-y-4">
                 {recentReports.map((report) => (
-                  <div 
+                  <div
                     key={report.id}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                   >
@@ -413,15 +339,15 @@ const Reports = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => handleToggleFavorite(report.id)}
                       >
                         <Star className={`h-4 w-4 ${report.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => handleDownloadReport(report.name, report.type)}
                       >
@@ -431,10 +357,10 @@ const Reports = () => {
                   </div>
                 ))}
               </TabsContent>
-              
+
               <TabsContent value="favorites" className="space-y-4">
                 {favoriteReports.filter(report => report.isFavorite).map((report) => (
-                  <div 
+                  <div
                     key={report.id}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                   >
@@ -446,15 +372,15 @@ const Reports = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => handleToggleFavorite(report.id)}
                       >
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => handleDownloadReport(report.name, report.type)}
                       >
@@ -505,15 +431,15 @@ const Reports = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleToggleFavorite(parseInt(report.id), true)}
                         >
                           <Star className={`h-4 w-4 ${report.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDownloadReport(report.name, report.format, report.type)}
                           className="flex items-center gap-2"
@@ -532,6 +458,6 @@ const Reports = () => {
       )}
     </div>
   );
-};
+}
 
 export default Reports;

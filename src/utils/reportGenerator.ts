@@ -3,6 +3,8 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
+const EXPORTS_DISABLED = import.meta.env.VITE_DISABLE_REPORT_EXPORTS === "true";
+
 export interface ReportSection {
   type: 'text' | 'table' | 'chart';
   textContent?: string[];
@@ -153,9 +155,14 @@ export function generateExcelContent(reportData: any): string {
 }
 
 // Download file utility (for the Reports components)
-export function downloadFile(content: string, filename: string, mimeType: string): boolean {
+export function downloadFile(content: string | Blob, filename: string, mimeType: string): boolean {
+  if (EXPORTS_DISABLED) {
+    console.warn("[exports] download disabled via VITE_DISABLE_REPORT_EXPORTS", { filename, mimeType });
+    return false;
+  }
+
   try {
-    const blob = new Blob([content], { type: mimeType });
+    const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

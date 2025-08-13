@@ -52,6 +52,7 @@ import AdminRecords from "./pages/admin/Records";
 import AdminAuditLog from "./pages/admin/AuditLog";
 import AdminSettings from "./pages/admin/Settings";
 import AdminProfile from "./pages/admin/Profile";
+import ReportExport from "./pages/export/ReportExport";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +79,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/export" element={<ReportExport />} />
             
             {/* Manager Routes */}
             <Route path="/manager" element={<ManagerLayout />}>
@@ -107,7 +109,7 @@ const App = () => (
               <Route path="profile" element={<TeamLeadProfile />} />
               {/* Common Pages */}
               <Route path="notifications" element={<Notifications />} />
-              <Route path="reports" element={<Reports />} />
+              <Route path="reports" element={<Reports role="teamlead" />} />
               <Route path="support" element={<Support />} />
             </Route>
             

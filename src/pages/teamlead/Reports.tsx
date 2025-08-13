@@ -1,94 +1,99 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePerformanceReport } from '@/hooks/usePerformanceReport';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { exportPerformanceReportPDF } from '@/utils/pdfReport';
+import { downloadTeamReportPDF } from "@/utils/downloadTeamReport";
 
-// Mock fallback data for when real data is empty
-const getMockReportsForRole = (role: string) => {
-  return [
-    {
-      id: 'mock-1',
-      user_id: 'mock-user-1',
-      department_id: 'mock-dept-1',
-      profiles: { name: 'John Doe', email: 'john@example.com', role: 'teamlead' as const },
-      position: 'Senior Developer',
-      departments: { name: 'Engineering' },
-      performance_rating: 85,
-      hire_date: '2023-01-15',
-      phone: '+1234567890',
-      skills: ['React', 'TypeScript']
-    },
-    {
-      id: 'mock-2',
-      user_id: 'mock-user-2', 
-      department_id: 'mock-dept-1',
-      profiles: { name: 'Jane Smith', email: 'jane@example.com', role: 'teamlead' as const },
-      position: 'Project Manager',
-      departments: { name: 'Engineering' },
-      performance_rating: 92,
-      hire_date: '2022-06-10',
-      phone: '+1234567891',
-      skills: ['Management', 'Agile']
+// Using Team Lead's data from TeamDepartment page
+const teamMembers = [
+  { 
+    id: 101, 
+    name: 'John Smith', 
+    designation: 'Senior Developer', 
+    avatar: null,
+    ratings: {
+      productivity: 95,
+      collaboration: 88,
+      timeliness: 92,
+      overall: 92
     }
-  ];
-};
+  },
+  { 
+    id: 102, 
+    name: 'Emily Wilson', 
+    designation: 'UX Designer', 
+    avatar: null,
+    ratings: {
+      productivity: 90,
+      collaboration: 95,
+      timeliness: 85,
+      overall: 90
+    }
+  },
+  { 
+    id: 103, 
+    name: 'Michael Brown', 
+    designation: 'Backend Developer', 
+    avatar: null,
+    ratings: {
+      productivity: 88,
+      collaboration: 90,
+      timeliness: 94,
+      overall: 91
+    }
+  }
+];
 
-export default function Reports() {
+export default function TeamLeadReports() {
   const { profile } = useAuth();
-  const { fetch, loading } = usePerformanceReport(profile?.role || 'teamlead', profile?.id || '');
+  const [generating, setGenerating] = useState(false);
 
-  const handleDownload = async () => {
-    console.log("🚀 [TeamLeadReports] Download button clicked");
-    console.log("✅ [TeamLeadReports] Profile:", profile);
-    console.log("✅ [TeamLeadReports] Profile role:", profile?.role);
-    console.log("✅ [TeamLeadReports] Profile id:", profile?.id);
-    
-    toast("Download started");
-    
+  // TeamLead-only: direct PDF download (no /export navigation)
+  const handleDownload = async (e?: React.MouseEvent | React.FormEvent) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
     try {
-      console.log("[TeamLeadReports] Calling fetch function...");
-      let data = await fetch();
-      console.log("[TeamLeadReports] Fetch result:", data);
-      console.log("[TeamLeadReports] Data length:", data?.length);
-      console.log("[TeamLeadReports] Data type:", typeof data);
-      console.log("[TeamLeadReports] Data is array:", Array.isArray(data));
+      setGenerating(true);
       
-      if (!data?.length) {
-        console.log("[TeamLeadReports] No real data found, using mock data");
-        // fallback to mock if allowed
-        data = getMockReportsForRole(profile?.role || 'teamlead') || [];
-        console.log("[TeamLeadReports] Mock data:", data);
-        console.log("[TeamLeadReports] Mock data length:", data.length);
-      }
-      
-      if (!data.length) {
-        console.log("[TeamLeadReports] No data at all, showing error");
-        toast.error("No records to download");
-        return;
-      }
+      // Use the exact rows the Team List renders
+      const rows = teamMembers.map(member => ({
+        id: member.id,
+        name: member.name,
+        designation: member.designation,
+        photo: member.avatar,
+        rating: member.ratings.overall,
+        notes: `Productivity: ${member.ratings.productivity}%, Collaboration: ${member.ratings.collaboration}%, Timeliness: ${member.ratings.timeliness}%`
+      }));
 
-      console.log("[TeamLeadReports] About to generate PDF with data:", data);
-      console.log("[TeamLeadReports] First data item:", data[0]);
-      const title = `TeamLead Report - ${profile?.name || 'Unknown'}`;
-      console.log("[TeamLeadReports] PDF title:", title);
-      
-      await exportPerformanceReportPDF(data, title);
-      toast.success("PDF report generated successfully");
+      await downloadTeamReportPDF(rows, {
+        title: "Team Performance Report",
+        departmentId: "IT Department",     // Team Lead is in IT department
+        dateFrom: "",                      // Could add date filter state here
+        dateTo: "",                        // Could add date filter state here
+      });
     } catch (error) {
-      console.error("[TeamLeadReports] Error generating report:", error);
-      console.error("[TeamLeadReports] Error stack:", error instanceof Error ? error.stack : 'No stack');
-      toast.error("Failed to generate report: " + (error instanceof Error ? error.message : "Unknown error"));
+      console.error("Failed to generate report:", error);
+    } finally {
+      setGenerating(false);
     }
+
   };
 
   return (
     <Card className="p-6">
-      <Button onClick={handleDownload} disabled={loading}>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate Report"}
-      </Button>
+      <form onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+        <div className="space-y-4">
+          <Button 
+            type="button" 
+            onClick={handleDownload} 
+            disabled={generating}
+          >
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate Report"}
+          </Button>
+        </div>
+      </form>
     </Card>
   );
 }
